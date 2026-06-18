@@ -1,0 +1,3353 @@
+import { useState } from "react";
+
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal: #0D9488;
+    --teal-light: #14B8A6;
+    --teal-dark: #0F766E;
+    --coral: #F97316;
+    --coral-light: #FB923C;
+    --navy: #0F2237;
+    --navy-mid: #1A3550;
+    --slate: #334155;
+    --mist: #F0FDFA;
+    --mist2: #F8FAFC;
+    --border: #E2E8F0;
+    --text-primary: #0F2237;
+    --text-secondary: #64748B;
+    --text-light: #94A3B8;
+    --white: #FFFFFF;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 4px 24px rgba(15,34,55,0.08);
+    --shadow-lg: 0 12px 48px rgba(15,34,55,0.14);
+  }
+
+  body { font-family: 'DM Sans', sans-serif; background: var(--mist2); color: var(--text-primary); }
+  .app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  .nav {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(15,34,55,0.06);
+  }
+  .nav-logo {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--teal-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-logo span { color: var(--coral); }
+  .nav-pill {
+    background: var(--mist);
+    border: 1px solid #CCFBF1;
+    border-radius: 100px;
+    display: flex;
+    padding: 4px;
+    gap: 2px;
+  }
+  .nav-pill button {
+    padding: 6px 20px;
+    border-radius: 100px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    color: var(--text-secondary);
+  }
+  .nav-pill button.active { background: var(--teal); color: white; box-shadow: 0 2px 8px rgba(13,148,136,0.3); }
+
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #1B4F72 100%);
+    padding: 80px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(13,148,136,0.18) 0%, transparent 70%);
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(249,115,22,0.15);
+    border: 1px solid rgba(249,115,22,0.3);
+    color: var(--coral-light);
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .hero h1 {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 700;
+    color: white;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .hero h1 em { color: var(--teal-light); font-style: normal; }
+  .hero p { color: rgba(255,255,255,0.65); font-size: 17px; max-width: 520px; margin: 0 auto 36px; line-height: 1.6; position: relative; }
+  .hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; }
+
+  .btn {
+    padding: 14px 28px;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary { background: var(--teal); color: white; box-shadow: 0 4px 16px rgba(13,148,136,0.4); }
+  .btn-primary:hover { background: var(--teal-light); transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: white; border: 1.5px solid rgba(255,255,255,0.3); }
+  .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.6); }
+  .btn-ghost { background: var(--mist); color: var(--teal-dark); border: 1.5px solid #CCFBF1; }
+  .btn-ghost:hover { background: #CCFBF1; }
+  .btn-danger { background: #FEE2E2; color: #991B1B; border: none; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .stats-bar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; color: var(--teal-dark); }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  .main { flex: 1; padding: 40px 16px; max-width: 900px; margin: 0 auto; width: 100%; }
+  .main-narrow { flex: 1; padding: 40px 16px; max-width: 560px; margin: 0 auto; width: 100%; }
+
+  .card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+  .card-header { padding: 24px 28px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .card-icon.teal { background: #CCFBF1; }
+  .card-title { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 600; }
+  .card-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .card-body { padding: 28px; }
+
+  .steps { display: flex; gap: 0; margin-bottom: 32px; }
+  .step { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+  .step::after { content: ''; position: absolute; top: 16px; left: 50%; width: 100%; height: 2px; background: var(--border); z-index: 0; }
+  .step:last-child::after { display: none; }
+  .step-dot { width: 32px; height: 32px; border-radius: 50%; background: var(--border); color: var(--text-light); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; position: relative; z-index: 1; transition: all 0.3s; }
+  .step-dot.active { background: var(--teal); color: white; box-shadow: 0 0 0 4px rgba(13,148,136,0.2); }
+  .step-dot.done { background: var(--success); color: white; }
+  .step-label { font-size: 11px; color: var(--text-light); margin-top: 6px; text-align: center; font-weight: 500; }
+  .step-label.active { color: var(--teal-dark); }
+
+  .form-group { margin-bottom: 20px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--slate); margin-bottom: 6px; }
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text-primary);
+    background: var(--white);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,148,136,0.12); }
+  .input-prefix { position: relative; }
+  .input-prefix span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 15px; }
+  .input-prefix input { padding-left: 28px; }
+  .input-sensitive { font-family: monospace; letter-spacing: 2px; }
+
+  .financing-card { border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 20px; cursor: pointer; transition: all 0.2s; position: relative; background: var(--white); }
+  .financing-card:hover { border-color: var(--teal-light); transform: translateY(-2px); box-shadow: var(--shadow); }
+  .financing-card.selected { border-color: var(--teal); background: #F0FDFA; }
+  .financing-card.recommended::before { content: 'Best Match'; position: absolute; top: -1px; right: 16px; background: var(--coral); color: white; font-size: 11px; font-weight: 600; padding: 3px 12px; border-radius: 0 0 8px 8px; }
+  .fc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .fc-logo { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .fc-name { font-family: 'Sora', sans-serif; font-weight: 600; font-size: 16px; }
+  .fc-type { font-size: 12px; color: var(--text-secondary); }
+  .fc-details { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .fc-detail { background: var(--mist2); border-radius: 8px; padding: 10px 12px; }
+  .fc-detail-val { font-family: 'Sora', sans-serif; font-weight: 600; font-size: 15px; color: var(--teal-dark); }
+  .fc-detail-label { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+  .success-screen { text-align: center; padding: 48px 24px; }
+  .success-icon { width: 80px; height: 80px; background: linear-gradient(135deg, var(--teal), var(--teal-light)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 24px; box-shadow: 0 8px 24px rgba(13,148,136,0.3); }
+  .success-screen h2 { font-family: 'Sora', sans-serif; font-size: 24px; font-weight: 700; margin-bottom: 12px; }
+  .success-screen p { color: var(--text-secondary); font-size: 16px; line-height: 1.6; max-width: 400px; margin: 0 auto 32px; }
+  .next-steps { background: var(--mist); border-radius: var(--radius-sm); padding: 20px; text-align: left; margin-top: 24px; }
+  .next-steps h4 { font-weight: 600; margin-bottom: 12px; font-size: 14px; }
+  .next-step-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-size: 14px; color: var(--slate); }
+  .next-step-num { width: 22px; height: 22px; background: var(--teal); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+  .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .metric-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 20px; box-shadow: var(--shadow); }
+  .metric-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric-val { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 700; color: var(--text-primary); }
+  .metric-sub { font-size: 12px; color: var(--success); margin-top: 4px; }
+
+  .patient-table { width: 100%; border-collapse: collapse; }
+  .patient-table th { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  .patient-table td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid #F1F5F9; }
+  .patient-table tr:last-child td { border-bottom: none; }
+  .patient-table tr:hover td { background: var(--mist); }
+
+  .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 100px; font-size: 12px; font-weight: 500; }
+  .status-pill.approved { background: #D1FAE5; color: #065F46; }
+  .status-pill.pending { background: #FEF3C7; color: #92400E; }
+  .status-pill.reviewing { background: #E0F2FE; color: #0C4A6E; }
+
+  .tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); padding: 0 28px; background: var(--white); }
+  .tab-btn { padding: 14px 20px; border: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
+  .tab-btn.active { color: var(--teal-dark); border-bottom-color: var(--teal); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .helper-text { font-size: 12px; color: var(--text-light); margin-top: 6px; }
+  .alert { padding: 14px 16px; border-radius: var(--radius-sm); font-size: 14px; margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-start; }
+  .alert.info { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+  .alert.success { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+  .alert.warning { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+  .section-title { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .section-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+
+  .magic-link-box { background: var(--mist); border: 1.5px dashed var(--teal-light); border-radius: var(--radius-sm); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+  .magic-link-url { font-family: monospace; font-size: 12px; color: var(--teal-dark); word-break: break-all; flex: 1; }
+  .copy-btn { background: var(--teal); color: white; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
+  .copy-btn:hover { background: var(--teal-light); }
+
+  .portal-header { background: linear-gradient(135deg, var(--navy), var(--navy-mid)); padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .portal-user { display: flex; align-items: center; gap: 12px; }
+  .portal-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--teal); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px; }
+  .portal-name { color: white; font-weight: 600; font-size: 15px; }
+  .portal-email { color: rgba(255,255,255,0.55); font-size: 12px; }
+
+  .approval-card { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-lg); }
+  .approval-approved { background: linear-gradient(135deg, #065F46, #047857); }
+  .approval-review { background: linear-gradient(135deg, #92400E, #B45309); }
+  .approval-declined { background: linear-gradient(135deg, #7F1D1D, #991B1B); }
+  .approval-body { padding: 40px 32px; text-align: center; color: white; }
+  .approval-icon { font-size: 56px; margin-bottom: 16px; }
+  .approval-title { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  .approval-sub { font-size: 15px; opacity: 0.8; margin-bottom: 32px; }
+  .approval-amount { font-family: 'Sora', sans-serif; font-size: 48px; font-weight: 700; margin-bottom: 4px; }
+  .approval-amount-label { font-size: 13px; opacity: 0.7; margin-bottom: 32px; }
+  .approval-details { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 32px; }
+  .approval-detail { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 14px; }
+  .approval-detail-val { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; }
+  .approval-detail-label { font-size: 11px; opacity: 0.75; margin-top: 3px; }
+
+  .section-divider { display: flex; align-items: center; gap: 12px; margin: 24px 0; }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+  .section-divider-text { font-size: 12px; color: var(--text-light); font-weight: 500; white-space: nowrap; }
+
+  .site-footer { background: var(--navy); color: rgba(255,255,255,0.7); padding: 56px 32px 32px; margin-top: auto; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; max-width: 1000px; margin: 0 auto 48px; }
+  .footer-brand-col .footer-logo { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 22px; color: white; margin-bottom: 12px; }
+  .footer-brand-col .footer-logo span { color: var(--coral); }
+  .footer-brand-col p { font-size: 13px; line-height: 1.7; max-width: 240px; }
+  .footer-col-title { font-family: 'Sora', sans-serif; font-weight: 600; font-size: 13px; color: white; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; }
+  .footer-link { display: block; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px; cursor: pointer; transition: color 0.2s; background: none; border: none; font-family: 'DM Sans', sans-serif; padding: 0; text-align: left; }
+  .footer-link:hover { color: var(--teal-light); }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 12px; color: rgba(255,255,255,0.4); }
+  .footer-legal { display: flex; gap: 20px; flex-wrap: wrap; }
+
+  .blog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 48px; }
+  .blog-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+  .blog-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .blog-card-img { height: 140px; display: flex; align-items: center; justify-content: center; font-size: 48px; }
+  .blog-card-body { padding: 20px; }
+  .blog-card-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--teal-dark); margin-bottom: 8px; }
+  .blog-card-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 16px; margin-bottom: 8px; line-height: 1.4; }
+  .blog-card-excerpt { font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; }
+  .blog-card-meta { font-size: 12px; color: var(--text-light); display: flex; justify-content: space-between; }
+
+  @media (max-width: 600px) {
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+    .form-row { grid-template-columns: 1fr; }
+    .fc-details { grid-template-columns: 1fr 1fr; }
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .hero { padding: 48px 20px; }
+    .stats-bar { gap: 24px; }
+    .main { padding: 24px 12px; }
+    .main-narrow { padding: 24px 12px; }
+    .approval-details { grid-template-columns: 1fr 1fr; }
+  }
+`;
+
+// ─── MOCK DATA ────────────────────────────────────────────────────────────────
+
+const FINANCING_OPTIONS = [
+  { id: "rpps_plan", name: "RPPS Flex Pay", type: "Monthly Payment Plan", logo: "🏥", bg: "#F0FDFA", apr: "0%", term: "3–12 mo", approval: "Instant", minAmount: 100, recommended: true },
+  { id: "partner_a", name: "Partner Plan A", type: "Third-Party Monthly Financing", logo: "💳", bg: "#EFF6FF", apr: "0% promo", term: "6–24 mo", approval: "~60 sec", minAmount: 200, recommended: false },
+  { id: "partner_b", name: "Partner Plan B", type: "Extended Monthly Financing", logo: "⚡", bg: "#FFF7ED", apr: "5.9–24.9%", term: "12–60 mo", approval: "~2 min", minAmount: 500, recommended: false },
+];
+
+const MOCK_PATIENTS = [
+  { name: "Maria L.", amount: "$1,200", plan: "RPPS Flex Pay", status: "approved", date: "Today" },
+  { name: "James R.", amount: "$3,400", plan: "Partner Plan A", status: "reviewing", date: "Yesterday" },
+  { name: "Aisha T.", amount: "$680", plan: "RPPS Flex Pay", status: "approved", date: "May 20" },
+  { name: "Carlos M.", amount: "$2,100", plan: "Partner Plan B", status: "pending", date: "May 19" },
+  { name: "Diane K.", amount: "$890", plan: "RPPS Flex Pay", status: "approved", date: "May 18" },
+];
+
+// ─── MOCK AUTH ────────────────────────────────────────────────────────────────
+// TODO: Replace with Supabase auth calls on deployment
+// supabase.auth.signInWithOtp({ email }) for magic link send
+// supabase.auth.getSession() for session check
+
+function generateMagicLink(email) {
+  const token = Math.random().toString(36).slice(2, 10).toUpperCase();
+  return `https://rpps-mvp.vercel.app/auth?token=${token}&email=${encodeURIComponent(email)}`;
+}
+
+// ─── MOCK UNDERWRITING ENGINE ─────────────────────────────────────────────────
+// TODO: Replace with real lending partner API call on deployment
+// e.g. POST to Medallion Bank / FinWise decisioning endpoint
+
+function runMockUnderwriting(data) {
+  const income = parseFloat(data.annualIncome) || 0;
+  const balance = parseFloat(data.balanceOwed) || 0;
+  const score = parseInt(data.mockCreditScore) || 650;
+
+  if (score >= 680 && income >= 30000) {
+    return { decision: "approved", approvedAmount: balance, apr: "0%", term: "12 mo", monthlyPayment: (balance / 12).toFixed(2), partner: data.selectedPlan };
+  } else if (score >= 600 && income >= 20000) {
+    const approvedAmount = Math.min(balance, income * 0.1);
+    return { decision: "approved", approvedAmount: approvedAmount.toFixed(2), apr: "12.9%", term: "24 mo", monthlyPayment: (approvedAmount / 24).toFixed(2), partner: data.selectedPlan };
+  } else if (score >= 560) {
+    return { decision: "review", approvedAmount: null, apr: null, term: null, monthlyPayment: null, partner: data.selectedPlan };
+  } else {
+    return { decision: "declined", approvedAmount: null, apr: null, term: null, monthlyPayment: null, partner: data.selectedPlan };
+  }
+}
+
+// ─── INTAKE FORM (pre-auth) ───────────────────────────────────────────────────
+
+function IntakeForm({ onSubmit }) {
+  const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", email: "", balanceOwed: "", careDescription: "", provider: "" });
+  const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const valid = form.firstName && form.lastName && form.email && form.phone && form.balanceOwed && form.careDescription;
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <div className="card-icon teal">💚</div>
+        <div>
+          <div className="card-title">Check Your Payment Options</div>
+          <div className="card-subtitle">Takes under 2 minutes — no impact to your credit score</div>
+        </div>
+      </div>
+      <div className="card-body">
+        <div className="section-title">Tell us about yourself</div>
+        <div className="section-sub">Your information is private and HIPAA-protected.</div>
+        <div className="form-row">
+          <div className="form-group"><label>First Name *</label><input placeholder="Maria" value={form.firstName} onChange={e => upd("firstName", e.target.value)} /></div>
+          <div className="form-group"><label>Last Name *</label><input placeholder="Lopez" value={form.lastName} onChange={e => upd("lastName", e.target.value)} /></div>
+        </div>
+        <div className="form-row">
+          <div className="form-group"><label>Phone Number *</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
+          <div className="form-group"><label>Email Address *</label><input type="email" placeholder="maria@email.com" value={form.email} onChange={e => upd("email", e.target.value)} /></div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Estimated Balance Owed ($) *</label>
+            <div className="input-prefix"><span>$</span><input type="number" placeholder="0.00" value={form.balanceOwed} onChange={e => upd("balanceOwed", e.target.value)} /></div>
+            <div className="helper-text">Include copays, deductibles, or self-pay amounts</div>
+          </div>
+          <div className="form-group"><label>Provider / Practice Name</label><input placeholder="e.g. Sunrise Health Clinic" value={form.provider} onChange={e => upd("provider", e.target.value)} /></div>
+        </div>
+        <div className="form-group">
+          <label>Description of Care Needed *</label>
+          <textarea placeholder="Briefly describe the healthcare service you are seeking (e.g. dental work, physical therapy, behavioral health treatment, chiropractic care, etc.)" value={form.careDescription} onChange={e => upd("careDescription", e.target.value)} style={{ minHeight: 90, resize: "vertical", lineHeight: 1.6 }} />
+          <div className="helper-text">Required — helps us match you with the right payment options.</div>
+        </div>
+        <hr className="divider" />
+        <button className="btn btn-primary" style={{ width: "100%" }} disabled={!valid} onClick={() => onSubmit(form)}>
+          Continue — Check My Options
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAGIC LINK SENT SCREEN ───────────────────────────────────────────────────
+
+function MagicLinkSent({ email, magicLink, onSimulateClick }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(magicLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="card">
+      <div className="success-screen">
+        <div className="success-icon">📬</div>
+        <h2>Check your email</h2>
+        <p>{"We sent a secure sign-in link to:"}<br /><strong style={{ color: "var(--teal-dark)" }}>{email}</strong></p>
+        <p style={{ fontSize: 14, color: "var(--text-secondary)", marginTop: -16 }}>{"Click the link in your email to register and complete your application. The link expires in 24 hours."}</p>
+
+        <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 13, color: "#92400E", marginBottom: 20, textAlign: "left" }}>
+          <strong>Demo mode:</strong> Email sending requires deployment. Use the link below to simulate clicking the magic link.
+        </div>
+
+        <div className="magic-link-box">
+          <span className="magic-link-url">{magicLink}</span>
+          <button className="copy-btn" onClick={handleCopy}>{copied ? "Copied!" : "Copy"}</button>
+        </div>
+
+        <button className="btn btn-primary" style={{ width: "100%" }} onClick={onSimulateClick}>
+          Simulate: Click Magic Link
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── SHARED AUTH UTILITIES ────────────────────────────────────────────────────
+
+function LogoDark({ width = 200, height = 60 }) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 1600 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(120,92) scale(1.25)">
+        <path d="M120 0 L240 68 L120 136 L0 68 Z" fill="#14B8A6"/>
+        <path d="M0 78 L112 142 L112 275 L0 211 Z" fill="#0F766E"/>
+        <path d="M128 142 L240 78 L240 211 L128 275 Z" fill="#F59E0B"/>
+      </g>
+      <g transform="translate(545,128)">
+        <text x="0" y="160" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="205" fontWeight="800" letterSpacing="-8" fill="#F8FAFC">Rubix</text>
+        <text x="4" y="250" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="76" fontWeight="400" letterSpacing="-1" fill="#CBD5E1">Patient Payment Solutions</text>
+      </g>
+    </svg>
+  );
+}
+
+function validatePassword(pw) {
+  const errors = [];
+  if (pw.length < 8) errors.push("At least 8 characters");
+  if (!/[0-9]/.test(pw)) errors.push("At least one number");
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw)) errors.push("At least one special character");
+  return errors;
+}
+
+function PasswordStrength({ password }) {
+  const errors = validatePassword(password);
+  if (!password) return null;
+  const rules = [
+    { label: "8+ characters", pass: password.length >= 8 },
+    { label: "Contains a number", pass: /[0-9]/.test(password) },
+    { label: "Contains a special character", pass: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) },
+  ];
+  return (
+    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+      {rules.map(r => (
+        <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+          <span style={{ color: r.pass ? "var(--success)" : "var(--text-light)", fontWeight: 700 }}>{r.pass ? "✓" : "○"}</span>
+          <span style={{ color: r.pass ? "var(--success)" : "var(--text-light)" }}>{r.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ForgotFlow({ type, onBack }) {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const label = type === "password" ? "Password Reset" : "Username Recovery";
+  const bodyText = type === "password"
+    ? "Enter your email address and we will send you a link to reset your password."
+    : "Enter your email address and we will send you your account username if one exists.";
+  const sentText = type === "password"
+    ? "If an account exists for that email, a password reset link has been sent."
+    : "If an account exists for that email, your username has been sent to that address.";
+  return (
+    <div style={{ padding: "0 0 8px" }}>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: "var(--teal-dark)", fontFamily: "DM Sans, sans-serif", fontSize: 13, cursor: "pointer", fontWeight: 500, marginBottom: 16, padding: 0 }}>← Back to Sign In</button>
+      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{label}</div>
+      {!sent ? (
+        <>
+          <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>{bodyText}</div>
+          <div className="form-group"><label>Email Address</label><input type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} /></div>
+          <button className="btn btn-primary" style={{ width: "100%" }} disabled={!email} onClick={() => setSent(true)}>Send {type === "password" ? "Reset Link" : "Username"}</button>
+        </>
+      ) : (
+        <div className="alert success">{sentText}</div>
+      )}
+    </div>
+  );
+}
+
+function AuthDivider() {
+  return (
+    <div className="section-divider" style={{ margin: "16px 0" }}>
+      <div className="section-divider-line" />
+      <div className="section-divider-text">or</div>
+      <div className="section-divider-line" />
+    </div>
+  );
+}
+
+// ─── REGISTER / LOGIN PAGE (patient intake) ───────────────────────────────────
+
+function AuthPage({ intakeData, onAuthenticated }) {
+  const [tab, setTab] = useState("register");
+  const [forgot, setForgot] = useState(null); // "password" | "username" | null
+  const [regForm, setRegForm] = useState({ password: "", confirmPassword: "" });
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [magicEmail, setMagicEmail] = useState("");
+  const [magicSent, setMagicSent] = useState(false);
+  const [error, setError] = useState("");
+  const updReg = (k, v) => setRegForm(f => ({ ...f, [k]: v }));
+  const updLogin = (k, v) => setLoginForm(f => ({ ...f, [k]: v }));
+
+  const handleRegister = () => {
+    const errs = validatePassword(regForm.password);
+    if (errs.length) { setError(errs[0]); return; }
+    if (regForm.password !== regForm.confirmPassword) { setError("Passwords do not match."); return; }
+    setError("");
+    // TODO: supabase.auth.signUp({ email: intakeData.email, password: regForm.password })
+    onAuthenticated({ email: intakeData.email, firstName: intakeData.firstName, lastName: intakeData.lastName });
+  };
+
+  const handlePasswordSignIn = () => {
+    if (!loginForm.email || !loginForm.password) { setError("Please enter your email and password."); return; }
+    setError("");
+    // TODO: supabase.auth.signInWithPassword({ email: loginForm.email, password: loginForm.password })
+    onAuthenticated({ email: loginForm.email, firstName: "", lastName: "" });
+  };
+
+  const handleMagicLink = () => {
+    if (!magicEmail) return;
+    setMagicSent(true);
+    // TODO: supabase.auth.signInWithOtp({ email: magicEmail })
+  };
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <div className="card-icon teal">🔐</div>
+        <div>
+          <div className="card-title">Create Your Account</div>
+          <div className="card-subtitle">Secure your application with a password</div>
+        </div>
+      </div>
+      <div className="tab-bar">
+        <button className={`tab-btn ${tab === "register" ? "active" : ""}`} onClick={() => { setTab("register"); setForgot(null); setError(""); }}>Create Account</button>
+        <button className={`tab-btn ${tab === "login" ? "active" : ""}`} onClick={() => { setTab("login"); setForgot(null); setError(""); }}>Sign In</button>
+      </div>
+      <div className="card-body">
+        {tab === "register" && (
+          <>
+            <div className="alert info" style={{ marginBottom: 16 }}>{"Creating account for: "}<strong>{intakeData?.email}</strong></div>
+            <div className="form-group">
+              <label>Create Password *</label>
+              <input type="password" placeholder="Min. 8 chars, 1 number, 1 special character" value={regForm.password} onChange={e => updReg("password", e.target.value)} />
+              <PasswordStrength password={regForm.password} />
+            </div>
+            <div className="form-group">
+              <label>Confirm Password *</label>
+              <input type="password" placeholder="Re-enter your password" value={regForm.confirmPassword} onChange={e => updReg("confirmPassword", e.target.value)} />
+            </div>
+            {error && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+            <button className="btn btn-primary" style={{ width: "100%" }} onClick={handleRegister}>Create Account & Continue</button>
+          </>
+        )}
+
+        {tab === "login" && !forgot && (
+          <>
+            <div className="form-group">
+              <label>Email Address</label>
+              <input type="email" placeholder="maria@email.com" value={loginForm.email} onChange={e => updLogin("email", e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input type="password" placeholder="Your password" value={loginForm.password} onChange={e => updLogin("password", e.target.value)} />
+            </div>
+            {error && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+            <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+              <button onClick={() => { setForgot("password"); setError(""); }} style={{ background: "none", border: "none", color: "var(--teal-dark)", fontSize: 12, cursor: "pointer", fontFamily: "DM Sans, sans-serif", padding: 0 }}>Forgot password?</button>
+              <button onClick={() => { setForgot("username"); setError(""); }} style={{ background: "none", border: "none", color: "var(--teal-dark)", fontSize: 12, cursor: "pointer", fontFamily: "DM Sans, sans-serif", padding: 0 }}>Forgot username?</button>
+            </div>
+            <button className="btn btn-primary" style={{ width: "100%" }} onClick={handlePasswordSignIn}>Sign In</button>
+            <AuthDivider />
+            {!magicSent ? (
+              <>
+                <div className="form-group" style={{ marginBottom: 8 }}>
+                  <label>Or sign in with a magic link</label>
+                  <input type="email" placeholder="Enter your email" value={magicEmail} onChange={e => setMagicEmail(e.target.value)} />
+                </div>
+                <button className="btn btn-ghost" style={{ width: "100%" }} disabled={!magicEmail} onClick={handleMagicLink}>Send Magic Link</button>
+              </>
+            ) : (
+              <div className="alert success">{"Magic link sent! Check your email to sign in."}</div>
+            )}
+          </>
+        )}
+
+        {tab === "login" && forgot && <ForgotFlow type={forgot} onBack={() => setForgot(null)} />}
+
+        <div className="section-divider" style={{ marginTop: 20 }}>
+          <div className="section-divider-line" />
+          <div className="section-divider-text">HIPAA-protected and encrypted</div>
+          <div className="section-divider-line" />
+        </div>
+        <div style={{ fontSize: 12, color: "var(--text-light)", textAlign: "center", lineHeight: 1.6 }}>
+          By creating an account you agree to our Terms of Service and Privacy Policy. Your health information is never sold or shared.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PATIENT PORTAL (underwriting + plan selection) ──────────────────────────
+
+function PatientPortal({ user, intakeData, onApprovalResult, onSignOut }) {
+  const [uwStep, setUwStep] = useState(0);
+  const [uwForm, setUwForm] = useState({
+    dob: "", ssn: "", address: "", city: "", state: "", zip: "",
+    employmentStatus: "", annualIncome: "", employerName: "",
+    mockCreditScore: "670",
+  });
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const uwSteps = ["Personal", "Financial", "Select Plan", "Review"];
+  const upd = (k, v) => setUwForm(f => ({ ...f, [k]: v }));
+
+  const filteredOptions = FINANCING_OPTIONS;
+
+  const canProceed = [
+    uwForm.dob && uwForm.ssn && uwForm.address && uwForm.city && uwForm.state && uwForm.zip,
+    uwForm.employmentStatus && uwForm.annualIncome,
+    selectedPlan,
+    true,
+  ][uwStep];
+
+  const handleSubmit = () => {
+    setSubmitting(true);
+    setTimeout(() => {
+      const result = runMockUnderwriting({ ...uwForm, balanceOwed: intakeData.balanceOwed, selectedPlan: selectedPlan?.name });
+      setSubmitting(false);
+      onApprovalResult(result, intakeData, selectedPlan);
+    }, 2200);
+  };
+
+  const initials = (user.firstName?.[0] || user.email?.[0] || "P").toUpperCase();
+
+  return (
+    <>
+      <div className="portal-header">
+        <div className="portal-user">
+          <div className="portal-avatar">{initials}</div>
+          <div>
+            <div className="portal-name">{user.firstName ? `${user.firstName} ${user.lastName}` : "Patient"}</div>
+            <div className="portal-email">{user.email}</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12 }}>Balance to finance</div>
+            <div style={{ color: "white", fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 20 }}>${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}</div>
+          </div>
+          <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
+        </div>
+      </div>
+
+      <div className="main-narrow">
+        <div className="card">
+          <div className="card-header">
+            <div className="card-icon teal">📋</div>
+            <div>
+              <div className="card-title">Complete Your Application</div>
+              <div className="card-subtitle">Required for pre-approval — all information is encrypted</div>
+            </div>
+          </div>
+          <div className="card-body">
+            <div className="steps">
+              {uwSteps.map((s, i) => (
+                <div className="step" key={i}>
+                  <div className={`step-dot ${i < uwStep ? "done" : i === uwStep ? "active" : ""}`}>{i < uwStep ? "✓" : i + 1}</div>
+                  <div className={`step-label ${i === uwStep ? "active" : ""}`}>{s}</div>
+                </div>
+              ))}
+            </div>
+
+            {uwStep === 0 && (
+              <>
+                <div className="section-title">Personal Information</div>
+                <div className="section-sub">Required for identity verification and underwriting.</div>
+                <div className="form-row">
+                  <div className="form-group"><label>Date of Birth *</label><input type="date" value={uwForm.dob} onChange={e => upd("dob", e.target.value)} /></div>
+                  <div className="form-group">
+                    <label>Social Security Number *</label>
+                    <input className="input-sensitive" placeholder="XXX-XX-XXXX" value={uwForm.ssn} onChange={e => upd("ssn", e.target.value)} maxLength={11} />
+                    <div className="helper-text">256-bit encrypted — never stored in plain text</div>
+                  </div>
+                </div>
+                <div className="form-group"><label>Street Address *</label><input placeholder="123 Main Street" value={uwForm.address} onChange={e => upd("address", e.target.value)} /></div>
+                <div className="form-row">
+                  <div className="form-group"><label>City *</label><input placeholder="Miami" value={uwForm.city} onChange={e => upd("city", e.target.value)} /></div>
+                  <div className="form-group"><label>State *</label>
+                    <select value={uwForm.state} onChange={e => upd("state", e.target.value)}>
+                      <option value="">Select...</option>
+                      {["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"].map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group" style={{ maxWidth: 180 }}><label>ZIP Code *</label><input placeholder="33101" value={uwForm.zip} onChange={e => upd("zip", e.target.value)} maxLength={5} /></div>
+              </>
+            )}
+
+            {uwStep === 1 && (
+              <>
+                <div className="section-title">Financial Information</div>
+                <div className="section-sub">Used to determine your eligibility and plan options.</div>
+                <div className="form-group">
+                  <label>Employment Status *</label>
+                  <select value={uwForm.employmentStatus} onChange={e => upd("employmentStatus", e.target.value)}>
+                    <option value="">Select...</option>
+                    <option>Employed Full-Time</option>
+                    <option>Employed Part-Time</option>
+                    <option>Self-Employed</option>
+                    <option>Retired</option>
+                    <option>Unemployed</option>
+                    <option>Student</option>
+                    <option>Unable to Work</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Annual Household Income ($) *</label>
+                  <div className="input-prefix"><span>$</span><input type="number" placeholder="45000" value={uwForm.annualIncome} onChange={e => upd("annualIncome", e.target.value)} /></div>
+                  <div className="helper-text">Include all sources: wages, benefits, Social Security, etc.</div>
+                </div>
+                <div className="form-group">
+                  <label>Employer / Income Source</label>
+                  <input placeholder="e.g. Employer name or Social Security" value={uwForm.employerName} onChange={e => upd("employerName", e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Estimated Credit Score (for demo)</label>
+                  <select value={uwForm.mockCreditScore} onChange={e => upd("mockCreditScore", e.target.value)}>
+                    <option value="720">720+ (Excellent)</option>
+                    <option value="680">680–719 (Good)</option>
+                    <option value="640">640–679 (Fair)</option>
+                    <option value="600">600–639 (Poor)</option>
+                    <option value="550">Below 600 (Very Poor)</option>
+                  </select>
+                  <div className="helper-text">Demo only — a real credit pull replaces this on deployment.</div>
+                </div>
+              </>
+            )}
+
+            {uwStep === 2 && (
+              <>
+                <div className="section-title">Choose a Payment Plan</div>
+                <div className="section-sub">{"Select the plan you'd like to apply for. Checking options does not affect your credit score."}</div>
+                <div className="alert info">{"Estimated balance: "}<strong>${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}</strong> {"for "}<strong>{intakeData.careDescription}</strong></div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {filteredOptions.map(opt => (
+                    <div key={opt.id} className={`financing-card ${selectedPlan?.id === opt.id ? "selected" : ""} ${opt.recommended ? "recommended" : ""}`} onClick={() => setSelectedPlan(opt)}>
+                      <div className="fc-header">
+                        <div className="fc-logo" style={{ background: opt.bg }}>{opt.logo}</div>
+                        <div><div className="fc-name">{opt.name}</div><div className="fc-type">{opt.type}</div></div>
+                        {selectedPlan?.id === opt.id && <div style={{ marginLeft: "auto", color: "var(--teal)", fontSize: 22 }}>✓</div>}
+                      </div>
+                      <div className="fc-details">
+                        <div className="fc-detail"><div className="fc-detail-val">{opt.apr}</div><div className="fc-detail-label">Interest Rate</div></div>
+                        <div className="fc-detail"><div className="fc-detail-val">{opt.term}</div><div className="fc-detail-label">Term Length</div></div>
+                        <div className="fc-detail"><div className="fc-detail-val">{opt.approval}</div><div className="fc-detail-label">Decision</div></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {uwStep === 3 && (
+              <>
+                <div className="section-title">Review & Submit</div>
+                <div className="section-sub">Confirm your details before we submit your application.</div>
+                <div style={{ background: "var(--mist)", borderRadius: "var(--radius-sm)", padding: 20, marginBottom: 20 }}>
+                  {[
+                    ["Name", `${intakeData.firstName} ${intakeData.lastName}`],
+                    ["Email", user.email],
+                    ["Date of Birth", uwForm.dob],
+                    ["Address", `${uwForm.address}, ${uwForm.city}, ${uwForm.state} ${uwForm.zip}`],
+                    ["Employment", uwForm.employmentStatus],
+                    ["Annual Income", `$${parseFloat(uwForm.annualIncome || 0).toLocaleString()}`],
+                    ["Balance to Finance", `$${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}`],
+                    ["Care Description", intakeData.careDescription],
+                    ["Selected Plan", selectedPlan?.name],
+                  ].map(([k, v]) => (
+                    <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--border)", fontSize: 14 }}>
+                      <span style={{ color: "var(--text-secondary)" }}>{k}</span>
+                      <span style={{ fontWeight: 500, textAlign: "right", maxWidth: "60%" }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="alert info">{"By submitting you authorize Rubix to share your application with "}<strong>{selectedPlan?.name}</strong>{" for a pre-approval decision. A soft credit pull will be performed — this does not affect your credit score."}</div>
+                {submitting && (
+                  <div style={{ textAlign: "center", padding: "24px 0" }}>
+                    <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
+                    <div style={{ fontWeight: 600, marginBottom: 6 }}>Submitting your application...</div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Connecting with lending partners</div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {!submitting && (
+              <>
+                <hr className="divider" />
+                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                  {uwStep > 0 && <button className="btn btn-ghost" onClick={() => setUwStep(s => s - 1)}>Back</button>}
+                  <button className="btn btn-primary" disabled={!canProceed} onClick={uwStep === 3 ? handleSubmit : () => setUwStep(s => s + 1)}>
+                    {uwStep === 3 ? "Submit Application" : "Continue"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── EMAIL MOCK DISPLAY ───────────────────────────────────────────────────────
+
+function MockEmail({ subject, to, body, note }) {
+  return (
+    <div style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", overflow: "hidden", boxShadow: "var(--shadow)", marginBottom: 20 }}>
+      <div style={{ background: "#F8FAFC", borderBottom: "1px solid var(--border)", padding: "14px 20px" }}>
+        <div style={{ fontSize: 11, color: "var(--text-light)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8, fontWeight: 600 }}>Mock Email Preview</div>
+        <div style={{ fontSize: 13, marginBottom: 4 }}><span style={{ color: "var(--text-secondary)", width: 48, display: "inline-block" }}>To:</span><strong>{to}</strong></div>
+        <div style={{ fontSize: 13 }}><span style={{ color: "var(--text-secondary)", width: 48, display: "inline-block" }}>Re:</span>{subject}</div>
+      </div>
+      <div style={{ padding: "20px", fontSize: 14, color: "var(--slate)", lineHeight: 1.8, whiteSpace: "pre-line" }}>{body}</div>
+      {note && <div style={{ background: "#FFFBEB", borderTop: "1px solid #FDE68A", padding: "10px 20px", fontSize: 12, color: "#92400E" }}><strong>Demo note:</strong> {note}</div>}
+    </div>
+  );
+}
+
+// ─── APPLICATION SUBMITTED SCREEN ────────────────────────────────────────────
+
+function AppSubmitted({ intakeData, selectedPlan, onSimulateDecision, onSignOut }) {
+  const [showEmail, setShowEmail] = useState(false);
+
+  const emailBody =
+`Dear ${intakeData.firstName},
+
+Thank you for submitting your application through Rubix.
+
+We have received your application for the following payment plan:
+
+  Plan: ${selectedPlan?.name}
+  Requested Amount: $${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}
+  Care Description: ${intakeData.careDescription}
+
+Our team is reviewing your application and you will receive a decision within 1 business day.
+
+Once a decision has been reached, you will receive a follow-up email with your result and next steps.
+
+If you have any questions in the meantime, please reply to this email.
+
+— The Rubix Team`;
+
+  return (
+    <>
+      <div className="portal-header">
+        <div style={{ color: "white" }}>
+          <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Application submitted</div>
+          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>{selectedPlan?.name}</div>
+        </div>
+        <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
+      </div>
+      <div className="main-narrow">
+        <div className="card">
+          <div className="success-screen" style={{ paddingBottom: 32 }}>
+            <div className="success-icon">📨</div>
+            <h2>Application Submitted</h2>
+            <p>{"Your application has been received. You'll be notified of a decision within 1 business day."}</p>
+            <button className="btn btn-ghost" style={{ marginBottom: 16 }} onClick={() => setShowEmail(v => !v)}>
+              {showEmail ? "Hide" : "Preview"} Confirmation Email
+            </button>
+            {showEmail && (
+              <MockEmail
+                to={intakeData.email}
+                subject="Your Rubix Application Has Been Received"
+                body={emailBody}
+                note="On deployment this email sends automatically via SendGrid when the application is submitted."
+              />
+            )}
+            <div style={{ background: "var(--mist)", borderRadius: "var(--radius-sm)", padding: 20, textAlign: "left", marginTop: 8 }}>
+              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12 }}>What happens next</div>
+              {[
+                "Application confirmation email sent to your inbox",
+                "Rubix reviews your application (within 1 business day)",
+                "You receive a decision email with a link to review your offer",
+                "Sign your agreement and funding is sent to your provider",
+              ].map((s, i) => (
+                <div className="next-step-item" key={i}>
+                  <div className="next-step-num">{i + 1}</div>{s}
+                </div>
+              ))}
+            </div>
+            <hr className="divider" />
+            <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 13, color: "#92400E", marginBottom: 20, textAlign: "left" }}>
+              <strong>Demo mode:</strong> In production a real decision is returned by the lending partner. Click below to simulate receiving the decision email.
+            </div>
+            <button className="btn btn-primary" style={{ width: "100%" }} onClick={onSimulateDecision}>
+              Simulate: Receive Decision Email
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── DECISION EMAIL + OFFER REVIEW ───────────────────────────────────────────
+
+function OfferReview({ result, intakeData, selectedPlan, onAccept, onDecline, onSignOut }) {
+  const [showEmail, setShowEmail] = useState(true);
+  const approved = result.decision === "approved";
+  const review = result.decision === "review";
+
+  const decisionEmailBody = approved
+    ? `Dear ${intakeData.firstName},
+
+Great news — your application has been reviewed and you have been pre-approved!
+
+  Plan: ${selectedPlan?.name}
+  Approved Amount: $${parseFloat(result.approvedAmount).toLocaleString()}
+  Interest Rate: ${result.apr}
+  Term: ${result.term}
+  Estimated Monthly Payment: $${result.monthlyPayment}
+
+To accept this offer, please sign in to your Rubix portal using the link below and review your loan agreement.
+
+  [View and Accept Your Offer]
+  https://rpps-mvp.vercel.app/portal
+
+This offer expires in 30 days.
+
+— The Rubix Team`
+    : review
+    ? `Dear ${intakeData.firstName},
+
+Thank you for your patience. Your application is currently under additional review by our team.
+
+We will contact you within 1 business day with a final decision. You may be asked to provide supporting documentation such as proof of income.
+
+If you have questions please reply to this email.
+
+— The Rubix Team`
+    : `Dear ${intakeData.firstName},
+
+Thank you for applying through Rubix. After careful review, we are unable to approve your application at this time.
+
+A Rubix care coordinator will reach out to discuss alternative options that may be available to you, including hardship programs and extended payment arrangements.
+
+— The Rubix Team`;
+
+  return (
+    <>
+      <div className="portal-header">
+        <div style={{ color: "white" }}>
+          <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Decision received</div>
+          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>{approved ? "Pre-Approved" : review ? "Under Review" : "Not Approved"}</div>
+        </div>
+        <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
+      </div>
+
+      <div className="main-narrow">
+        {showEmail && (
+          <MockEmail
+            to={intakeData.email}
+            subject={approved ? "Your Rubix Application — Decision Ready" : review ? "Your Rubix Application — Under Review" : "Your Rubix Application — Update"}
+            body={decisionEmailBody}
+            note="On deployment this email sends automatically when a lending partner returns a decision."
+          />
+        )}
+        <button className="btn btn-ghost" style={{ marginBottom: 20, fontSize: 13 }} onClick={() => setShowEmail(v => !v)}>
+          {showEmail ? "Hide" : "Show"} Decision Email
+        </button>
+
+        <div className={`approval-card ${approved ? "approval-approved" : review ? "approval-review" : "approval-declined"}`}>
+          <div className="approval-body">
+            <div className="approval-icon">{approved ? "✅" : review ? "🔍" : "❌"}</div>
+            <div className="approval-title">{approved ? "Pre-Approved!" : review ? "Under Review" : "Not Approved"}</div>
+            <div className="approval-sub">
+              {approved ? `Your application for ${selectedPlan?.name} has been pre-approved.` : review ? "Your application needs additional review. We will be in touch within 1 business day." : "We were unable to approve your application at this time."}
+            </div>
+            {approved && (
+              <>
+                <div className="approval-amount">${parseFloat(result.approvedAmount).toLocaleString()}</div>
+                <div className="approval-amount-label">Approved Amount</div>
+                <div className="approval-details">
+                  <div className="approval-detail"><div className="approval-detail-val">{result.apr}</div><div className="approval-detail-label">Interest Rate</div></div>
+                  <div className="approval-detail"><div className="approval-detail-val">{result.term}</div><div className="approval-detail-label">Term</div></div>
+                  <div className="approval-detail"><div className="approval-detail-val">${result.monthlyPayment}</div><div className="approval-detail-label">Est. Monthly</div></div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {approved && (
+          <div className="card" style={{ marginTop: 20 }}>
+            <div className="card-body">
+              <div className="section-title" style={{ fontSize: 17 }}>Ready to accept your offer?</div>
+              <p style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7, marginTop: 8, marginBottom: 20 }}>
+                Review and sign your loan agreement to finalize your payment plan. Funds will be sent to your provider within 1-2 business days of signing.
+              </p>
+              <button className="btn btn-primary" style={{ width: "100%", marginBottom: 12 }} onClick={onAccept}>
+                Review and Sign Agreement
+              </button>
+              <button className="btn btn-ghost" style={{ width: "100%" }} onClick={onDecline}>
+                Decline This Offer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!approved && (
+          <div className="card" style={{ marginTop: 20 }}>
+            <div className="card-body">
+              {review
+                ? <p style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7 }}>A Rubix specialist will contact you at <strong>{intakeData.email}</strong> within 1 business day.</p>
+                : <p style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7 }}>A Rubix care coordinator will reach out to discuss alternatives including hardship programs and extended payment arrangements.</p>
+              }
+              <hr className="divider" />
+              <button className="btn btn-ghost" style={{ width: "100%" }} onClick={onSignOut}>Return to Home</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ─── E-SIGN DOCUMENT ─────────────────────────────────────────────────────────
+
+function ESignDoc({ result, intakeData, selectedPlan, onSigned, onBack }) {
+  const [agreed, setAgreed] = useState(false);
+  const [signed, setSigned] = useState(false);
+  const [sigName, setSigName] = useState("");
+
+  const handleSign = () => {
+    if (!agreed || !sigName.trim()) return;
+    setSigned(true);
+    setTimeout(() => onSigned(), 1200);
+  };
+
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  return (
+    <div className="main-narrow" style={{ paddingTop: 32 }}>
+      <div className="card">
+        <div className="card-header">
+          <div className="card-icon teal">📄</div>
+          <div>
+            <div className="card-title">Loan Agreement</div>
+            <div className="card-subtitle">Review carefully before signing</div>
+          </div>
+        </div>
+        <div className="card-body">
+          <div style={{ background: "var(--mist2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "24px", fontSize: 13, lineHeight: 1.9, color: "var(--slate)", maxHeight: 360, overflowY: "auto", marginBottom: 24 }}>
+            <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 16, textAlign: "center" }}>CONSUMER LOAN AGREEMENT</div>
+            <div style={{ marginBottom: 12 }}><strong>Lender:</strong> {selectedPlan?.name} (administered by Rubix — Rubix Patient Payment Solutions)</div>
+            <div style={{ marginBottom: 12 }}><strong>Borrower:</strong> {intakeData.firstName} {intakeData.lastName}</div>
+            <div style={{ marginBottom: 12 }}><strong>Date:</strong> {today}</div>
+            <div style={{ marginBottom: 12 }}><strong>Loan Amount:</strong> ${parseFloat(result.approvedAmount).toLocaleString()}</div>
+            <div style={{ marginBottom: 12 }}><strong>Annual Percentage Rate (APR):</strong> {result.apr}</div>
+            <div style={{ marginBottom: 12 }}><strong>Loan Term:</strong> {result.term}</div>
+            <div style={{ marginBottom: 12 }}><strong>Estimated Monthly Payment:</strong> ${result.monthlyPayment}</div>
+            <div style={{ marginBottom: 12 }}><strong>Purpose of Loan:</strong> {intakeData.careDescription}</div>
+            <hr style={{ margin: "16px 0", borderColor: "var(--border)" }} />
+            <div style={{ marginBottom: 12 }}><strong>1. Promise to Pay.</strong> Borrower agrees to repay the loan amount plus any applicable interest in monthly installments as described above, beginning 30 days from the date of funding.</div>
+            <div style={{ marginBottom: 12 }}><strong>2. Disbursement.</strong> Loan proceeds will be disbursed directly to the healthcare provider within 1-2 business days of signing this agreement.</div>
+            <div style={{ marginBottom: 12 }}><strong>3. Prepayment.</strong> Borrower may prepay all or part of the outstanding balance at any time without penalty.</div>
+            <div style={{ marginBottom: 12 }}><strong>4. Default.</strong> Borrower will be considered in default if a payment is more than 30 days past due. Default may result in acceleration of the remaining balance and referral to a collections agency.</div>
+            <div style={{ marginBottom: 12 }}><strong>5. Autopay Authorization.</strong> By signing this agreement, Borrower authorizes Rubix to initiate ACH debit entries from the bank account provided for monthly payment amounts on the scheduled due date.</div>
+            <div style={{ marginBottom: 12 }}><strong>6. TILA Disclosure.</strong> This agreement is governed by the Truth in Lending Act (TILA) and Regulation Z. The APR, finance charges, and total repayment amounts disclosed herein represent the full cost of credit.</div>
+            <div style={{ marginBottom: 12 }}><strong>7. Privacy.</strong> All personal and health information collected in connection with this loan is protected under HIPAA and will not be sold or shared with third parties except as necessary to administer this loan.</div>
+            <div style={{ fontSize: 11, color: "var(--text-light)", marginTop: 16 }}>This is a mock document for demonstration purposes. On deployment, this agreement will be generated by the issuing lender (e.g. Medallion Bank) and will constitute a legally binding consumer loan agreement.</div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 20, cursor: "pointer" }} onClick={() => setAgreed(v => !v)}>
+            <div style={{ width: 20, height: 20, borderRadius: 4, border: `2px solid ${agreed ? "var(--teal)" : "var(--border)"}`, background: agreed ? "var(--teal)" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+              {agreed && <span style={{ color: "white", fontSize: 12 }}>✓</span>}
+            </div>
+            <div style={{ fontSize: 13, color: "var(--slate)", lineHeight: 1.6 }}>I have read and agree to the terms of this Loan Agreement, including the TILA disclosures and ACH autopay authorization.</div>
+          </div>
+
+          <div className="form-group">
+            <label>Type your full legal name to sign *</label>
+            <input placeholder={`${intakeData.firstName} ${intakeData.lastName}`} value={sigName} onChange={e => setSigName(e.target.value)} style={{ fontFamily: "Georgia, serif", fontSize: 18, color: "var(--navy)" }} />
+            <div className="helper-text">Typing your name constitutes a legal electronic signature under the ESIGN Act.</div>
+          </div>
+
+          {signed && (
+            <div className="alert success">Signature captured — processing your agreement...</div>
+          )}
+
+          {!signed && (
+            <>
+              <hr className="divider" />
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button className="btn btn-ghost" onClick={onBack}>Back</button>
+                <button className="btn btn-primary" disabled={!agreed || !sigName.trim()} onClick={handleSign}>
+                  Sign and Accept Offer
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── OFFER ACCEPTED CONFIRMATION ─────────────────────────────────────────────
+
+function OfferAccepted({ result, intakeData, selectedPlan, providerEmail, onStartOver }) {
+  const [showPatientEmail, setShowPatientEmail] = useState(false);
+  const [showProviderEmail, setShowProviderEmail] = useState(false);
+
+  const patientEmailBody =
+`Dear ${intakeData.firstName},
+
+Congratulations — your loan agreement has been signed and your payment plan is now active!
+
+  Plan: ${selectedPlan?.name}
+  Funded Amount: $${parseFloat(result.approvedAmount).toLocaleString()}
+  Interest Rate: ${result.apr}
+  Term: ${result.term}
+  Monthly Payment: $${result.monthlyPayment}
+  First Payment Due: 30 days from today
+
+Funds are being disbursed directly to your healthcare provider within 1-2 business days.
+
+Your monthly payments will be automatically debited from your account on file. You will receive a reminder 3 days before each payment.
+
+Thank you for choosing Rubix.
+
+— The Rubix Team`;
+
+  const providerEmailBody =
+`Dear ${intakeData.provider || "Healthcare Provider"},
+
+This is a notification that a patient has accepted a payment plan through Rubix and funding is on its way to your practice.
+
+  Patient: ${intakeData.firstName} ${intakeData.lastName}
+  Plan: ${selectedPlan?.name}
+  Funded Amount: $${parseFloat(result.approvedAmount).toLocaleString()}
+  Care Description: ${intakeData.careDescription}
+  Expected Disbursement: Within 1-2 business days
+
+Net proceeds (after merchant discount fee) will be deposited via ACH to your account on file.
+
+If you have questions please contact your Rubix account manager.
+
+— The Rubix Team`;
+
+  return (
+    <div className="main-narrow" style={{ paddingTop: 32 }}>
+      <div className="card">
+        <div className="success-screen" style={{ paddingBottom: 32 }}>
+          <div className="success-icon">🎉</div>
+          <h2>{"You're all set!"}</h2>
+          <p>Your payment plan is active and funds are on their way to your provider.</p>
+
+          <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: "var(--radius-sm)", padding: 20, textAlign: "left", marginBottom: 24 }}>
+            {[
+              ["Plan", selectedPlan?.name],
+              ["Funded Amount", `$${parseFloat(result.approvedAmount).toLocaleString()}`],
+              ["Monthly Payment", `$${result.monthlyPayment}`],
+              ["Term", result.term],
+              ["First Payment Due", "30 days from today"],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid var(--border)", fontSize: 14 }}>
+                <span style={{ color: "var(--text-secondary)" }}>{k}</span>
+                <span style={{ fontWeight: 600 }}>{v}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", marginBottom: 24 }}>
+            <button className="btn btn-ghost" style={{ width: "100%" }} onClick={() => setShowPatientEmail(v => !v)}>
+              {showPatientEmail ? "Hide" : "Preview"} Patient Confirmation Email
+            </button>
+            {showPatientEmail && (
+              <MockEmail
+                to={intakeData.email}
+                subject="Your Rubix Payment Plan is Active"
+                body={patientEmailBody}
+                note="Sends automatically to the patient upon offer acceptance."
+              />
+            )}
+            <button className="btn btn-ghost" style={{ width: "100%" }} onClick={() => setShowProviderEmail(v => !v)}>
+              {showProviderEmail ? "Hide" : "Preview"} Provider Payment Notification Email
+            </button>
+            {showProviderEmail && (
+              <MockEmail
+                to={providerEmail || "provider@practice.com"}
+                subject="Rubix — Upcoming Patient Payment to Your Practice"
+                body={providerEmailBody}
+                note="Sends automatically to the provider notification email on file."
+              />
+            )}
+          </div>
+
+          <hr className="divider" />
+          <button className="btn btn-ghost" style={{ width: "100%" }} onClick={onStartOver}>Return to Home</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── HOW IT WORKS PAGE ────────────────────────────────────────────────────────
+
+function HowItWorks({ onBack, onApply }) {
+  const steps = [
+    { num: "01", icon: "🔍", title: "Check Your Options", desc: "Tell us about your care and estimated balance. We will show you available payment options in seconds — with no impact to your credit score.", detail: "No commitment required. Checking your options is completely free and takes less than 2 minutes." },
+    { num: "02", icon: "📋", title: "Apply in Minutes", desc: "Select the option that works best for you and complete a short application. We only ask for the basics — name, contact info, and a few financial details.", detail: "Your information is private and HIPAA-protected. We use bank-level encryption on every submission." },
+    { num: "03", icon: "✓", title: "Get Pre-Approved", desc: "Most patients receive a pre-approval decision in under 60 seconds. If approved, your payment plan details are displayed immediately.", detail: "84% of applicants are approved. If one option does not work, we will show you alternatives." },
+    { num: "04", icon: "💚", title: "Start Your Care", desc: "Your provider is notified and your financial barrier is removed. Focus on getting better — we will handle the rest with simple monthly payments.", detail: "Payments are set up on autopay so you never have to think about it during treatment." },
+  ];
+
+  const faqs = [
+    { q: "Will checking my options affect my credit score?", a: "No. Checking your options uses a soft credit pull which has zero impact on your credit score. Only if you proceed with a full application will a hard pull occur." },
+    { q: "What types of care does this cover?", a: "Behavioral health, dental, chiropractic, physical therapy, occupational therapy, speech therapy, primary care, and other healthcare services." },
+    { q: "How much can I finance?", a: "Payment plans are available for balances from $100 up to $5,000, depending on the option you select and your individual application." },
+    { q: "Is my information private?", a: "Yes. All information you submit is HIPAA-protected and encrypted. We never sell your personal or health information." },
+    { q: "What if I am not approved?", a: "If one option does not work, we will automatically show you alternatives. There are multiple financing paths available depending on your situation." },
+  ];
+
+  return (
+    <>
+      <div style={{ background: "linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #1B4F72 100%)", padding: "60px 32px 48px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 60% at 50% 100%, rgba(13,148,136,0.18) 0%, transparent 70%)" }} />
+        <button onClick={onBack} style={{ position: "absolute", top: 24, left: 24, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "8px 16px", borderRadius: "100px", cursor: "pointer", fontSize: 13, fontFamily: "DM Sans, sans-serif", display: "flex", alignItems: "center", gap: 6 }}>Back</button>
+        <h1 style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 700, color: "white", lineHeight: 1.15, marginBottom: 16, position: "relative" }}>How <em style={{ color: "var(--teal-light)", fontStyle: "normal" }}>Rubix</em> Works</h1>
+        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 17, maxWidth: 480, margin: "0 auto", lineHeight: 1.6, position: "relative" }}>{"From checking your options to starting care \u2014 here is exactly what to expect."}</p>
+      </div>
+
+      <div style={{ maxWidth: "780px", margin: "0 auto", padding: "40px 24px 0" }}>
+        <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: "var(--radius)", padding: "28px 32px" }}>
+          <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, margin: 0 }}>
+            Rubix is a patient financing platform designed specifically for behavioral and mental health care — including ABA therapy, IOP, PHP, outpatient therapy, and psychiatric services. We connect patients with flexible monthly payment options so cost never becomes a reason to pause or stop treatment.
+          </p>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: "780px", margin: "0 auto", padding: "40px 24px 48px" }}>
+        <div style={{ marginBottom: 64 }}>
+          {steps.map((s, i) => (
+            <div key={i} style={{ display: "flex", gap: 28, marginBottom: 40, alignItems: "flex-start" }}>
+              <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg, var(--teal), var(--teal-light))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 4px 16px rgba(13,148,136,0.3)" }}>{s.icon}</div>
+                {i < steps.length - 1 && <div style={{ width: 2, height: 40, background: "linear-gradient(to bottom, var(--teal-light), var(--border))", marginTop: 8 }} />}
+              </div>
+              <div style={{ paddingTop: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--teal)", letterSpacing: "1px", textTransform: "uppercase", marginBottom: 6 }}>Step {s.num}</div>
+                <div style={{ fontFamily: "Sora, sans-serif", fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{s.title}</div>
+                <div style={{ fontSize: 15, color: "var(--slate)", lineHeight: 1.6, marginBottom: 8 }}>{s.desc}</div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", background: "var(--mist)", borderRadius: 8, padding: "10px 14px", borderLeft: "3px solid var(--teal-light)" }}>{s.detail}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginBottom: 48 }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: 22, fontWeight: 700, marginBottom: 6 }}>Common Questions</div>
+          <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 28 }}>Everything you need to know before applying.</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {faqs.map((f, i) => (
+              <div key={i} style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "20px 22px", boxShadow: "var(--shadow)" }}>
+                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 8 }}>{f.q}</div>
+                <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.6 }}>{f.a}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ background: "linear-gradient(135deg, var(--navy), var(--navy-mid))", borderRadius: "var(--radius)", padding: "40px 32px", textAlign: "center" }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: 22, fontWeight: 700, color: "white", marginBottom: 10 }}>Ready to check your options?</div>
+          <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 15, marginBottom: 28 }}>{"It takes under 2 minutes and won't affect your credit score."}</div>
+          <button className="btn btn-primary" onClick={onApply}>Check My Options</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── SHARED FOOTER ────────────────────────────────────────────────────────────
+
+function SiteFooter({ mode, onNavigate }) {
+  const patientLinks = [["home","Home"],["about","About"],["services","Services"],["blog-patient","Blog"],["contact-patient","Contact"]];
+  const providerLinks = [["home","Home"],["about","About"],["services","Services"],["partners","Partners"],["faq","FAQ"],["blog-provider","Blog"],["contact-provider","Contact"]];
+  const links = mode === "provider" ? providerLinks : patientLinks;
+
+  return (
+    <footer className="site-footer">
+      <div className="footer-grid">
+        <div className="footer-brand-col">
+          <div style={{ marginBottom: 14 }}><LogoDark width={180} height={44} /></div>
+          <p>Purpose-built patient financing for behavioral health, mental health, autism, and ABA therapy practices. Flexible payment options that keep patients in treatment.</p>
+        </div>
+        <div>
+          <div className="footer-col-title">Navigation</div>
+          {links.map(([id, label]) => (
+            <button key={id} className="footer-link" onClick={() => onNavigate(id)}>{label}</button>
+          ))}
+        </div>
+        <div>
+          <div className="footer-col-title">Legal</div>
+          {[["privacy","Privacy Policy"],["terms","Terms of Service"],["hipaa","HIPAA Notice"],["accessibility","Accessibility"]].map(([id, label]) => (
+            <button key={id} className="footer-link" onClick={() => onNavigate(id)}>{label}</button>
+          ))}
+        </div>
+        <div>
+          <div className="footer-col-title">Contact</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.8 }}>
+            <div>support@rubix.com</div>
+            <div>(800) 000-0000</div>
+            <div style={{ marginTop: 8 }}>Mon–Fri, 9am–6pm ET</div>
+            <div style={{ marginTop: 12, fontSize: 12 }}>123 Health Ave, Suite 100<br />Miami, FL 33101</div>
+          </div>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <div>© {new Date().getFullYear()} Rubix Patient Payment Solutions. All rights reserved.</div>
+        <div className="footer-legal">
+          <span style={{ cursor: "pointer" }} onClick={() => onNavigate("privacy")}>Privacy Policy</span>
+          <span style={{ cursor: "pointer" }} onClick={() => onNavigate("terms")}>Terms of Service</span>
+          <span style={{ cursor: "pointer" }} onClick={() => onNavigate("hipaa")}>HIPAA Notice</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// ─── PATIENT BLOG ─────────────────────────────────────────────────────────────
+
+const PATIENT_POSTS = [
+  { icon: "🧩", tag: "Autism & ABA", title: "Understanding the Cost of ABA Therapy", excerpt: "ABA therapy is one of the most effective interventions for autism spectrum disorder — and one of the most expensive. This guide breaks down what families typically pay and what options exist.", author: "Rubix Team", date: "May 20, 2026" },
+  { icon: "🧠", tag: "Behavioral Health", title: "When Insurance Falls Short: Financing Behavioral Health Care", excerpt: "Insurance coverage for IOP, PHP, and ABA therapy is often partial or contested. This guide explains what families can do when their benefits run out before treatment is complete.", author: "Rubix Team", date: "May 12, 2026" },
+  { icon: "💳", tag: "Financing", title: "Does Applying for a Payment Plan Affect My Credit Score?", excerpt: "One of the most common questions families ask before applying for a behavioral health payment plan is whether it will impact their credit. The short answer: checking your options does not. Here is the full picture.", author: "Rubix Team", date: "May 5, 2026" },
+  { icon: "💚", tag: "Mental Health", title: "The Cost of Stopping Treatment Early", excerpt: "Research consistently shows that interrupted behavioral health treatment leads to setbacks. Here is how families can plan ahead financially to protect continuity of care.", author: "Rubix Team", date: "Apr 28, 2026" },
+  { icon: "🏡", tag: "IOP & PHP", title: "What to Expect Financially from an IOP or PHP Program", excerpt: "Intensive outpatient and partial hospitalization programs are highly effective — and often come with substantial out-of-pocket costs. This guide walks you through what to expect and how to plan.", author: "Rubix Team", date: "Apr 18, 2026" },
+  { icon: "📋", tag: "Family Resources", title: "A Family Guide to Managing Autism Treatment Costs", excerpt: "For families navigating an autism diagnosis, the financial picture can feel overwhelming. This guide covers insurance, public funding, and private financing options from start to finish.", author: "Rubix Team", date: "Apr 10, 2026" },
+];
+
+function PatientBlog({ onNavigate }) {
+  return (
+    <>
+      <div className="hero" style={{ padding: "72px 32px" }}>
+        <h1>Patient <em>Resources</em></h1>
+        <p>Resources for families and patients navigating ABA therapy, behavioral health treatment, and mental health care costs.</p>
+      </div>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "56px 24px" }}>
+        <div className="blog-grid">
+          {PATIENT_POSTS.map((post, i) => (
+            <div key={i} className="blog-card">
+              <div className="blog-card-img" style={{ background: i % 3 === 0 ? "var(--mist)" : i % 3 === 1 ? "#EFF6FF" : "#FFF7ED" }}>{post.icon}</div>
+              <div className="blog-card-body">
+                <div className="blog-card-tag">{post.tag}</div>
+                <div className="blog-card-title">{post.title}</div>
+                <div className="blog-card-excerpt">{post.excerpt}</div>
+                <div className="blog-card-meta">
+                  <span>{post.author}</span>
+                  <span>{post.date}</span>
+                </div>
+                <button className="btn btn-ghost" style={{ marginTop: 14, padding: "8px 16px", fontSize: 13, width: "100%" }}>Read More →</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <button className="btn btn-primary" onClick={() => onNavigate("get-started")}>Explore Your Payment Options</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── PROVIDER BLOG ────────────────────────────────────────────────────────────
+
+const PROVIDER_POSTS = [
+  { icon: "📈", tag: "Revenue Cycle", title: "How ABA Centers Are Reducing Write-Offs with Point-of-Service Financing", excerpt: "ABA therapy practices face some of the highest rates of patient balance write-offs in behavioral health. Point-of-service financing is changing that — here is the data.", author: "Rubix Team", date: "May 22, 2026" },
+  { icon: "🧩", tag: "ABA & Autism", title: "Why ABA Practices Need a Purpose-Built Financing Solution", excerpt: "Generic medical financing products were not designed for the session-based, insurance-complex world of ABA therapy. Here is what purpose-built looks like.", author: "Rubix Team", date: "May 15, 2026" },
+  { icon: "💚", tag: "Patient Retention", title: "Financial Stress is the Leading Cause of ABA Dropout", excerpt: "Studies show that financial burden is the number one reason families discontinue ABA therapy before goals are met. Patient financing at the point of service directly addresses this.", author: "Rubix Team", date: "May 8, 2026" },
+  { icon: "📋", tag: "Compliance", title: "TILA, Reg Z, and Behavioral Health Financing: What Providers Need to Know", excerpt: "When your IOP, PHP, or ABA practice offers payment plans, specific federal disclosure requirements apply. This guide clarifies what you are responsible for and what Rubix handles.", author: "Rubix Team", date: "Apr 30, 2026" },
+  { icon: "🔗", tag: "Integrations", title: "Embedding Patient Financing Into Your Behavioral Health EHR", excerpt: "For ABA and behavioral health practices using Kipu, Netsmart, or Qualifacts, embedding financing into existing intake workflows can dramatically increase uptake. Here is how it works.", author: "Rubix Team", date: "Apr 22, 2026" },
+  { icon: "💰", tag: "Practice Management", title: "The Real Cost of Uncollected Balances in ABA and IOP Practices", excerpt: "Behavioral health practices write off a disproportionate share of patient balances compared to other specialties. Payment plans close that gap before it opens — here is how to calculate your exposure.", author: "Rubix Team", date: "Apr 14, 2026" },
+];
+
+function ProviderBlog({ onNavigate }) {
+  return (
+    <>
+      <div className="hero" style={{ padding: "72px 32px" }}>
+        <h1>Provider <em>Insights</em></h1>
+        <p>Research, trends, and practical guidance for healthcare practices navigating patient financing.</p>
+      </div>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "56px 24px" }}>
+        <div className="blog-grid">
+          {PROVIDER_POSTS.map((post, i) => (
+            <div key={i} className="blog-card">
+              <div className="blog-card-img" style={{ background: i % 3 === 0 ? "var(--mist)" : i % 3 === 1 ? "#EFF6FF" : "#FFF7ED" }}>{post.icon}</div>
+              <div className="blog-card-body">
+                <div className="blog-card-tag">{post.tag}</div>
+                <div className="blog-card-title">{post.title}</div>
+                <div className="blog-card-excerpt">{post.excerpt}</div>
+                <div className="blog-card-meta">
+                  <span>{post.author}</span>
+                  <span>{post.date}</span>
+                </div>
+                <button className="btn btn-ghost" style={{ marginTop: 14, padding: "8px 16px", fontSize: 13, width: "100%" }}>Read More →</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <button className="btn btn-primary" onClick={() => onNavigate("register")}>Get Started — First Month Free</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── SHARED CONTACT PAGE ──────────────────────────────────────────────────────
+
+function ContactPage({ audience }) {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
+  const [submitted, setSubmitted] = useState(false);
+  const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const valid = form.name && form.email && form.subject && form.message;
+
+  const subjects = audience === "provider"
+    ? ["General Inquiry", "Partnership Opportunity", "Technical Support", "Billing Question", "Demo Request", "Other"]
+    : ["General Inquiry", "Help with My Application", "Payment Plan Question", "Account Support", "Document Upload Help", "Other"];
+
+  return (
+    <>
+      <div className="hero" style={{ padding: "72px 32px" }}>
+        <h1>{"Get in "}<em>Touch</em></h1>
+        <p>{audience === "provider" ? "Our team specializes in ABA therapy, IOP, PHP, and behavioral health financing. We are here to help you get set up and answer any questions." : "Have a question about your ABA or behavioral health payment plan? Our team understands the unique nature of these treatments and is here to help."}</p>
+      </div>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "56px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: 40, alignItems: "start" }}>
+
+          {/* Contact info */}
+          <div>
+            <div style={{ fontFamily: "Sora, sans-serif", fontSize: 20, fontWeight: 700, marginBottom: 24 }}>Contact Information</div>
+            {[
+              ["📧", "Email", "support@rubix.com", audience === "provider" ? "providers@rubix.com" : null],
+              ["📞", "Phone", "(800) 000-0000", null],
+              ["🕐", "Hours", "Monday – Friday", "9:00 AM – 6:00 PM ET"],
+              ["📍", "Address", "123 Health Ave, Suite 100", "Miami, FL 33101"],
+            ].map(([icon, label, line1, line2]) => (
+              <div key={label} style={{ display: "flex", gap: 14, marginBottom: 24 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--mist)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{icon}</div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{line1}{line2 && <><br />{line2}</>}</div>
+                </div>
+              </div>
+            ))}
+            <div style={{ background: "var(--mist)", borderRadius: "var(--radius-sm)", padding: "16px 18px", fontSize: 13, color: "var(--slate)", lineHeight: 1.7 }}>
+              {audience === "provider"
+                ? "For urgent technical issues or platform questions, existing providers can also message us directly from the provider portal."
+                : "For questions about your ABA, IOP, or behavioral health payment plan, signing in to your patient account and using secure messaging will get you the fastest response from our team."}
+            </div>
+          </div>
+
+          {/* Contact form */}
+          <div className="card">
+            <div className="card-body">
+              {submitted ? (
+                <div style={{ textAlign: "center", padding: "24px 0" }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+                  <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Message sent!</div>
+                  <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>{"We'll get back to you within 1 business day."}</div>
+                  <button className="btn btn-ghost" style={{ marginTop: 20 }} onClick={() => { setSubmitted(false); setForm({ name: "", email: "", phone: "", subject: "", message: "" }); }}>Send Another Message</button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontFamily: "Sora, sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Send Us a Message</div>
+                  <div className="form-row">
+                    <div className="form-group"><label>Your Name *</label><input placeholder="Jane Smith" value={form.name} onChange={e => upd("name", e.target.value)} /></div>
+                    <div className="form-group"><label>Email Address *</label><input type="email" placeholder="you@email.com" value={form.email} onChange={e => upd("email", e.target.value)} /></div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group"><label>Phone (optional)</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
+                    <div className="form-group"><label>Subject *</label>
+                      <select value={form.subject} onChange={e => upd("subject", e.target.value)}>
+                        <option value="">Select a subject...</option>
+                        {subjects.map(s => <option key={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Message *</label>
+                    <textarea placeholder="How can we help you?" value={form.message} onChange={e => upd("message", e.target.value)} style={{ minHeight: 120, resize: "vertical", lineHeight: 1.6 }} />
+                  </div>
+                  <button className="btn btn-primary" style={{ width: "100%" }} disabled={!valid} onClick={() => setSubmitted(true)}>Send Message</button>
+                  <div style={{ fontSize: 11, color: "var(--text-light)", textAlign: "center", marginTop: 12 }}>We typically respond within 1 business day.</div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── PATIENT MARKETING SITE ──────────────────────────────────────────────────
+
+function PatientMarketingNav({ activePage, onNavigate }) {
+  const links = [["home", "Home"], ["about", "About"], ["services", "Services"], ["blog-patient", "Blog"], ["contact-patient", "Contact"]];
+  return (
+    <div style={{ background: "var(--white)", borderBottom: "1px solid var(--border)", padding: "0 32px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, flexWrap: "wrap", gap: 8 }}>
+      <div style={{ display: "flex", gap: 4 }}>
+        {links.map(([id, label]) => (
+          <button key={id} onClick={() => onNavigate(id)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: activePage === id ? 600 : 400, cursor: "pointer", background: "transparent", color: activePage === id ? "var(--teal-dark)" : "var(--text-secondary)", borderBottom: activePage === id ? "2px solid var(--teal)" : "2px solid transparent", transition: "all 0.2s" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div className="nav-pill">
+          <button className={activePage === "patient-account-login" ? "active" : ""} onClick={() => onNavigate("patient-account-login")}>Sign In</button>
+          <button onClick={() => onNavigate("get-started")}>Get Started</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PatientAbout({ onNavigate }) {
+  return (
+    <>
+      <div className="hero" style={{ padding: "72px 32px" }}>
+        <h1>About <em>Rubix</em></h1>
+        <p>We built Rubix for the families and patients navigating some of the most demanding treatment journeys — behavioral health, mental health, autism, and ABA therapy.</p>
+      </div>
+      <div style={{ maxWidth: 780, margin: "0 auto", padding: "56px 24px" }}>
+        <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Why We Exist</div>
+        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>ABA therapy. Intensive outpatient programs. Psychiatric care. These are not optional treatments — they are essential. Yet for many families, the cost of sustained care becomes an obstacle. Rubix was built to remove that obstacle. We connect patients and families with transparent, flexible monthly payment options designed around the realities of behavioral health treatment.</p>
+
+        <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>How We Help You</div>
+        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>Rubix works directly with your ABA center, behavioral health provider, or mental health practice. Whether you are managing ongoing ABA sessions, a PHP program, or outpatient therapy costs, we offer a payment path that fits your family's budget — without disrupting treatment.</p>
+
+        <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>What We Stand For</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginBottom: 48 }}>
+          {[
+            ["Transparency", "No hidden fees, no surprise charges. You always know exactly what you are agreeing to before you sign."],
+            ["Accessibility", "We work with patients across the credit spectrum. Getting care should not require a perfect credit score."],
+            ["Privacy", "Your health and financial information is HIPAA-protected and encrypted. We never sell your data."],
+            ["Simplicity", "We designed Rubix to be straightforward. Apply in minutes, get a decision fast, and start your care."],
+          ].map(([title, desc]) => (
+            <div key={title} style={{ background: "var(--mist)", borderRadius: "var(--radius-sm)", padding: "24px 20px" }}>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 8, color: "var(--teal-dark)" }}>{title}</div>
+              <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7 }}>{desc}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ background: "linear-gradient(135deg, var(--navy), var(--navy-mid))", borderRadius: "var(--radius)", padding: "40px 32px", textAlign: "center" }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: 22, fontWeight: 700, color: "white", marginBottom: 10 }}>Ready to check your options?</div>
+          <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 15, marginBottom: 28 }}>{"It takes under 2 minutes and won't affect your credit score."}</div>
+          <button className="btn btn-primary" onClick={() => onNavigate("get-started")}>Get Started</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function PatientServices({ onNavigate }) {
+  const services = [
+    { icon: "💳", title: "Flexible Payment Plans", desc: "Instead of paying your full balance upfront, Rubix lets you spread the cost into manageable monthly payments. Plans are available from 3 to 60 months depending on your balance and the option you choose.", features: ["Multiple term options", "0% and low-interest plans available", "No prepayment penalties", "Plans starting from $100"] },
+    { icon: "⚡", title: "Fast Pre-Approval", desc: "Most patients receive a pre-approval decision in under 60 seconds. Checking your options uses a soft credit pull, which means there is no impact to your credit score until you formally apply.", features: ["Soft credit pull to check options", "Decision in seconds", "84% average approval rate", "Multiple options if one does not fit"] },
+    { icon: "🏥", title: "Works With Your Provider", desc: "Rubix is offered directly through your healthcare provider. Your provider is paid in full by Rubix — your monthly payments go directly to us, not to collections.", features: ["Provider-integrated platform", "No collection risk to you", "Coordinated with your care team", "Available at point of service"] },
+    { icon: "🔒", title: "Secure and Private", desc: "Every piece of information you submit through Rubix is encrypted and HIPAA-protected. We maintain strict data security standards and never sell or share your personal or health information.", features: ["HIPAA-compliant platform", "Bank-level encryption", "No data sold or shared", "ESIGN Act-compliant agreements"] },
+    { icon: "📱", title: "Manage Everything Online", desc: "Your Rubix patient account gives you full visibility into your payment plans, payment history, and upcoming due dates — all in one place, accessible from any device.", features: ["View all active plans", "Make payments anytime", "Upload documents securely", "Message our support team"] },
+    { icon: "🤝", title: "Support When You Need It", desc: "Our patient support team is here to help. Whether you have questions about your plan, need to update your account, or want to explore additional financing options, we are just a message away.", features: ["In-app secure messaging", "Typical response within 1 business day", "Document upload and review", "Account management support"] },
+  ];
+
+  return (
+    <>
+      <div className="hero" style={{ padding: "72px 32px" }}>
+        <h1>Built for <em>your</em> care journey</h1>
+        <p>Rubix is designed specifically for the long-term, high-engagement nature of ABA therapy, behavioral health, and mental health treatment — not a one-time procedure.</p>
+      </div>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "56px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
+          {services.map((s, i) => (
+            <div key={i} style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "32px 28px", boxShadow: "var(--shadow)" }}>
+              <div style={{ fontSize: 36, marginBottom: 16 }}>{s.icon}</div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 10 }}>{s.title}</div>
+              <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7, marginBottom: 20 }}>{s.desc}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                {s.features.map((f, j) => (
+                  <div key={j} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--slate)" }}>
+                    <span style={{ color: "var(--teal)", fontWeight: 700, fontSize: 12 }}>✓</span>{f}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 56, background: "linear-gradient(135deg, var(--navy), var(--navy-mid))", borderRadius: "var(--radius)", padding: "40px 32px", textAlign: "center" }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: 22, fontWeight: 700, color: "white", marginBottom: 10 }}>See what options are available to you</div>
+          <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 15, marginBottom: 28 }}>{"Checking your options takes under 2 minutes and won't affect your credit score."}</div>
+          <button className="btn btn-primary" onClick={() => onNavigate("get-started")}>Check My Options</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── PROVIDER FLOW ────────────────────────────────────────────────────────────
+
+// ─── PROVIDER LOGIN PAGE ─────────────────────────────────────────────────────
+
+function ProviderLogin({ onAuthenticated }) {
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [magicEmail, setMagicEmail] = useState("");
+  const [magicSent, setMagicSent] = useState(false);
+  const [magicLink, setMagicLink] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [forgot, setForgot] = useState(null);
+  const [error, setError] = useState("");
+  const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handlePasswordSignIn = () => {
+    if (!form.email || !form.password) { setError("Please enter your email and password."); return; }
+    setError("");
+    // TODO: supabase.auth.signInWithPassword({ email: form.email, password: form.password })
+    onAuthenticated({ email: form.email, practiceName: "Sunrise Health Clinic" });
+  };
+
+  const handleMagicLink = () => {
+    if (!magicEmail) return;
+    const link = generateMagicLink(magicEmail);
+    setMagicLink(link);
+    setMagicSent(true);
+    // TODO: supabase.auth.signInWithOtp({ email: magicEmail })
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(magicLink).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="main-narrow" style={{ paddingTop: 48 }}>
+      <div className="card">
+        <div className="card-header">
+          <div className="card-icon teal">🏥</div>
+          <div>
+            <div className="card-title">Provider Sign In</div>
+            <div className="card-subtitle">Sign in to your Rubix Provider Portal</div>
+          </div>
+        </div>
+        <div className="card-body">
+          {forgot ? (
+            <ForgotFlow type={forgot} onBack={() => setForgot(null)} />
+          ) : !magicSent ? (
+            <>
+              <div className="form-group">
+                <label>Practice Email Address</label>
+                <input type="email" placeholder="admin@practice.com" value={form.email} onChange={e => upd("email", e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Password</label>
+                <input type="password" placeholder="Your password" value={form.password} onChange={e => upd("password", e.target.value)} />
+              </div>
+              {error && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+              <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+                <button onClick={() => setForgot("password")} style={{ background: "none", border: "none", color: "var(--teal-dark)", fontSize: 12, cursor: "pointer", fontFamily: "DM Sans, sans-serif", padding: 0 }}>Forgot password?</button>
+                <button onClick={() => setForgot("username")} style={{ background: "none", border: "none", color: "var(--teal-dark)", fontSize: 12, cursor: "pointer", fontFamily: "DM Sans, sans-serif", padding: 0 }}>Forgot username?</button>
+              </div>
+              <button className="btn btn-primary" style={{ width: "100%" }} disabled={!form.email || !form.password} onClick={handlePasswordSignIn}>Sign In</button>
+              <AuthDivider />
+              <div className="form-group" style={{ marginBottom: 8 }}>
+                <label>Or sign in with a magic link</label>
+                <input type="email" placeholder="Enter your practice email" value={magicEmail} onChange={e => setMagicEmail(e.target.value)} />
+              </div>
+              <button className="btn btn-ghost" style={{ width: "100%" }} disabled={!magicEmail} onClick={handleMagicLink}>Send Magic Link</button>
+            </>
+          ) : (
+            <div className="success-screen" style={{ padding: "16px 0 24px" }}>
+              <div className="success-icon">📬</div>
+              <h2>{"Check your email"}</h2>
+              <p>{"We sent a sign-in link to:"}<br /><strong style={{ color: "var(--teal-dark)" }}>{magicEmail}</strong></p>
+              <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 13, color: "#92400E", marginBottom: 20, textAlign: "left" }}>
+                <strong>Demo mode:</strong> Use the link below to simulate clicking the magic link.
+              </div>
+              <div className="magic-link-box">
+                <span className="magic-link-url">{magicLink}</span>
+                <button className="copy-btn" onClick={handleCopy}>{copied ? "Copied!" : "Copy"}</button>
+              </div>
+              <button className="btn btn-primary" style={{ width: "100%" }} onClick={() => onAuthenticated({ email: magicEmail, practiceName: "Sunrise Health Clinic" })}>
+                Simulate: Click Magic Link
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── PROVIDER PORTAL NAV ─────────────────────────────────────────────────────
+
+function ProviderPortalNav({ providerUser, activePage, onNavigate, onSignOut }) {
+  return (
+    <div style={{ background: "var(--navy)", borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, gap: 16 }}>
+      <LogoDark width={130} height={32} />
+      <div style={{ display: "flex", gap: 4, flex: 1, justifyContent: "center" }}>
+        {[["dashboard", "Dashboard"], ["refer", "Refer Patient"], ["account", "Account"], ["billing", "Billing"]].map(([id, label]) => (
+          <button key={id} onClick={() => onNavigate(id)} style={{ padding: "6px 16px", borderRadius: 8, border: "none", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, cursor: "pointer", background: activePage === id ? "rgba(255,255,255,0.15)" : "transparent", color: activePage === id ? "white" : "rgba(255,255,255,0.55)", transition: "all 0.2s" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>{providerUser?.email}</div>
+        <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={onSignOut}>Sign Out</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── PROVIDER DASHBOARD PAGE ──────────────────────────────────────────────────
+
+function ProviderDashboard({ onNavigate }) {
+  return (
+    <div className="main">
+      <div className="card">
+        <div className="card-body">
+          <div className="section-title">Practice Dashboard</div>
+          <div className="section-sub">Sunrise Health Clinic · Last updated just now</div>
+          <div className="dashboard-grid">
+            {[{ label: "Total Financed", val: "$41.2K", sub: "↑ $6.8K this month" }, { label: "Approval Rate", val: "84%", sub: "Industry avg: 61%" }, { label: "Avg. Plan Size", val: "$1,790", sub: "Across all partners" }, { label: "Active Plans", val: "23", sub: "↑ 4 this week" }].map(m => (
+              <div className="metric-card" key={m.label}>
+                <div className="metric-label">{m.label}</div>
+                <div className="metric-val">{m.val}</div>
+                <div className="metric-sub">{m.sub}</div>
+              </div>
+            ))}
+          </div>
+          <div className="metric-card" style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <div className="metric-label">Monthly Payment Plan Activity</div>
+                <div className="metric-val">31 <span style={{ fontSize: 16, fontWeight: 400, color: "var(--text-secondary)" }}>applications</span></div>
+                <div className="metric-sub">↑ 6 vs. last month</div>
+              </div>
+              <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: 10, padding: "6px 14px", fontSize: 13, color: "var(--teal-dark)", fontWeight: 500 }}>This Month</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              {[{ label: "Approved", val: "26", pct: "84%", color: "var(--success)" }, { label: "Pending", val: "3", pct: "10%", color: "var(--warning)" }, { label: "Declined", val: "2", pct: "6%", color: "#EF4444" }].map(s => (
+                <div key={s.label} style={{ background: "var(--mist2)", borderRadius: 8, padding: "12px 14px", borderLeft: `3px solid ${s.color}` }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "Sora, sans-serif" }}>{s.val}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2 }}>{s.label}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: s.color, marginTop: 2 }}>{s.pct}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontWeight: 600, fontSize: 15 }}>Recent Patient Applications</div>
+            <button className="btn btn-ghost" style={{ padding: "6px 14px", fontSize: 13 }} onClick={() => onNavigate("refer")}>+ Refer Patient</button>
+          </div>
+          <div className="card" style={{ overflow: "hidden" }}>
+            <table className="patient-table">
+              <thead><tr><th>Patient</th><th>Amount</th><th>Plan</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody>
+                {MOCK_PATIENTS.map((p, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 500 }}>{p.name}</td>
+                    <td>{p.amount}</td>
+                    <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>{p.plan}</td>
+                    <td><span className={`status-pill ${p.status}`}>{p.status === "approved" ? "✓" : p.status === "pending" ? "○" : "◎"} {p.status.charAt(0).toUpperCase() + p.status.slice(1)}</span></td>
+                    <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>{p.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── REFER PATIENT PAGE ───────────────────────────────────────────────────────
+
+function ReferPatientPage({ providerUser }) {
+  const APP_URL = "https://rpps-mvp.vercel.app";
+  const [refForm, setRefForm] = useState({ firstName: "", lastName: "", phone: "", email: "", balance: "", careDescription: "" });
+  const [refSent, setRefSent] = useState(null);
+  const updRef = (k, v) => setRefForm(f => ({ ...f, [k]: v }));
+
+  const buildAppLink = () => {
+    const params = new URLSearchParams({ firstName: refForm.firstName, lastName: refForm.lastName, balance: refForm.balance, care: refForm.careDescription });
+    return `${APP_URL}?${params.toString()}`;
+  };
+
+  const handleSendSMS = () => {
+    const link = buildAppLink();
+    const name = refForm.firstName || "there";
+    const message = `Hi ${name}, your provider has invited you to apply for a patient payment plan through Rubix. It takes under 2 minutes and won't affect your credit score. Apply here: ${link}`;
+    window.open(`sms:${refForm.phone.replace(/\D/g, "")}?body=${encodeURIComponent(message)}`);
+    setRefSent("sms");
+  };
+
+  const handleSendEmail = () => {
+    const link = buildAppLink();
+    const name = refForm.firstName || "there";
+    const subject = "Your Patient Payment Options — Rubix";
+    const body = `Hi ${name},\n\nYour provider has invited you to explore flexible payment options for your upcoming care.\n\nApplying takes under 2 minutes and won't affect your credit score.\n\nGet started here:\n${link}\n\n— Your Care Team`;
+    window.open(`mailto:${refForm.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    setRefSent("email");
+  };
+
+  const refFormValid = refForm.firstName && refForm.lastName && (refForm.phone || refForm.email);
+
+  return (
+    <div className="main-narrow">
+      <div className="card">
+        <div className="card-header">
+          <div className="card-icon teal">➕</div>
+          <div><div className="card-title">Refer a Patient</div><div className="card-subtitle">Send a patient their payment options link</div></div>
+        </div>
+        <div className="card-body">
+          {refSent && (
+            <div className="alert success">
+              Application link {refSent === "sms" ? "text opened" : "email opened"} for {refForm.firstName} {refForm.lastName}.
+              {" "}<span style={{ cursor: "pointer", textDecoration: "underline" }} onClick={() => { setRefSent(null); setRefForm({ firstName: "", lastName: "", phone: "", email: "", balance: "", careDescription: "" }); }}>Refer another</span>
+            </div>
+          )}
+          <div className="form-row">
+            <div className="form-group"><label>First Name *</label><input placeholder="Maria" value={refForm.firstName} onChange={e => updRef("firstName", e.target.value)} /></div>
+            <div className="form-group"><label>Last Name *</label><input placeholder="Lopez" value={refForm.lastName} onChange={e => updRef("lastName", e.target.value)} /></div>
+          </div>
+          <div className="form-row">
+            <div className="form-group"><label>Patient Phone</label><input placeholder="(555) 000-0000" value={refForm.phone} onChange={e => updRef("phone", e.target.value)} /></div>
+            <div className="form-group"><label>Patient Email</label><input placeholder="patient@email.com" value={refForm.email} onChange={e => updRef("email", e.target.value)} /></div>
+          </div>
+          <div className="form-row">
+            <div className="form-group"><label>Balance Owed ($)</label><div className="input-prefix"><span>$</span><input type="number" placeholder="0.00" value={refForm.balance} onChange={e => updRef("balance", e.target.value)} /></div></div>
+            <div className="form-group"><label>Description of Care *</label><input placeholder="e.g. dental, PT, behavioral health..." value={refForm.careDescription} onChange={e => updRef("careDescription", e.target.value)} /></div>
+          </div>
+          <div className="helper-text" style={{ marginBottom: 16 }}>* Required. Phone needed for text, email needed for email link.</div>
+          <hr className="divider" />
+          <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+            <button className="btn btn-ghost" disabled={!refFormValid || !refForm.phone} onClick={handleSendSMS}>Send via Text</button>
+            <button className="btn btn-primary" disabled={!refFormValid || !refForm.email} onClick={handleSendEmail}>Send Application Link</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PROVIDER ACCOUNT PAGE ────────────────────────────────────────────────────
+
+function ProviderAccountPage({ onNotifEmailChange }) {
+  const [account, setAccount] = useState({ practiceName: "", npi: "", specialty: "", phone: "", address: "", city: "", state: "", zip: "", billingEmail: "", notifEmail: "" });
+  const [partners, setPartners] = useState({ rpps_plan: true, partner_a: true, partner_b: false });
+  const [banking, setBanking] = useState({ bankName: "", accountHolder: "", routingNumber: "", accountNumber: "", accountType: "checking" });
+  const [bankSaved, setBankSaved] = useState(false);
+  const [accountSaved, setAccountSaved] = useState(false);
+  const updAcc = (k, v) => {
+    setAccount(f => ({ ...f, [k]: v }));
+    if (k === "notifEmail" && onNotifEmailChange) onNotifEmailChange(v);
+  };
+  const updBank = (k, v) => setBanking(f => ({ ...f, [k]: v }));
+
+  const maskAccount = (num) => num.length > 4 ? "•".repeat(num.length - 4) + num.slice(-4) : num;
+  const maskRouting = (num) => num.length > 4 ? "•".repeat(num.length - 4) + num.slice(-4) : num;
+
+  return (
+    <div className="main" style={{ maxWidth: 740 }}>
+
+      {/* Practice Info */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div className="card-header">
+          <div className="card-icon teal">🏥</div>
+          <div><div className="card-title">Practice Information</div><div className="card-subtitle">Your practice details and contact information</div></div>
+        </div>
+        <div className="card-body">
+          {accountSaved && <div className="alert success" style={{ marginBottom: 16 }}>Changes saved successfully.</div>}
+          <div className="form-group"><label>Practice Name</label><input placeholder="Sunrise Health Clinic" value={account.practiceName} onChange={e => updAcc("practiceName", e.target.value)} /></div>
+          <div className="form-row">
+            <div className="form-group"><label>NPI Number</label><input placeholder="1234567890" value={account.npi} onChange={e => updAcc("npi", e.target.value)} /></div>
+            <div className="form-group"><label>Specialty</label>
+              <select value={account.specialty} onChange={e => updAcc("specialty", e.target.value)}>
+                <option value="">Select...</option>
+                <option>Behavioral Health</option><option>Dental</option><option>Chiropractic</option>
+                <option>Physical Therapy</option><option>Occupational Therapy</option><option>Speech Therapy</option>
+                <option>Primary Care</option><option>Specialty Medicine</option><option>Other Healthcare</option>
+              </select>
+            </div>
+          </div>
+          <div className="form-group"><label>Street Address</label><input placeholder="123 Main Street" value={account.address} onChange={e => updAcc("address", e.target.value)} /></div>
+          <div className="form-row">
+            <div className="form-group"><label>City</label><input placeholder="Miami" value={account.city} onChange={e => updAcc("city", e.target.value)} /></div>
+            <div className="form-group"><label>State</label>
+              <select value={account.state} onChange={e => updAcc("state", e.target.value)}>
+                <option value="">Select...</option>
+                {["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group" style={{ maxWidth: 180 }}><label>ZIP Code</label><input placeholder="33101" value={account.zip} onChange={e => updAcc("zip", e.target.value)} maxLength={5} /></div>
+            <div className="form-group"><label>Practice Phone</label><input placeholder="(555) 000-0000" value={account.phone} onChange={e => updAcc("phone", e.target.value)} /></div>
+          </div>
+          <div className="form-row">
+            <div className="form-group"><label>Billing Email</label><input placeholder="billing@practice.com" value={account.billingEmail} onChange={e => updAcc("billingEmail", e.target.value)} /></div>
+            <div className="form-group"><label>Notification Email</label><input placeholder="admin@practice.com" value={account.notifEmail} onChange={e => updAcc("notifEmail", e.target.value)} /><div className="helper-text">Receives patient payment alerts</div></div>
+          </div>
+          <hr className="divider" />
+          <div className="section-title" style={{ fontSize: 16, marginBottom: 6 }}>Financing Partners</div>
+          <div className="section-sub">Select which payment plans to offer your patients.</div>
+          {FINANCING_OPTIONS.map(opt => (
+            <div key={opt.id} onClick={() => setPartners(p => ({ ...p, [opt.id]: !p[opt.id] }))} style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 14, border: `2px solid ${partners[opt.id] ? "var(--teal)" : "var(--border)"}`, borderRadius: "var(--radius-sm)", padding: "14px 16px", cursor: "pointer", background: partners[opt.id] ? "#F0FDFA" : "var(--white)" }}>
+              <div className="fc-logo" style={{ background: opt.bg }}>{opt.logo}</div>
+              <div><div style={{ fontWeight: 600, fontSize: 14 }}>{opt.name}</div><div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{opt.type} · {opt.apr} APR · {opt.approval} approval</div></div>
+              <div style={{ marginLeft: "auto", width: 22, height: 22, borderRadius: 6, background: partners[opt.id] ? "var(--teal)" : "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 13, flexShrink: 0 }}>{partners[opt.id] ? "✓" : ""}</div>
+            </div>
+          ))}
+          <hr className="divider" />
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button className="btn btn-primary" onClick={() => { setAccountSaved(true); setTimeout(() => setAccountSaved(false), 3000); }}>Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+      {/* ACH Banking Info */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div className="card-header">
+          <div className="card-icon teal">🏦</div>
+          <div><div className="card-title">ACH Banking Information</div><div className="card-subtitle">Where patient payment funds will be deposited</div></div>
+        </div>
+        <div className="card-body">
+          {bankSaved && <div className="alert success" style={{ marginBottom: 16 }}>Banking information saved securely.</div>}
+          <div className="alert info" style={{ marginBottom: 20 }}>{"Your banking details are encrypted and used solely for ACH disbursement of patient payment funds to your practice."}</div>
+          <div className="form-row">
+            <div className="form-group"><label>Bank Name</label><input placeholder="e.g. Chase, Bank of America" value={banking.bankName} onChange={e => updBank("bankName", e.target.value)} /></div>
+            <div className="form-group"><label>Account Holder Name</label><input placeholder="Practice legal name" value={banking.accountHolder} onChange={e => updBank("accountHolder", e.target.value)} /></div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Routing Number</label>
+              <input className="input-sensitive" placeholder="9 digits" value={bankSaved ? maskRouting(banking.routingNumber) : banking.routingNumber} onChange={e => updBank("routingNumber", e.target.value)} maxLength={9} readOnly={bankSaved} />
+            </div>
+            <div className="form-group">
+              <label>Account Number</label>
+              <input className="input-sensitive" placeholder="Account number" value={bankSaved ? maskAccount(banking.accountNumber) : banking.accountNumber} onChange={e => updBank("accountNumber", e.target.value)} readOnly={bankSaved} />
+            </div>
+          </div>
+          <div className="form-group" style={{ maxWidth: 220 }}>
+            <label>Account Type</label>
+            <select value={banking.accountType} onChange={e => updBank("accountType", e.target.value)} disabled={bankSaved}>
+              <option value="checking">Checking</option>
+              <option value="savings">Savings</option>
+            </select>
+          </div>
+          <div className="helper-text" style={{ marginBottom: 20 }}>Routing and account numbers are masked after saving. Contact support to update banking information.</div>
+          <hr className="divider" />
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+            {bankSaved && <button className="btn btn-ghost" onClick={() => setBankSaved(false)}>Edit</button>}
+            {!bankSaved && <button className="btn btn-primary" disabled={!banking.bankName || !banking.routingNumber || !banking.accountNumber || !banking.accountHolder} onClick={() => setBankSaved(true)}>Save Banking Info</button>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PROVIDER BILLING PAGE ────────────────────────────────────────────────────
+
+function ProviderBillingPage() {
+  const [card, setCard] = useState({ cardNumber: "", expiry: "", cvv: "", name: "", address: "", city: "", state: "", zip: "" });
+  const [cardSaved, setCardSaved] = useState(false);
+  const updCard = (k, v) => setCard(f => ({ ...f, [k]: v }));
+  const maskCard = (num) => num.length >= 4 ? "•••• •••• •••• " + num.replace(/\s/g, "").slice(-4) : num;
+
+  return (
+    <div className="main-narrow">
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div className="card-header">
+          <div className="card-icon teal">💳</div>
+          <div><div className="card-title">Billing</div><div className="card-subtitle">Credit card on file for Rubix monthly platform fee</div></div>
+        </div>
+        <div className="card-body">
+          <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: "var(--radius-sm)", padding: "16px 20px", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>Current Plan</div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>Rubix Provider</div>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>$49.99 / month · Billed monthly</div>
+            </div>
+            <div style={{ background: "#D1FAE5", color: "#065F46", fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: "100px" }}>Active</div>
+          </div>
+
+          {cardSaved && <div className="alert success" style={{ marginBottom: 16 }}>Card saved securely.</div>}
+
+          <div className="section-title" style={{ fontSize: 16, marginBottom: 6 }}>Payment Method</div>
+          <div className="section-sub">Your card is charged on the 1st of each month.</div>
+
+          <div className="form-group">
+            <label>Cardholder Name</label>
+            <input placeholder="Name as it appears on card" value={card.name} onChange={e => updCard("name", e.target.value)} readOnly={cardSaved} />
+          </div>
+          <div className="form-group">
+            <label>Card Number</label>
+            <input className="input-sensitive" placeholder="1234 5678 9012 3456" value={cardSaved ? maskCard(card.cardNumber) : card.cardNumber} onChange={e => updCard("cardNumber", e.target.value)} maxLength={19} readOnly={cardSaved} />
+          </div>
+          <div className="form-row">
+            <div className="form-group"><label>Expiration Date</label><input placeholder="MM / YY" value={card.expiry} onChange={e => updCard("expiry", e.target.value)} maxLength={7} readOnly={cardSaved} /></div>
+            <div className="form-group"><label>CVV</label><input className="input-sensitive" placeholder="•••" value={cardSaved ? "•••" : card.cvv} onChange={e => updCard("cvv", e.target.value)} maxLength={4} readOnly={cardSaved} /></div>
+          </div>
+
+          <hr className="divider" />
+          <div className="section-title" style={{ fontSize: 16, marginBottom: 6 }}>Billing Address</div>
+          <div className="form-group"><label>Street Address</label><input placeholder="123 Main Street" value={card.address} onChange={e => updCard("address", e.target.value)} readOnly={cardSaved} /></div>
+          <div className="form-row">
+            <div className="form-group"><label>City</label><input placeholder="Miami" value={card.city} onChange={e => updCard("city", e.target.value)} readOnly={cardSaved} /></div>
+            <div className="form-group"><label>State</label>
+              <select value={card.state} onChange={e => updCard("state", e.target.value)} disabled={cardSaved}>
+                <option value="">Select...</option>
+                {["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-group" style={{ maxWidth: 180 }}><label>ZIP Code</label><input placeholder="33101" value={card.zip} onChange={e => updCard("zip", e.target.value)} maxLength={5} readOnly={cardSaved} /></div>
+
+          <div className="helper-text" style={{ marginBottom: 20 }}>Card details are masked after saving. Click Edit to update your payment method.</div>
+          <hr className="divider" />
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+            {cardSaved && <button className="btn btn-ghost" onClick={() => setCardSaved(false)}>Edit Card</button>}
+            {!cardSaved && <button className="btn btn-primary" disabled={!card.cardNumber || !card.expiry || !card.cvv || !card.name} onClick={() => setCardSaved(true)}>Save Card</button>}
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-body">
+          <div className="section-title" style={{ fontSize: 16, marginBottom: 6 }}>Billing History</div>
+          <div className="section-sub">Recent charges to your account.</div>
+          <table className="patient-table">
+            <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead>
+            <tbody>
+              {[["May 1, 2026", "Rubix Provider — Monthly Fee", "$49.99", "approved"], ["Apr 1, 2026", "Rubix Provider — Monthly Fee", "$49.99", "approved"], ["Mar 1, 2026", "Rubix Provider — Monthly Fee", "$49.99", "approved"]].map(([date, desc, amt, status], i) => (
+                <tr key={i}>
+                  <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>{date}</td>
+                  <td style={{ fontSize: 14 }}>{desc}</td>
+                  <td style={{ fontWeight: 600 }}>{amt}</td>
+                  <td><span className={`status-pill ${status}`}>✓ Paid</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PROVIDER MARKETING SITE ─────────────────────────────────────────────────
+
+function ProviderMarketingNav({ activePage, onNavigate }) {
+  const links = [["home", "Home"], ["about", "About"], ["services", "Services"], ["partners", "Partners"], ["faq", "FAQ"], ["blog-provider", "Blog"], ["contact-provider", "Contact"]];
+  return (
+    <div style={{ background: "var(--white)", borderBottom: "1px solid var(--border)", padding: "0 32px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, flexWrap: "wrap", gap: 8 }}>
+      <div style={{ display: "flex", gap: 4 }}>
+        {links.map(([id, label]) => (
+          <button key={id} onClick={() => onNavigate(id)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: activePage === id ? 600 : 400, cursor: "pointer", background: "transparent", color: activePage === id ? "var(--teal-dark)" : "var(--text-secondary)", borderBottom: activePage === id ? "2px solid var(--teal)" : "2px solid transparent", transition: "all 0.2s" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div className="nav-pill">
+          <button className={activePage === "provider-login" ? "active" : ""} onClick={() => onNavigate("provider-login")}>Sign In</button>
+          <button className={activePage === "register" ? "active" : ""} onClick={() => onNavigate("register")}>Get Started</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GetStartedCTA({ onNavigate, light }) {
+  return (
+    <div style={{ textAlign: "center", padding: "56px 32px", background: light ? "var(--mist)" : "linear-gradient(135deg, var(--navy), var(--navy-mid))", borderRadius: light ? 0 : "var(--radius)" }}>
+      <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 700, color: light ? "var(--text-primary)" : "white", marginBottom: 12 }}>Ready to get started?</div>
+      <div style={{ fontSize: 16, color: light ? "var(--text-secondary)" : "rgba(255,255,255,0.65)", marginBottom: 32, maxWidth: 480, margin: "0 auto 32px" }}>Join hundreds of practices offering flexible payment options to their patients. Setup takes under 5 minutes.</div>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        <button className="btn btn-primary" onClick={() => onNavigate("register")}>Create Your Free Account</button>
+        <button onClick={() => onNavigate("about")} style={{ padding: "14px 28px", borderRadius: "100px", fontFamily: "DM Sans, sans-serif", fontWeight: 500, fontSize: 15, cursor: "pointer", background: "transparent", color: light ? "var(--teal-dark)" : "white", border: light ? "1.5px solid var(--teal)" : "1.5px solid rgba(255,255,255,0.3)" }}>Learn More</button>
+      </div>
+    </div>
+  );
+}
+
+// ── PROVIDER HOME PAGE ──
+
+function ProviderHome({ onNavigate }) {
+  const features = [
+    { icon: "⚡", title: "Instant Pre-Approvals", desc: "Patients receive a pre-approval decision in seconds, removing financial hesitation at the point of care." },
+    { icon: "💳", title: "Multiple Payment Plans", desc: "Offer patients monthly payment options built around the episodic, ongoing nature of ABA therapy, IOP, PHP, and outpatient behavioral health treatment." },
+    { icon: "🏦", title: "Direct ACH Disbursement", desc: "Approved funds are deposited directly to your practice account within 1-2 business days. Zero collection risk." },
+    { icon: "📊", title: "Real-Time Dashboard", desc: "Track application activity, approval rates, and financed revenue from a single, intuitive dashboard." },
+    { icon: "🔒", title: "HIPAA Compliant", desc: "Patient data is encrypted and handled in full compliance with HIPAA requirements at every step." },
+    { icon: "📲", title: "Refer in Seconds", desc: "Send patients a personalized application link via text or email directly from your provider portal." },
+  ];
+
+  const stats = [["84%", "Approval rate"], ["1–2 days", "ACH disbursement"], ["$0", "Collection risk"], ["ABA & BH", "Built for your vertical"]];
+
+  return (
+    <>
+      {/* Hero */}
+      <div className="hero" style={{ padding: "88px 32px" }}>
+        <h1 style={{ position: "relative" }}>Your patients need care.<br />Cost <em>should not</em> be the reason they stop.</h1>
+        <p>Rubix is built for behavioral health, mental health, autism, and ABA practices — giving your patients a clear path to financing so your team can focus on treatment, not billing.</p>
+        <div className="hero-ctas">
+          <button className="btn btn-primary" onClick={() => onNavigate("register")}>Create Your Free Account</button>
+          <button className="btn btn-outline" onClick={() => onNavigate("how-it-works")}>Learn How It Works</button>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div className="stats-bar">
+        {stats.map(([n, l]) => (
+          <div className="stat" key={l}><div className="stat-num">{n}</div><div className="stat-label">{l}</div></div>
+        ))}
+      </div>
+
+      {/* Features grid */}
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "64px 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 700, marginBottom: 12 }}>Everything your practice needs</div>
+          <div style={{ fontSize: 16, color: "var(--text-secondary)", maxWidth: 520, margin: "0 auto" }}>One platform to handle patient financing from application to disbursement.</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+          {features.map((f, i) => (
+            <div key={i} style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "28px 24px", boxShadow: "var(--shadow)" }}>
+              <div style={{ fontSize: 32, marginBottom: 14 }}>{f.icon}</div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 16, marginBottom: 8 }}>{f.title}</div>
+              <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How it works strip */}
+      <div style={{ background: "var(--mist)", padding: "64px 24px" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(20px, 3vw, 30px)", fontWeight: 700, marginBottom: 10 }}>How it works for your practice</div>
+            <div style={{ fontSize: 15, color: "var(--text-secondary)" }}>Designed for the workflow of ABA centers, behavioral health practices, and mental health providers. No technical setup required.</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
+            {[["01", "Create Your Account", "Sign up in under 5 minutes. Enter your practice details and connect your bank account for ACH deposits."], ["02", "Refer a Patient", "Send patients a personalized financing link via text or email directly from your dashboard."], ["03", "Patient Gets Pre-Approved", "Patients complete a short application and receive a pre-approval decision in seconds."], ["04", "You Get Paid", "Approved funds are deposited to your practice within 1-2 business days. Zero collection risk."]].map(([num, title, desc]) => (
+              <div key={num} style={{ background: "var(--white)", borderRadius: "var(--radius-sm)", padding: "24px 20px", boxShadow: "var(--shadow)", textAlign: "center" }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, var(--teal), var(--teal-light))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 14, color: "white" }}>{num}</div>
+                <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 8 }}>{title}</div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7 }}>{desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Pricing teaser */}
+      <div style={{ maxWidth: 560, margin: "0 auto", padding: "64px 24px", textAlign: "center" }}>
+        <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(20px, 3vw, 30px)", fontWeight: 700, marginBottom: 12 }}>Simple, transparent pricing</div>
+        <div style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>One flat monthly fee. No setup costs, no hidden fees, no long-term contracts.</div>
+        <div style={{ background: "var(--white)", border: "2px solid var(--teal)", borderRadius: "var(--radius)", padding: "36px 32px", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: 48, fontWeight: 700, color: "var(--teal-dark)" }}>$49.99</div>
+          <div style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 24 }}>per location / month</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28, textAlign: "left" }}>
+            {["Unlimited patient referrals", "Full dashboard and reporting", "ACH disbursement within 1-2 days", "Multiple lending partner options", "HIPAA-compliant platform", "Email and chat support"].map((f, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--slate)" }}>
+                <span style={{ color: "var(--success)", fontWeight: 700 }}>✓</span>{f}
+              </div>
+            ))}
+          </div>
+          <button className="btn btn-primary" style={{ width: "100%" }} onClick={() => onNavigate("register")}>Get Started — First Month Free</button>
+        </div>
+      </div>
+
+      <GetStartedCTA onNavigate={onNavigate} />
+    </>
+  );
+}
+
+// ── ABOUT PAGE ──
+
+function ProviderAbout({ onNavigate }) {
+  return (
+    <>
+      <div className="hero" style={{ padding: "72px 32px" }}>
+        <h1>About <em>Rubix</em></h1>
+        <p>Rubix is purpose-built for the practices and treatment centers serving patients with behavioral health conditions, mental health needs, and autism.</p>
+      </div>
+      <div style={{ maxWidth: 780, margin: "0 auto", padding: "56px 24px" }}>
+        <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Our Mission</div>
+        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>ABA therapy, IOP programs, PHP levels of care, outpatient psychiatric services — these treatments require sustained engagement over weeks and months. A family that has to pause ABA because of a billing gap does not just lose a week of therapy. They lose progress. Rubix was built to prevent that.</p>
+
+        <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Who We Are</div>
+        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>Rubix was founded by a team with deep roots in behavioral health revenue cycle management. We spent years watching families drop out of ABA programs and behavioral health treatment because of billing complexity and unmanageable out-of-pocket costs. We built Rubix because existing financing products were not designed for this space — and the patients in it deserve better.</p>
+
+        <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>What We Believe</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginBottom: 48 }}>
+          {[["Transparency", "No hidden fees, no deferred interest traps. Patients and providers always know exactly what they are signing up for."], ["Accessibility", "We design our products to work for patients across the credit spectrum, not just those with perfect scores."], ["Partnership", "We are not a vendor — we are a long-term partner in your practice's financial health and patient outcomes."], ["Compliance", "HIPAA, TILA, Reg Z. We built compliance in from day one, not as an afterthought."]].map(([title, desc]) => (
+            <div key={title} style={{ background: "var(--mist)", borderRadius: "var(--radius-sm)", padding: "24px 20px" }}>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 8, color: "var(--teal-dark)" }}>{title}</div>
+              <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7 }}>{desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <GetStartedCTA onNavigate={onNavigate} />
+    </>
+  );
+}
+
+// ── SERVICES PAGE ──
+
+function ProviderServices({ onNavigate }) {
+  const services = [
+    { icon: "💳", title: "Patient Payment Plans", desc: "Offer patients flexible monthly payment options through our network of vetted lending partners. From 0% promotional plans to extended financing, we match patients with the option that fits their financial situation.", features: ["Pre-approval in seconds", "Multiple term options", "Soft credit pull only", "84% average approval rate"] },
+    { icon: "🏦", title: "Direct Practice Funding", desc: "Once a patient is approved and signs their agreement, funds are disbursed directly to your practice via ACH within 1-2 business days. You get paid in full — we handle collections.", features: ["ACH to your bank account", "1-2 business day funding", "Zero collection risk", "Transparent merchant fee"] },
+    { icon: "📲", title: "Patient Referral Tools", desc: "Refer patients to a financing application in seconds from your dashboard. Send a personalized link via text or email, or complete the intake form on their behalf at check-in.", features: ["SMS and email referral links", "Pre-filled patient info", "In-office tablet flow", "Staff-assisted entry"] },
+    { icon: "📊", title: "Practice Dashboard", desc: "Track application activity, approval rates, and disbursements across your ABA or behavioral health caseload — all in one real-time dashboard.", features: ["Real-time application status", "Monthly activity metrics", "Approval rate tracking", "Disbursement history"] },
+    { icon: "🔒", title: "Compliance Infrastructure", desc: "Rubix is built on a HIPAA-compliant infrastructure with bank-level encryption. All patient data, loan agreements, and e-signatures are handled in full regulatory compliance.", features: ["HIPAA-compliant data handling", "TILA / Reg Z disclosures", "ESIGN Act e-signatures", "SOC 2 compliant hosting"] },
+    { icon: "🤝", title: "Dedicated Onboarding", desc: "Every new practice gets a dedicated Rubix onboarding specialist who walks you through setup, answers questions, and makes sure you are ready to refer your first patient on day one.", features: ["Dedicated account setup", "Practice staff training", "Go-live support", "Ongoing account management"] },
+  ];
+
+  return (
+    <>
+      <div className="hero" style={{ padding: "72px 32px" }}>
+        <h1>Built for <em>behavioral health</em></h1>
+        <p>A patient financing platform designed specifically for ABA therapy centers, IOP/PHP programs, outpatient behavioral health practices, and psychiatric providers.</p>
+      </div>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "56px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
+          {services.map((s, i) => (
+            <div key={i} style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "32px 28px", boxShadow: "var(--shadow)" }}>
+              <div style={{ fontSize: 36, marginBottom: 16 }}>{s.icon}</div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 10 }}>{s.title}</div>
+              <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7, marginBottom: 20 }}>{s.desc}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                {s.features.map((f, j) => (
+                  <div key={j} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--slate)" }}>
+                    <span style={{ color: "var(--teal)", fontWeight: 700, fontSize: 12 }}>✓</span>{f}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <GetStartedCTA onNavigate={onNavigate} />
+    </>
+  );
+}
+
+// ── PARTNERS PAGE ──
+
+function ProviderPartners({ onNavigate }) {
+  const partners = [
+    { logo: "🏥", name: "RPPS Flex Pay", type: "Proprietary Plan", desc: "Our in-house 0% monthly payment plan, available instantly to all approved patients. No third-party approval required.", tags: ["0% Interest", "Instant", "$100 minimum"] },
+    { logo: "💳", name: "Partner Plan A", type: "Third-Party Financing", desc: "A promotional 0% financing option through one of our vetted lending partners, offering terms from 6 to 24 months.", tags: ["0% Promo APR", "6-24 months", "$200 minimum"] },
+    { logo: "⚡", name: "Partner Plan B", type: "Extended Financing", desc: "Extended monthly financing for larger balances, with competitive rates and terms up to 60 months.", tags: ["5.9-24.9% APR", "12-60 months", "$500 minimum"] },
+  ];
+
+  return (
+    <>
+      <div className="hero" style={{ padding: "72px 32px" }}>
+        <h1>Our <em>lending partners</em></h1>
+        <p>Rubix works with a curated network of vetted lending partners to give your patients the best possible financing options.</p>
+      </div>
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "56px 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, marginBottom: 12 }}>Payment plans we offer</div>
+          <div style={{ fontSize: 15, color: "var(--text-secondary)", maxWidth: 520, margin: "0 auto" }}>Every partner is vetted for compliance, patient experience, and competitive terms. We are continuously expanding our network.</div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 56 }}>
+          {partners.map((p, i) => (
+            <div key={i} style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "28px 28px", boxShadow: "var(--shadow)", display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 14, background: "var(--mist)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{p.logo}</div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: "var(--teal-dark)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>{p.type}</div>
+                <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7, marginBottom: 14 }}>{p.desc}</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {p.tags.map(t => (<span key={t} style={{ background: "var(--mist)", border: "1px solid #CCFBF1", color: "var(--teal-dark)", fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: "100px" }}>{t}</span>))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ background: "var(--mist)", borderRadius: "var(--radius)", padding: "32px 28px", textAlign: "center" }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 20, marginBottom: 10 }}>Interested in becoming a lending partner?</div>
+          <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>We are actively expanding our lending network. If you are a bank, credit union, or specialty finance company interested in reaching qualified healthcare patients, we would like to hear from you.</div>
+          <button className="btn btn-ghost" style={{ color: "var(--teal-dark)" }}>Contact Partnerships</button>
+        </div>
+      </div>
+      <GetStartedCTA onNavigate={onNavigate} />
+    </>
+  );
+}
+
+// ── FAQ PAGE ──
+
+function ProviderFAQ({ onNavigate }) {
+  const [open, setOpen] = useState(null);
+  const faqs = [
+    { q: "How long does it take to set up my practice on Rubix?", a: "Setup takes under 5 minutes. Create your account, enter your practice details, connect your bank account for ACH disbursements, and select which payment plans to offer. ABA centers, IOP programs, and outpatient practices can refer their first patient the same day." },
+    { q: "How does Rubix make money?", a: "Rubix charges a flat monthly platform fee of $49.99 per practice location. We also collect a small merchant discount fee (deducted from disbursements) when a patient financing transaction is funded. There are no setup fees or long-term contracts." },
+    { q: "When does my practice receive funds after a patient is approved?", a: "Once a patient accepts their offer and signs the loan agreement, funds are disbursed to your practice bank account via ACH within 1-2 business days. You are paid in full regardless of the patient's repayment behavior." },
+    { q: "What happens if a patient defaults on their payment plan?", a: "Your practice bears zero collection risk. Once funds are disbursed to your account, Rubix and our lending partners handle all patient repayment and collections. A patient default has no impact on your practice revenue." },
+    { q: "What types of practices can use Rubix?", a: "Rubix is purpose-built for IOP and PHP programs, outpatient mental health and substance use practices, psychiatric providers, ABA therapy centers, and autism treatment providers. We also support dental, physical therapy, and other specialty healthcare." },
+    { q: "Is Rubix HIPAA compliant?", a: "Yes. Rubix is built on HIPAA-compliant infrastructure. All patient data is encrypted in transit and at rest. We maintain a Business Associate Agreement (BAA) with all practices on the platform." },
+    { q: "What credit scores do patients need to qualify?", a: "Our lending partners work with a broad credit spectrum. We offer tiered approval options from prime to near-prime borrowers. We also offer our in-house 0% RPPS Flex Pay plan which has more flexible qualification criteria." },
+    { q: "Can I refer patients from my existing EHR or practice management system?", a: "Direct EHR integration is on our roadmap. Currently, providers refer patients directly from the Rubix dashboard via a personalized SMS or email link. The patient completes their application on any device." },
+    { q: "Is there a minimum volume requirement?", a: "No. There are no minimum patient volume requirements. The $49.99 monthly fee is flat regardless of how many patients you refer in a given month." },
+    { q: "How do I cancel my Rubix account?", a: "You can cancel at any time with no cancellation fees. Simply contact your account manager or email support. Your account will remain active through the end of your current billing period." },
+  ];
+
+  return (
+    <>
+      <div className="hero" style={{ padding: "72px 32px" }}>
+        <h1>Frequently asked <em>questions</em></h1>
+        <p>Everything providers want to know before getting started with Rubix.</p>
+      </div>
+      <div style={{ maxWidth: 740, margin: "0 auto", padding: "56px 24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 56 }}>
+          {faqs.map((f, i) => (
+            <div key={i} style={{ background: "var(--white)", border: `1px solid ${open === i ? "var(--teal-light)" : "var(--border)"}`, borderRadius: "var(--radius-sm)", overflow: "hidden", boxShadow: open === i ? "var(--shadow)" : "none", transition: "all 0.2s" }}>
+              <button onClick={() => setOpen(open === i ? null : i)} style={{ width: "100%", background: "none", border: "none", padding: "18px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontSize: 15, fontWeight: 600, color: open === i ? "var(--teal-dark)" : "var(--text-primary)", textAlign: "left", gap: 12 }}>
+                {f.q}
+                <span style={{ color: "var(--teal)", fontSize: 20, flexShrink: 0, transform: open === i ? "rotate(45deg)" : "none", transition: "transform 0.2s" }}>+</span>
+              </button>
+              {open === i && (
+                <div style={{ padding: "0 20px 18px", fontSize: 14, color: "var(--slate)", lineHeight: 1.8 }}>{f.a}</div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ background: "var(--mist)", borderRadius: "var(--radius-sm)", padding: "28px 24px", textAlign: "center" }}>
+          <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Still have questions?</div>
+          <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 16 }}>Our team is happy to walk you through anything before you sign up.</div>
+          <button className="btn btn-ghost" style={{ color: "var(--teal-dark)" }}>Contact Us</button>
+        </div>
+      </div>
+      <GetStartedCTA onNavigate={onNavigate} />
+    </>
+  );
+}
+
+// ── PROVIDER REGISTRATION PAGE ──
+
+function ProviderRegister({ onRegistered }) {
+  const [form, setForm] = useState({ contactName: "", practiceName: "", email: "", phone: "", specialty: "", password: "", confirmPassword: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
+  const [error, setError] = useState("");
+  const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const pwErrors = validatePassword(form.password);
+  const valid = form.contactName && form.practiceName && form.email && form.phone && form.password && form.confirmPassword && pwErrors.length === 0;
+
+
+  const welcomeEmailBody =
+`Dear ${form.contactName || "there"},
+
+Welcome to Rubix Patient Payment Solutions!
+
+Your account has been created and you are ready to start offering flexible payment options to your patients.
+
+  Practice: ${form.practiceName}
+  Email: ${form.email}
+
+Here is what to do next:
+  1. Complete your practice profile in the Account section
+  2. Add your ACH banking information for fund disbursements
+  3. Refer your first patient from the dashboard
+
+If you have any questions, reply to this email or reach out to your dedicated onboarding specialist.
+
+Welcome aboard.
+
+— The Rubix Team`;
+
+  const handleSubmit = () => {
+    const errs = validatePassword(form.password);
+    if (errs.length) { setError(errs[0]); return; }
+    if (form.password !== form.confirmPassword) { setError("Passwords do not match."); return; }
+    setError("");
+    setSubmitting(true);
+    // TODO: supabase.auth.signUp({ email: form.email, password: form.password }) + create provider record
+    setTimeout(() => {
+      setSubmitting(false);
+      setShowEmail(true);
+      setTimeout(() => {
+        onRegistered({ email: form.email, practiceName: form.practiceName, contactName: form.contactName });
+      }, 2000);
+    }, 1200);
+  };
+
+  return (
+    <div className="main-narrow" style={{ paddingTop: 48 }}>
+      <div className="card">
+        <div className="card-header">
+          <div className="card-icon teal">🏥</div>
+          <div>
+            <div className="card-title">Create Your Rubix Account</div>
+            <div className="card-subtitle">First month free — no credit card required</div>
+          </div>
+        </div>
+        <div className="card-body">
+          {showEmail ? (
+            <div style={{ textAlign: "center", padding: "16px 0" }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Account created!</div>
+              <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>Signing you in and sending your welcome email...</div>
+              <MockEmail to={form.email} subject="Welcome to Rubix Patient Payment Solutions" body={welcomeEmailBody} note="Sends automatically upon registration via SendGrid on deployment." />
+            </div>
+          ) : (
+            <>
+              <div className="alert info" style={{ marginBottom: 20 }}>{"Your first month is free. No credit card required to get started."}</div>
+              <div className="form-row">
+                <div className="form-group"><label>Your Name *</label><input placeholder="Jane Smith" value={form.contactName} onChange={e => upd("contactName", e.target.value)} /></div>
+                <div className="form-group"><label>Practice Name *</label><input placeholder="Sunrise Health Clinic" value={form.practiceName} onChange={e => upd("practiceName", e.target.value)} /></div>
+              </div>
+              <div className="form-row">
+                <div className="form-group"><label>Email Address *</label><input type="email" placeholder="admin@practice.com" value={form.email} onChange={e => upd("email", e.target.value)} /></div>
+                <div className="form-group"><label>Phone Number *</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
+              </div>
+              <div className="form-group">
+                <label>Practice Specialty</label>
+                <select value={form.specialty} onChange={e => upd("specialty", e.target.value)}>
+                  <option value="">Select (optional)</option>
+                  <option>Behavioral Health</option><option>Dental</option><option>Chiropractic</option>
+                  <option>Physical Therapy</option><option>Occupational Therapy</option><option>Speech Therapy</option>
+                  <option>Primary Care</option><option>Specialty Medicine</option><option>Other Healthcare</option>
+                </select>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Create Password *</label>
+                  <input type="password" placeholder="Min. 8 chars, 1 number, 1 special character" value={form.password} onChange={e => upd("password", e.target.value)} />
+                  <PasswordStrength password={form.password} />
+                </div>
+                <div className="form-group">
+                  <label>Confirm Password *</label>
+                  <input type="password" placeholder="Re-enter your password" value={form.confirmPassword} onChange={e => upd("confirmPassword", e.target.value)} />
+                </div>
+              </div>
+              {error && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+              <hr className="divider" />
+              <button className="btn btn-primary" style={{ width: "100%" }} disabled={!valid || submitting} onClick={handleSubmit}>
+                {submitting ? "Creating your account..." : "Create Account — Get Started Free"}
+              </button>
+              <div style={{ fontSize: 12, color: "var(--text-light)", textAlign: "center", marginTop: 14, lineHeight: 1.6 }}>
+                By creating an account you agree to our Terms of Service and Privacy Policy. HIPAA BAA included with all accounts.
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MARKETING SITE WRAPPER ──
+
+function ProviderMarketingSite({ page, onNavigate, onRegistered }) {
+  const marketingPages = ["home", "about", "services", "partners", "faq", "register", "provider-login", "how-it-works", "blog-provider", "contact-provider"];
+  const activePage = marketingPages.includes(page) ? page : "home";
+
+  return (
+    <>
+      <ProviderMarketingNav activePage={activePage} onNavigate={onNavigate} />
+      {activePage === "home" && <ProviderHome onNavigate={onNavigate} />}
+      {activePage === "about" && <ProviderAbout onNavigate={onNavigate} />}
+      {activePage === "services" && <ProviderServices onNavigate={onNavigate} />}
+      {activePage === "partners" && <ProviderPartners onNavigate={onNavigate} />}
+      {activePage === "faq" && <ProviderFAQ onNavigate={onNavigate} />}
+      {activePage === "register" && <ProviderRegister onRegistered={onRegistered} />}
+      {activePage === "provider-login" && <ProviderLogin onAuthenticated={onRegistered} />}
+      {activePage === "how-it-works" && <HowItWorks onBack={() => onNavigate("home")} onApply={() => onNavigate("register")} />}
+      {activePage === "blog-provider" && <ProviderBlog onNavigate={onNavigate} />}
+      {activePage === "contact-provider" && <ContactPage audience="provider" />}
+      <SiteFooter mode="provider" onNavigate={onNavigate} />
+    </>
+  );
+}
+
+// ─── PATIENT ACCOUNT LOGIN ────────────────────────────────────────────────────
+
+function PatientAccountLogin({ onAuthenticated }) {
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [magicEmail, setMagicEmail] = useState("");
+  const [magicSent, setMagicSent] = useState(false);
+  const [forgot, setForgot] = useState(null);
+  const [magicLink, setMagicLink] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handlePasswordSignIn = () => {
+    if (!form.email || !form.password) { setError("Please enter your email and password."); return; }
+    setError("");
+    // TODO: supabase.auth.signInWithPassword({ email: form.email, password: form.password })
+    onAuthenticated({ email: form.email, firstName: "Maria", lastName: "Lopez" });
+  };
+
+  const handleMagicLink = () => {
+    if (!magicEmail) return;
+    const link = generateMagicLink(magicEmail);
+    setMagicLink(link);
+    setMagicSent(true);
+    // TODO: supabase.auth.signInWithOtp({ email: magicEmail })
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(magicLink).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="main-narrow" style={{ paddingTop: 48 }}>
+      <div className="card">
+        <div className="card-header">
+          <div className="card-icon teal">🔐</div>
+          <div>
+            <div className="card-title">Patient Account Sign In</div>
+            <div className="card-subtitle">Access your payment plans and account information</div>
+          </div>
+        </div>
+        <div className="card-body">
+          {forgot ? (
+            <ForgotFlow type={forgot} onBack={() => setForgot(null)} />
+          ) : !magicSent ? (
+            <>
+              <div className="form-group">
+                <label>Email Address</label>
+                <input type="email" placeholder="maria@email.com" value={form.email} onChange={e => upd("email", e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Password</label>
+                <input type="password" placeholder="Your password" value={form.password} onChange={e => upd("password", e.target.value)} />
+              </div>
+              {error && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+              <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+                <button onClick={() => setForgot("password")} style={{ background: "none", border: "none", color: "var(--teal-dark)", fontSize: 12, cursor: "pointer", fontFamily: "DM Sans, sans-serif", padding: 0 }}>Forgot password?</button>
+                <button onClick={() => setForgot("username")} style={{ background: "none", border: "none", color: "var(--teal-dark)", fontSize: 12, cursor: "pointer", fontFamily: "DM Sans, sans-serif", padding: 0 }}>Forgot username?</button>
+              </div>
+              <button className="btn btn-primary" style={{ width: "100%" }} disabled={!form.email || !form.password} onClick={handlePasswordSignIn}>Sign In</button>
+              <AuthDivider />
+              <div className="form-group" style={{ marginBottom: 8 }}>
+                <label>Or sign in with a magic link</label>
+                <input type="email" placeholder="Enter your email" value={magicEmail} onChange={e => setMagicEmail(e.target.value)} />
+              </div>
+              <button className="btn btn-ghost" style={{ width: "100%" }} disabled={!magicEmail} onClick={handleMagicLink}>Send Magic Link</button>
+              <div style={{ fontSize: 12, color: "var(--text-light)", textAlign: "center", marginTop: 14, lineHeight: 1.6 }}>
+                {"Don't have an account? Apply for financing to create one."}
+              </div>
+            </>
+          ) : (
+            <div className="success-screen" style={{ padding: "16px 0 24px" }}>
+              <div className="success-icon">📬</div>
+              <h2>{"Check your email"}</h2>
+              <p>{"We sent a sign-in link to:"}<br /><strong style={{ color: "var(--teal-dark)" }}>{magicEmail}</strong></p>
+              <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 13, color: "#92400E", marginBottom: 20, textAlign: "left" }}>
+                <strong>Demo mode:</strong> Use the link below to simulate clicking the magic link.
+              </div>
+              <div className="magic-link-box">
+                <span className="magic-link-url">{magicLink}</span>
+                <button className="copy-btn" onClick={handleCopy}>{copied ? "Copied!" : "Copy"}</button>
+              </div>
+              <button className="btn btn-primary" style={{ width: "100%" }} onClick={() => onAuthenticated({ email: magicEmail, firstName: "Maria", lastName: "Lopez" })}>
+                Simulate: Click Magic Link
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PATIENT ACCOUNT PORTAL ───────────────────────────────────────────────────
+
+const MOCK_PLANS = [
+  { id: "plan1", partner: "RPPS Flex Pay", originalAmount: 1200, remaining: 840, apr: "0%", term: "12 mo", monthlyPayment: 100, nextDue: "Jun 15, 2026", status: "active" },
+  { id: "plan2", partner: "Partner Plan A", originalAmount: 2400, remaining: 0, apr: "0% promo", term: "24 mo", monthlyPayment: 100, nextDue: "—", status: "paid_off" },
+];
+
+const MOCK_PAYMENT_HISTORY = [
+  { date: "May 15, 2026", plan: "RPPS Flex Pay", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "Apr 15, 2026", plan: "RPPS Flex Pay", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "Mar 15, 2026", plan: "RPPS Flex Pay", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "Feb 15, 2026", plan: "Partner Plan A", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+];
+
+function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
+  const [acctPage, setAcctPage] = useState("balances");
+  const [paymentPlan, setPaymentPlan] = useState(null);
+  const [payAmount, setPayAmount] = useState("");
+  const [paySubmitting, setPaySubmitting] = useState(false);
+  const [paySuccess, setPaySuccess] = useState(false);
+  const [acctForm, setAcctForm] = useState({ firstName: user.firstName || "Maria", lastName: user.lastName || "Lopez", email: user.email || "", phone: "(555) 012-3456", address: "123 Main Street", city: "Miami", state: "FL", zip: "33101" });
+  const [banking, setBanking] = useState({ bankName: "Chase", accountHolder: "Maria Lopez", routingNumber: "021000021", accountNumber: "4521987654", accountType: "checking" });
+  const [bankSaved, setBankSaved] = useState(true);
+  const [acctSaved, setAcctSaved] = useState(false);
+
+  // Documents state
+  const [docs, setDocs] = useState([
+    { id: 1, name: "Insurance_Card.pdf", type: "Insurance Card", date: "May 10, 2026", status: "accepted" },
+    { id: 2, name: "Proof_of_Income.pdf", type: "Proof of Income", date: "May 12, 2026", status: "reviewing" },
+  ]);
+  const [docForm, setDocForm] = useState({ type: "", fileName: "" });
+  const [docUploading, setDocUploading] = useState(false);
+  const [docSuccess, setDocSuccess] = useState(false);
+
+  // Messages state
+  const MOCK_MESSAGES = [
+    { id: 1, subject: "Welcome to Rubix", from: "Rubix Team", date: "May 1, 2026", read: true, thread: [
+      { from: "Rubix Team", date: "May 1, 2026", body: "Welcome to Rubix! Your account is now active. If you have any questions about your payment plan or need assistance, please don't hesitate to reach out. We are here to help." },
+    ]},
+    { id: 2, subject: "Question about my payment plan", from: "Me", date: "May 14, 2026", read: true, thread: [
+      { from: "Me", date: "May 14, 2026", body: "Hi, I wanted to ask about changing my payment due date. Is that something that can be done?" },
+      { from: "Rubix Team", date: "May 15, 2026", body: "Hi Maria, great question! Yes, we can adjust your payment due date once per plan term. Please let us know what date works best for you and we will make that change." },
+      { from: "Me", date: "May 15, 2026", body: "That would be great — can we move it to the 20th of each month?" },
+      { from: "Rubix Team", date: "May 15, 2026", body: "Done! Your payment due date has been updated to the 20th of each month. Your next payment will be due June 20, 2026." },
+    ]},
+    { id: 3, subject: "Document verification complete", from: "Rubix Team", date: "May 16, 2026", read: false, thread: [
+      { from: "Rubix Team", date: "May 16, 2026", body: "Your submitted documents have been reviewed and verified. Your account is fully active. No further action is needed on your part." },
+    ]},
+  ];
+  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [activeThread, setActiveThread] = useState(null);
+  const [composing, setComposing] = useState(false);
+  const [newMsg, setNewMsg] = useState({ subject: "", body: "" });
+  const [replyBody, setReplyBody] = useState("");
+  const [replySent, setReplySent] = useState(false);
+  const unreadCount = messages.filter(m => !m.read).length;
+  const updAcct = (k, v) => setAcctForm(f => ({ ...f, [k]: v }));
+  const updBank = (k, v) => setBanking(f => ({ ...f, [k]: v }));
+  const maskNum = (n) => n.length > 4 ? "•".repeat(n.length - 4) + n.slice(-4) : n;
+  const initials = ((acctForm.firstName?.[0] || "") + (acctForm.lastName?.[0] || "")).toUpperCase() || "P";
+
+  const handlePaySubmit = () => {
+    setPaySubmitting(true);
+    setTimeout(() => { setPaySubmitting(false); setPaySuccess(true); }, 1500);
+  };
+
+  const navItems = [["balances", "💳", "Balances"], ["payments", "💰", "Payments"], ["account", "👤", "Account Info"], ["financing", "➕", "Request Financing"], ["documents", "📎", "Documents"], ["messages", "💬", "Messages"]];
+
+  return (
+    <>
+      <div className="portal-header">
+        <div className="portal-user">
+          <div className="portal-avatar">{initials}</div>
+          <div>
+            <div className="portal-name">{acctForm.firstName} {acctForm.lastName}</div>
+            <div className="portal-email">{user.email}</div>
+          </div>
+        </div>
+        <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
+      </div>
+
+      <div style={{ background: "var(--white)", borderBottom: "1px solid var(--border)", padding: "0 24px", display: "flex", gap: 4, overflowX: "auto" }}>
+        {navItems.map(([id, icon, label]) => (
+          <button key={id} onClick={() => { setAcctPage(id); setPaymentPlan(null); setPaySuccess(false); if (id === "messages") setMessages(msgs => msgs.map(m => ({ ...m, read: true }))); }} style={{ padding: "14px 18px", border: "none", background: "transparent", fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: 500, color: acctPage === id ? "var(--teal-dark)" : "var(--text-secondary)", cursor: "pointer", borderBottom: `2px solid ${acctPage === id ? "var(--teal)" : "transparent"}`, marginBottom: -1, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+            {icon} {label}
+            {id === "messages" && unreadCount > 0 && (
+              <span style={{ background: "var(--coral)", color: "white", fontSize: 10, fontWeight: 700, borderRadius: "100px", padding: "1px 6px", lineHeight: 1.6 }}>{unreadCount}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="main-narrow">
+
+        {acctPage === "balances" && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-title" style={{ marginBottom: 4 }}>Your Payment Plans</div>
+              <div className="section-sub">All active and completed financing through Rubix.</div>
+            </div>
+            {MOCK_PLANS.map(plan => (
+              <div key={plan.id} className="card" style={{ marginBottom: 16 }}>
+                <div style={{ padding: "20px 24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+                    <div>
+                      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 16 }}>{plan.partner}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>{plan.apr} APR · {plan.term}</div>
+                    </div>
+                    <span className={`status-pill ${plan.status === "active" ? "approved" : "reviewing"}`}>
+                      {plan.status === "active" ? "✓ Active" : "✓ Paid Off"}
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: plan.status === "active" ? 16 : 0 }}>
+                    {[["Original Amount", `$${plan.originalAmount.toLocaleString()}`], ["Remaining Balance", plan.remaining > 0 ? `$${plan.remaining.toLocaleString()}` : "—"], ["Monthly Payment", plan.remaining > 0 ? `$${plan.monthlyPayment}` : "—"]].map(([l, v]) => (
+                      <div key={l} style={{ background: "var(--mist2)", borderRadius: 8, padding: "10px 12px" }}>
+                        <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 15, color: "var(--teal-dark)" }}>{v}</div>
+                        <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2 }}>{l}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {plan.status === "active" && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                      <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Next payment due: <strong style={{ color: "var(--text-primary)" }}>{plan.nextDue}</strong></div>
+                      <button className="btn btn-primary" style={{ padding: "8px 18px", fontSize: 13 }} onClick={() => { setAcctPage("payments"); setPaymentPlan(plan); }}>Make a Payment</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <button className="btn btn-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setAcctPage("financing")}>+ Request Additional Financing</button>
+          </>
+        )}
+
+        {acctPage === "payments" && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-title" style={{ marginBottom: 4 }}>Payments</div>
+              <div className="section-sub">Make a payment or view your payment history.</div>
+            </div>
+            <div className="card" style={{ marginBottom: 20 }}>
+              <div className="card-header">
+                <div className="card-icon teal">💰</div>
+                <div><div className="card-title">Make a Payment</div><div className="card-subtitle">ACH from your bank account on file</div></div>
+              </div>
+              <div className="card-body">
+                {paySuccess ? (
+                  <div style={{ textAlign: "center", padding: "16px 0" }}>
+                    <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+                    <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Payment submitted</div>
+                    <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>{"Your payment will be processed within 1-2 business days."}</div>
+                    <button className="btn btn-ghost" onClick={() => { setPaySuccess(false); setPayAmount(""); setPaymentPlan(null); }}>Make Another Payment</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="form-group">
+                      <label>Select Plan</label>
+                      <select value={paymentPlan?.id || ""} onChange={e => setPaymentPlan(MOCK_PLANS.find(p => p.id === e.target.value) || null)}>
+                        <option value="">Select a plan...</option>
+                        {MOCK_PLANS.filter(p => p.status === "active").map(p => (
+                          <option key={p.id} value={p.id}>{p.partner} — ${p.remaining.toLocaleString()} remaining</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Payment Amount ($)</label>
+                      <div className="input-prefix">
+                        <span>$</span>
+                        <input type="number" placeholder={paymentPlan ? String(paymentPlan.monthlyPayment) : "0.00"} value={payAmount} onChange={e => setPayAmount(e.target.value)} />
+                      </div>
+                      {paymentPlan && <div className="helper-text">Minimum payment: ${paymentPlan.monthlyPayment} · Remaining: ${paymentPlan.remaining.toLocaleString()}</div>}
+                    </div>
+                    <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 14, marginBottom: 20 }}>
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>Payment method</div>
+                      <div style={{ color: "var(--slate)" }}>ACH — {banking.bankName} Checking ••••{banking.accountNumber.slice(-4)}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>To update your bank account, go to Account Info.</div>
+                    </div>
+                    <hr className="divider" />
+                    <button className="btn btn-primary" style={{ width: "100%" }} disabled={!paymentPlan || !payAmount || paySubmitting} onClick={handlePaySubmit}>
+                      {paySubmitting ? "Processing..." : "Submit Payment"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-header">
+                <div className="card-icon teal">📋</div>
+                <div><div className="card-title">Payment History</div><div className="card-subtitle">All past payments across your plans</div></div>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table className="patient-table">
+                  <thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {MOCK_PAYMENT_HISTORY.map((p, i) => (
+                      <tr key={i}>
+                        <td style={{ fontSize: 13, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{p.date}</td>
+                        <td style={{ fontSize: 13 }}>{p.plan}</td>
+                        <td style={{ fontWeight: 600 }}>{p.amount}</td>
+                        <td style={{ fontSize: 12, color: "var(--text-secondary)" }}>{p.method}</td>
+                        <td><span className="status-pill approved">✓ Paid</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {acctPage === "account" && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-title" style={{ marginBottom: 4 }}>Account Information</div>
+              <div className="section-sub">Update your personal details and banking information.</div>
+            </div>
+            <div className="card" style={{ marginBottom: 20 }}>
+              <div className="card-header">
+                <div className="card-icon teal">👤</div>
+                <div><div className="card-title">Personal Details</div><div className="card-subtitle">Your contact and address information</div></div>
+              </div>
+              <div className="card-body">
+                {acctSaved && <div className="alert success" style={{ marginBottom: 16 }}>Changes saved.</div>}
+                <div className="form-row">
+                  <div className="form-group"><label>First Name</label><input value={acctForm.firstName} onChange={e => updAcct("firstName", e.target.value)} /></div>
+                  <div className="form-group"><label>Last Name</label><input value={acctForm.lastName} onChange={e => updAcct("lastName", e.target.value)} /></div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group"><label>Email Address</label><input type="email" value={acctForm.email} onChange={e => updAcct("email", e.target.value)} /></div>
+                  <div className="form-group"><label>Phone Number</label><input value={acctForm.phone} onChange={e => updAcct("phone", e.target.value)} /></div>
+                </div>
+                <div className="form-group"><label>Street Address</label><input value={acctForm.address} onChange={e => updAcct("address", e.target.value)} /></div>
+                <div className="form-row">
+                  <div className="form-group"><label>City</label><input value={acctForm.city} onChange={e => updAcct("city", e.target.value)} /></div>
+                  <div className="form-group"><label>State</label>
+                    <select value={acctForm.state} onChange={e => updAcct("state", e.target.value)}>
+                      {["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"].map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group" style={{ maxWidth: 180 }}><label>ZIP Code</label><input value={acctForm.zip} onChange={e => updAcct("zip", e.target.value)} maxLength={5} /></div>
+                <hr className="divider" />
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button className="btn btn-primary" onClick={() => { setAcctSaved(true); setTimeout(() => setAcctSaved(false), 3000); }}>Save Changes</button>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-header">
+                <div className="card-icon teal">🏦</div>
+                <div><div className="card-title">ACH Payment Method</div><div className="card-subtitle">Bank account used for monthly payments</div></div>
+              </div>
+              <div className="card-body">
+                <div className="alert info" style={{ marginBottom: 20 }}>{"ACH is the only available payment method at this time. Additional options coming soon."}</div>
+                <div className="form-row">
+                  <div className="form-group"><label>Bank Name</label><input value={banking.bankName} onChange={e => updBank("bankName", e.target.value)} readOnly={bankSaved} /></div>
+                  <div className="form-group"><label>Account Holder Name</label><input value={banking.accountHolder} onChange={e => updBank("accountHolder", e.target.value)} readOnly={bankSaved} /></div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group"><label>Routing Number</label><input className="input-sensitive" value={bankSaved ? maskNum(banking.routingNumber) : banking.routingNumber} onChange={e => updBank("routingNumber", e.target.value)} maxLength={9} readOnly={bankSaved} /></div>
+                  <div className="form-group"><label>Account Number</label><input className="input-sensitive" value={bankSaved ? maskNum(banking.accountNumber) : banking.accountNumber} onChange={e => updBank("accountNumber", e.target.value)} readOnly={bankSaved} /></div>
+                </div>
+                <div className="form-group" style={{ maxWidth: 220 }}>
+                  <label>Account Type</label>
+                  <select value={banking.accountType} onChange={e => updBank("accountType", e.target.value)} disabled={bankSaved}>
+                    <option value="checking">Checking</option>
+                    <option value="savings">Savings</option>
+                  </select>
+                </div>
+                <div className="helper-text" style={{ marginBottom: 16 }}>Account numbers are masked for security. Click Edit to update.</div>
+                <hr className="divider" />
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                  {bankSaved && <button className="btn btn-ghost" onClick={() => setBankSaved(false)}>Edit</button>}
+                  {!bankSaved && (
+                    <>
+                      <button className="btn btn-ghost" onClick={() => setBankSaved(true)}>Cancel</button>
+                      <button className="btn btn-primary" disabled={!banking.bankName || !banking.routingNumber || !banking.accountNumber} onClick={() => setBankSaved(true)}>Save Banking Info</button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {acctPage === "financing" && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-title" style={{ marginBottom: 4 }}>Request Additional Financing</div>
+              <div className="section-sub">Apply for a new payment plan for upcoming ABA, behavioral health, or mental health care expenses.</div>
+            </div>
+            <div className="card">
+              <div className="card-body">
+                <div className="alert info" style={{ marginBottom: 20 }}>{"Checking your options does not affect your credit score."}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 28 }}>
+                  {[["💊", "New or upcoming treatment", "Apply for financing for a new episode of care or upcoming procedure."], ["🏥", "Existing balance", "Finance an outstanding balance with your current provider."], ["🔄", "Refinance existing plan", "Request different terms on an existing Rubix payment plan."]].map(([icon, title, desc]) => (
+                    <div key={title} style={{ display: "flex", gap: 14, padding: "18px", border: "1.5px solid var(--border)", borderRadius: "var(--radius-sm)", cursor: "pointer", background: "var(--white)", transition: "all 0.2s" }} onClick={onRequestFinancing}>
+                      <div style={{ fontSize: 28, flexShrink: 0 }}>{icon}</div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{title}</div>
+                        <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{desc}</div>
+                      </div>
+                      <div style={{ marginLeft: "auto", color: "var(--teal)", fontSize: 18, alignSelf: "center" }}>→</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.6 }}>
+                  Selecting an option above will take you to a new financing application. Your existing plans will not be affected.
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {acctPage === "documents" && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-title" style={{ marginBottom: 4 }}>Documents</div>
+              <div className="section-sub">Upload and manage documents related to your account or financing application.</div>
+            </div>
+            <div className="card" style={{ marginBottom: 20 }}>
+              <div className="card-header">
+                <div className="card-icon teal">📤</div>
+                <div><div className="card-title">Upload a Document</div><div className="card-subtitle">Accepted formats: PDF, JPG, PNG — max 10MB</div></div>
+              </div>
+              <div className="card-body">
+                {docSuccess ? (
+                  <div style={{ textAlign: "center", padding: "12px 0" }}>
+                    <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
+                    <div style={{ fontWeight: 600, marginBottom: 6 }}>Document uploaded successfully</div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 16 }}>{"Our team will review it within 1 business day."}</div>
+                    <button className="btn btn-ghost" onClick={() => { setDocSuccess(false); setDocForm({ type: "", fileName: "" }); }}>Upload Another</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="form-group">
+                      <label>Document Type *</label>
+                      <select value={docForm.type} onChange={e => setDocForm(f => ({ ...f, type: e.target.value }))}>
+                        <option value="">Select document type...</option>
+                        <option>Photo ID</option>
+                        <option>Proof of Income</option>
+                        <option>Insurance Card</option>
+                        <option>Explanation of Benefits (EOB)</option>
+                        <option>Medical Bill or Statement</option>
+                        <option>Bank Statement</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Select File *</label>
+                      <div style={{ border: "2px dashed var(--border)", borderRadius: "var(--radius-sm)", padding: "28px 20px", textAlign: "center", cursor: "pointer", background: "var(--mist2)" }}
+                        onClick={() => { if (docForm.type) { const mockName = docForm.type.replace(/\s+/g, "_") + "_" + Date.now() + ".pdf"; setDocForm(f => ({ ...f, fileName: mockName })); } }}>
+                        {docForm.fileName ? (
+                          <div><div style={{ fontSize: 24, marginBottom: 6 }}>📄</div><div style={{ fontWeight: 600, fontSize: 14 }}>{docForm.fileName}</div><div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>Click to change file</div></div>
+                        ) : (
+                          <div><div style={{ fontSize: 32, marginBottom: 8 }}>📎</div><div style={{ fontWeight: 500, fontSize: 14, color: "var(--text-secondary)" }}>Click to select a file</div><div style={{ fontSize: 12, color: "var(--text-light)", marginTop: 4 }}>{docForm.type ? "Ready to select" : "Select a document type first"}</div></div>
+                        )}
+                      </div>
+                      <div className="helper-text">Demo mode: clicking selects a mock file. On deployment, this opens your file picker.</div>
+                    </div>
+                    <hr className="divider" />
+                    <button className="btn btn-primary" style={{ width: "100%" }}
+                      disabled={!docForm.type || !docForm.fileName || docUploading}
+                      onClick={() => {
+                        setDocUploading(true);
+                        setTimeout(() => {
+                          const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                          setDocs(d => [...d, { id: Date.now(), name: docForm.fileName, type: docForm.type, date: today, status: "reviewing" }]);
+                          setDocUploading(false);
+                          setDocSuccess(true);
+                        }, 1200);
+                      }}>
+                      {docUploading ? "Uploading..." : "Upload Document"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-header">
+                <div className="card-icon teal">📁</div>
+                <div><div className="card-title">Your Documents</div><div className="card-subtitle">{docs.length} document{docs.length !== 1 ? "s" : ""} on file</div></div>
+              </div>
+              {docs.length === 0 ? (
+                <div style={{ padding: "32px", textAlign: "center", color: "var(--text-secondary)", fontSize: 14 }}>No documents uploaded yet.</div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table className="patient-table">
+                    <thead><tr><th>Document</th><th>Type</th><th>Date</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                      {docs.map(doc => (
+                        <tr key={doc.id}>
+                          <td style={{ fontWeight: 500, fontSize: 13 }}>{"📄 " + doc.name}</td>
+                          <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>{doc.type}</td>
+                          <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>{doc.date}</td>
+                          <td><span className={"status-pill " + (doc.status === "accepted" ? "approved" : doc.status === "reviewing" ? "reviewing" : "pending")}>{doc.status === "accepted" ? "✓ Accepted" : doc.status === "reviewing" ? "◎ Under Review" : "○ Uploaded"}</span></td>
+                          <td><button onClick={() => setDocs(d => d.filter(x => x.id !== doc.id))} style={{ background: "none", border: "none", color: "#EF4444", cursor: "pointer", fontSize: 16 }}>🗑</button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {acctPage === "messages" && (
+          <>
+            <div style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div className="section-title" style={{ marginBottom: 4 }}>Messages</div>
+                <div className="section-sub">Send and receive messages with the Rubix support team.</div>
+              </div>
+              {!composing && !activeThread && (
+                <button className="btn btn-primary" style={{ padding: "8px 18px", fontSize: 13 }} onClick={() => { setComposing(true); setNewMsg({ subject: "", body: "" }); }}>+ New Message</button>
+              )}
+            </div>
+            {composing && (
+              <div className="card" style={{ marginBottom: 20 }}>
+                <div className="card-header">
+                  <div className="card-icon teal">✏️</div>
+                  <div><div className="card-title">New Message</div><div className="card-subtitle">Our team typically responds within 1 business day</div></div>
+                </div>
+                <div className="card-body">
+                  <div className="form-group"><label>Subject *</label><input placeholder="e.g. Question about my payment plan" value={newMsg.subject} onChange={e => setNewMsg(m => ({ ...m, subject: e.target.value }))} /></div>
+                  <div className="form-group"><label>Message *</label><textarea placeholder="Type your message here..." value={newMsg.body} onChange={e => setNewMsg(m => ({ ...m, body: e.target.value }))} style={{ minHeight: 120, resize: "vertical", lineHeight: 1.6 }} /></div>
+                  <hr className="divider" />
+                  <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                    <button className="btn btn-ghost" onClick={() => setComposing(false)}>Cancel</button>
+                    <button className="btn btn-primary" disabled={!newMsg.subject || !newMsg.body}
+                      onClick={() => {
+                        const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                        const msg = { id: Date.now(), subject: newMsg.subject, from: "Me", date: today, read: true, thread: [{ from: "Me", date: today, body: newMsg.body }] };
+                        setMessages(msgs => [msg, ...msgs]);
+                        setComposing(false);
+                        setActiveThread(msg);
+                      }}>Send Message</button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {activeThread && !composing && (
+              <div className="card" style={{ marginBottom: 20 }}>
+                <div className="card-header">
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
+                    <button onClick={() => { setActiveThread(null); setReplyBody(""); setReplySent(false); }} style={{ background: "none", border: "none", color: "var(--teal-dark)", cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, padding: 0 }}>{"← Back"}</button>
+                    <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 16 }}>{activeThread.subject}</div>
+                  </div>
+                </div>
+                <div style={{ padding: "0 28px" }}>
+                  {activeThread.thread.map((msg, i) => (
+                    <div key={i} style={{ padding: "20px 0", borderBottom: "1px solid var(--border)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: msg.from === "Me" ? "var(--teal)" : "var(--coral)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 13, fontWeight: 700 }}>
+                          {msg.from === "Me" ? (acctForm.firstName[0] || "M") : "R"}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>{msg.from === "Me" ? acctForm.firstName + " " + acctForm.lastName : "Rubix Support Team"}</div>
+                          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{msg.date}</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.8, paddingLeft: 42 }}>{msg.body}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="card-body" style={{ paddingTop: 16 }}>
+                  {replySent ? (
+                    <div className="alert success">{"Reply sent. Our team will respond within 1 business day."}</div>
+                  ) : (
+                    <>
+                      <div className="form-group"><label>Reply</label><textarea placeholder="Type your reply..." value={replyBody} onChange={e => setReplyBody(e.target.value)} style={{ minHeight: 90, resize: "vertical", lineHeight: 1.6 }} /></div>
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <button className="btn btn-primary" disabled={!replyBody.trim()}
+                          onClick={() => {
+                            const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                            const updated = { ...activeThread, thread: [...activeThread.thread, { from: "Me", date: today, body: replyBody }] };
+                            setMessages(msgs => msgs.map(m => m.id === activeThread.id ? updated : m));
+                            setActiveThread(updated);
+                            setReplyBody("");
+                            setReplySent(true);
+                          }}>Send Reply</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+            {!activeThread && !composing && (
+              <div className="card">
+                <div className="card-header">
+                  <div className="card-icon teal">📬</div>
+                  <div><div className="card-title">Inbox</div><div className="card-subtitle">{messages.length} conversation{messages.length !== 1 ? "s" : ""}</div></div>
+                </div>
+                {messages.length === 0 ? (
+                  <div style={{ padding: "32px", textAlign: "center", color: "var(--text-secondary)", fontSize: 14 }}>No messages yet.</div>
+                ) : (
+                  <div>
+                    {messages.map(msg => (
+                      <div key={msg.id}
+                        onClick={() => { setActiveThread(msg); setMessages(msgs => msgs.map(m => m.id === msg.id ? { ...m, read: true } : m)); setReplySent(false); setReplyBody(""); }}
+                        style={{ padding: "16px 24px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: msg.read ? "var(--white)" : "#F0FDFA", display: "flex", alignItems: "center", gap: 14 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: msg.from === "Me" ? "var(--teal)" : "var(--coral)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+                          {msg.from === "Me" ? (acctForm.firstName[0] || "M") : "R"}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                            <div style={{ fontWeight: msg.read ? 500 : 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{msg.subject}</div>
+                            <div style={{ fontSize: 12, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{msg.date}</div>
+                          </div>
+                          <div style={{ fontSize: 13, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
+                            {msg.from === "Me" ? "Me" : "Rubix Team"}{": "}{msg.thread[msg.thread.length - 1].body.slice(0, 60)}{"..."}
+                          </div>
+                        </div>
+                        {!msg.read && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--teal)", flexShrink: 0 }} />}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+      </div>
+    </>
+  );
+}
+
+// ─── APP ROOT ─────────────────────────────────────────────────────────────────
+export default function App() {
+  const [mode, setMode] = useState("patient");
+  const [page, setPage] = useState("home");
+  // patient flow state
+  const [intakeData, setIntakeData] = useState(null);
+  const [magicLink, setMagicLink] = useState("");
+  const [authUser, setAuthUser] = useState(null);
+  const [approvalResult, setApprovalResult] = useState(null);
+  const [approvalPlan, setApprovalPlan] = useState(null);
+  const [providerNotifEmail, setProviderNotifEmail] = useState("admin@practice.com");
+  // provider auth state
+  const [providerUser, setProviderUser] = useState(null);
+  const [providerPage, setProviderPage] = useState("dashboard");
+  // patient account portal state
+  const [patientAcctUser, setPatientAcctUser] = useState(null);
+
+  const handleIntakeSubmit = (form) => {
+    const link = generateMagicLink(form.email);
+    setIntakeData(form);
+    setMagicLink(link);
+    setPage("magic-link-sent");
+  };
+
+  const handleSimulateMagicLink = () => setPage("auth");
+  const handleAuthenticated = (user) => { setAuthUser(user); setPage("portal"); };
+  const handleApprovalResult = (result, intake, plan) => { setApprovalResult(result); setApprovalPlan(plan); setPage("app-submitted"); };
+  const handleSimulateDecision = () => setPage("offer-review");
+  const handleAcceptOffer = () => setPage("esign");
+  const handleDeclineOffer = () => setPage("home");
+  const handleOfferSigned = () => setPage("offer-accepted");
+  const handleSignOut = () => { setAuthUser(null); setIntakeData(null); setMagicLink(""); setApprovalResult(null); setApprovalPlan(null); setPage("home"); };
+  const handleStartOver = () => { setIntakeData(null); setMagicLink(""); setApprovalResult(null); setApprovalPlan(null); setAuthUser(null); setPage("home"); };
+
+  const handleProviderSignIn = (user) => { setProviderUser(user); setProviderPage("dashboard"); };
+  const handleProviderSignOut = () => { setProviderUser(null); setProviderPage("dashboard"); };
+  const handlePatientAcctSignIn = (user) => { setPatientAcctUser(user); setPage("patient-account"); };
+  const handlePatientAcctSignOut = () => { setPatientAcctUser(null); setPage("home"); };
+  const handleRequestAdditionalFinancing = () => { setPatientAcctUser(null); setPage("home"); };
+
+  const patientPortalPages = ["portal", "app-submitted", "offer-review", "esign", "offer-accepted", "patient-account"];
+  const isPatientPortal = patientPortalPages.includes(page);
+  const isProviderPortal = mode === "provider" && providerUser;
+
+  return (
+    <>
+      <style>{styles}</style>
+      <div className="app">
+
+        <nav className="nav">
+          <div className="nav-logo" style={{ cursor: "pointer" }} onClick={() => { handleStartOver(); if (mode === "provider") handleProviderSignOut(); setPatientAcctUser(null); }}>
+            <svg width="190" height="60" viewBox="0 0 1600 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g transform="translate(120,92) scale(1.25)">
+                <path d="M120 0 L240 68 L120 136 L0 68 Z" fill="#14B8A6"/>
+                <path d="M0 78 L112 142 L112 275 L0 211 Z" fill="#0F766E"/>
+                <path d="M128 142 L240 78 L240 211 L128 275 Z" fill="#F59E0B"/>
+                <path d="M6 70 L120 134 L234 70" stroke="#F8FAFC" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M120 136 V260" stroke="#F8FAFC" strokeWidth="10" strokeLinecap="round"/>
+              </g>
+              <g transform="translate(545,128)">
+                <text x="0" y="160" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="205" fontWeight="800" letterSpacing="-8" fill="#0F2237">Rubix</text>
+                <text x="4" y="250" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="76" fontWeight="400" letterSpacing="-1" fill="#64748B">Patient Payment Solutions</text>
+              </g>
+            </svg>
+          </div>
+          {!isPatientPortal && !isProviderPortal && (
+            <div className="nav-pill">
+              <button className={mode === "patient" ? "active" : ""} onClick={() => { setMode("patient"); handleStartOver(); setPatientAcctUser(null); }}>Patient</button>
+              <button className={mode === "provider" ? "active" : ""} onClick={() => { setMode("provider"); handleStartOver(); setPatientAcctUser(null); }}>Provider</button>
+            </div>
+          )}
+          {isPatientPortal && page === "patient-account" && <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Patient Account</div>}
+          {isPatientPortal && page !== "patient-account" && <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Secure Patient Portal</div>}
+        </nav>
+
+        {/* ── PATIENT PAGES ── */}
+        {mode === "patient" && page === "how-it-works" && <HowItWorks onBack={() => setPage("home")} onApply={() => setPage("home")} />}
+
+        {mode === "patient" && !isPatientPortal && page !== "how-it-works" && (
+          <PatientMarketingNav
+            activePage={["about", "services", "patient-account-login", "blog-patient", "contact-patient"].includes(page) ? page : "home"}
+            onNavigate={(p) => {
+              if (p === "get-started") {
+                setPage("home");
+                setTimeout(() => document.getElementById("intake-form")?.scrollIntoView({ behavior: "smooth" }), 80);
+              } else {
+                setPage(p);
+              }
+            }}
+          />
+        )}
+
+        {mode === "patient" && page === "home" && (
+          <>
+            <div className="hero">
+              <h1>{"The support you need"}<br />{"shouldn't wait on "}<em>cost</em>{"."}</h1>
+              <p>Rubix helps families and individuals in behavioral health, mental health, autism, and ABA treatment manage their care costs with flexible payment options.</p>
+              <div className="hero-ctas" style={{ flexDirection: "column", alignItems: "center", gap: 12 }}>
+                <button className="btn btn-primary" style={{ width: 280, justifyContent: "center" }} onClick={() => document.getElementById("intake-form")?.scrollIntoView({ behavior: "smooth" })}>Check My Options</button>
+                <button className="btn btn-outline" style={{ width: 280, justifyContent: "center" }} onClick={() => setPage("how-it-works")}>Learn How It Works</button>
+              </div>
+            </div>
+            <div className="stats-bar">
+              {[["$0", "To start care today"], ["84%", "Approval rate"], ["60 sec", "Average decision time"], ["ABA & BH", "Specialized focus"]].map(([n, l]) => (
+                <div className="stat" key={l}><div className="stat-num">{n}</div><div className="stat-label">{l}</div></div>
+              ))}
+            </div>
+            <div style={{ textAlign: "center", padding: "14px 16px", background: "var(--white)", borderBottom: "1px solid var(--border)", fontSize: 13, color: "var(--text-secondary)" }}>
+              {"Already have an account? "}
+              <button onClick={() => setPage("patient-account-login")} style={{ background: "none", border: "none", color: "var(--teal-dark)", fontWeight: 600, cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontSize: 13 }}>
+                Sign in to view your payment plans
+              </button>
+            </div>
+            <div id="intake-form" className="main"><IntakeForm onSubmit={handleIntakeSubmit} /></div>
+            <SiteFooter mode="patient" onNavigate={setPage} />
+          </>
+        )}
+
+        {mode === "patient" && page === "about" && (
+          <>
+            <PatientAbout onNavigate={(p) => { if (p === "get-started") { setPage("home"); setTimeout(() => document.getElementById("intake-form")?.scrollIntoView({ behavior: "smooth" }), 80); } else setPage(p); }} />
+            <SiteFooter mode="patient" onNavigate={setPage} />
+          </>
+        )}
+
+        {mode === "patient" && page === "services" && (
+          <>
+            <PatientServices onNavigate={(p) => { if (p === "get-started") { setPage("home"); setTimeout(() => document.getElementById("intake-form")?.scrollIntoView({ behavior: "smooth" }), 80); } else setPage(p); }} />
+            <SiteFooter mode="patient" onNavigate={setPage} />
+          </>
+        )}
+
+        {mode === "patient" && page === "blog-patient" && (
+          <>
+            <PatientBlog onNavigate={(p) => { if (p === "get-started") { setPage("home"); setTimeout(() => document.getElementById("intake-form")?.scrollIntoView({ behavior: "smooth" }), 80); } else setPage(p); }} />
+            <SiteFooter mode="patient" onNavigate={setPage} />
+          </>
+        )}
+
+        {mode === "patient" && page === "contact-patient" && (
+          <>
+            <ContactPage audience="patient" />
+            <SiteFooter mode="patient" onNavigate={setPage} />
+          </>
+        )}
+
+        {mode === "patient" && page === "patient-account-login" && (
+          <PatientAccountLogin onAuthenticated={handlePatientAcctSignIn} />
+        )}
+
+        {mode === "patient" && page === "patient-account" && patientAcctUser && (
+          <PatientAccountPortal user={patientAcctUser} onSignOut={handlePatientAcctSignOut} onRequestFinancing={handleRequestAdditionalFinancing} />
+        )}
+
+        {mode === "patient" && page === "magic-link-sent" && <div className="main-narrow" style={{ paddingTop: 48 }}><MagicLinkSent email={intakeData?.email} magicLink={magicLink} onSimulateClick={handleSimulateMagicLink} /></div>}
+        {mode === "patient" && page === "auth" && <div className="main-narrow" style={{ paddingTop: 48 }}><AuthPage intakeData={intakeData} onAuthenticated={handleAuthenticated} /></div>}
+        {mode === "patient" && page === "portal" && <PatientPortal user={authUser} intakeData={intakeData} onApprovalResult={handleApprovalResult} onSignOut={handleSignOut} />}
+        {mode === "patient" && page === "app-submitted" && <AppSubmitted intakeData={intakeData} selectedPlan={approvalPlan} onSimulateDecision={handleSimulateDecision} onSignOut={handleSignOut} />}
+        {mode === "patient" && page === "offer-review" && <OfferReview result={approvalResult} intakeData={intakeData} selectedPlan={approvalPlan} onAccept={handleAcceptOffer} onDecline={handleDeclineOffer} onSignOut={handleSignOut} />}
+        {mode === "patient" && page === "esign" && <ESignDoc result={approvalResult} intakeData={intakeData} selectedPlan={approvalPlan} onSigned={handleOfferSigned} onBack={() => setPage("offer-review")} />}
+        {mode === "patient" && page === "offer-accepted" && <OfferAccepted result={approvalResult} intakeData={intakeData} selectedPlan={approvalPlan} providerEmail={providerNotifEmail} onStartOver={handleStartOver} />}
+
+        {/* ── PROVIDER PAGES ── */}
+        {mode === "provider" && !providerUser && (
+          <ProviderMarketingSite
+            page={page}
+            onNavigate={setPage}
+            onRegistered={handleProviderSignIn}
+          />
+        )}
+
+        {mode === "provider" && providerUser && (
+          <>
+            <ProviderPortalNav providerUser={providerUser} activePage={providerPage} onNavigate={setProviderPage} onSignOut={handleProviderSignOut} />
+            {providerPage === "dashboard" && <ProviderDashboard onNavigate={setProviderPage} />}
+            {providerPage === "refer" && <ReferPatientPage providerUser={providerUser} />}
+            {providerPage === "account" && <ProviderAccountPage onNotifEmailChange={setProviderNotifEmail} />}
+            {providerPage === "billing" && <ProviderBillingPage />}
+          </>
+        )}
+
+      </div>
+    </>
+  );
+}
