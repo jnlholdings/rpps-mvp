@@ -382,7 +382,7 @@ function IntakeForm({ onSubmit }) {
           <div className="form-group"><label>Last Name *</label><input placeholder="Lopez" value={form.lastName} onChange={e => upd("lastName", e.target.value)} /></div>
         </div>
         <div className="form-row">
-          <div className="form-group"><label>Phone Number *</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
+          <div className="form-group"><label>Phone Number *</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", formatPhoneInput(e.target.value))} /></div>
           <div className="form-group"><label>Email Address *</label><input type="email" placeholder="maria@email.com" value={form.email} onChange={e => upd("email", e.target.value)} /></div>
         </div>
         <div className="form-row">
@@ -644,6 +644,20 @@ function AuthPage({ intakeData, onAuthenticated }) {
 
 // ─── PATIENT PORTAL (underwriting + plan selection) ──────────────────────────
 
+function formatDobInput(raw) {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean);
+  return parts.join("/");
+}
+
+function formatPhoneInput(raw) {
+  const digits = raw.replace(/\D/g, "").slice(0, 10);
+  if (digits.length === 0) return "";
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 function PatientPortal({ user, intakeData, onApprovalResult, onSignOut }) {
   const [uwStep, setUwStep] = useState(0);
   const [uwForm, setUwForm] = useState({
@@ -720,7 +734,18 @@ function PatientPortal({ user, intakeData, onApprovalResult, onSignOut }) {
                 <div className="section-title">Personal Information</div>
                 <div className="section-sub">Required for identity verification and underwriting.</div>
                 <div className="form-row">
-                  <div className="form-group"><label>Date of Birth *</label><input type="date" value={uwForm.dob} onChange={e => upd("dob", e.target.value)} /></div>
+                  <div className="form-group">
+                    <label>Date of Birth * <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>(MM/DD/YYYY)</span></label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="MM/DD/YYYY"
+                      maxLength={10}
+                      value={uwForm.dob}
+                      onChange={e => upd("dob", formatDobInput(e.target.value))}
+                    />
+                    <div className="helper-text">Enter as MM/DD/YYYY, e.g. 04/12/1990</div>
+                  </div>
                   <div className="form-group">
                     <label>Social Security Number *</label>
                     <input className="input-sensitive" placeholder="XXX-XX-XXXX" value={uwForm.ssn} onChange={e => upd("ssn", e.target.value)} maxLength={11} />
@@ -1526,7 +1551,7 @@ function ContactPage({ audience }) {
                     <div className="form-group"><label>Email Address *</label><input type="email" placeholder="you@email.com" value={form.email} onChange={e => upd("email", e.target.value)} /></div>
                   </div>
                   <div className="form-row">
-                    <div className="form-group"><label>Phone (optional)</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
+                    <div className="form-group"><label>Phone (optional)</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", formatPhoneInput(e.target.value))} /></div>
                     <div className="form-group"><label>Subject *</label>
                       <select value={form.subject} onChange={e => upd("subject", e.target.value)}>
                         <option value="">Select a subject...</option>
@@ -1885,7 +1910,7 @@ function ReferPatientPage({ providerUser }) {
             <div className="form-group"><label>Last Name *</label><input placeholder="Lopez" value={refForm.lastName} onChange={e => updRef("lastName", e.target.value)} /></div>
           </div>
           <div className="form-row">
-            <div className="form-group"><label>Patient Phone</label><input placeholder="(555) 000-0000" value={refForm.phone} onChange={e => updRef("phone", e.target.value)} /></div>
+            <div className="form-group"><label>Patient Phone</label><input placeholder="(555) 000-0000" value={refForm.phone} onChange={e => updRef("phone", formatPhoneInput(e.target.value))} /></div>
             <div className="form-group"><label>Patient Email</label><input placeholder="patient@email.com" value={refForm.email} onChange={e => updRef("email", e.target.value)} /></div>
           </div>
           <div className="form-row">
@@ -1956,7 +1981,7 @@ function ProviderAccountPage({ onNotifEmailChange }) {
           </div>
           <div className="form-row">
             <div className="form-group" style={{ maxWidth: 180 }}><label>ZIP Code</label><input placeholder="33101" value={account.zip} onChange={e => updAcc("zip", e.target.value)} maxLength={5} /></div>
-            <div className="form-group"><label>Practice Phone</label><input placeholder="(555) 000-0000" value={account.phone} onChange={e => updAcc("phone", e.target.value)} /></div>
+            <div className="form-group"><label>Practice Phone</label><input placeholder="(555) 000-0000" value={account.phone} onChange={e => updAcc("phone", formatPhoneInput(e.target.value))} /></div>
           </div>
           <div className="form-row">
             <div className="form-group"><label>Billing Email</label><input placeholder="billing@practice.com" value={account.billingEmail} onChange={e => updAcc("billingEmail", e.target.value)} /></div>
@@ -2481,7 +2506,7 @@ Welcome aboard.
               </div>
               <div className="form-row">
                 <div className="form-group"><label>Email Address *</label><input type="email" placeholder="admin@practice.com" value={form.email} onChange={e => upd("email", e.target.value)} /></div>
-                <div className="form-group"><label>Phone Number *</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
+                <div className="form-group"><label>Phone Number *</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", formatPhoneInput(e.target.value))} /></div>
               </div>
               <div className="form-group">
                 <label>Practice Specialty</label>
@@ -2866,7 +2891,7 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
                 </div>
                 <div className="form-row">
                   <div className="form-group"><label>Email Address</label><input type="email" value={acctForm.email} onChange={e => updAcct("email", e.target.value)} /></div>
-                  <div className="form-group"><label>Phone Number</label><input value={acctForm.phone} onChange={e => updAcct("phone", e.target.value)} /></div>
+                  <div className="form-group"><label>Phone Number</label><input value={acctForm.phone} onChange={e => updAcct("phone", formatPhoneInput(e.target.value))} /></div>
                 </div>
                 <div className="form-group"><label>Street Address</label><input value={acctForm.address} onChange={e => updAcct("address", e.target.value)} /></div>
                 <div className="form-row">
