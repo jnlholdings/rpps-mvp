@@ -658,6 +658,13 @@ function formatPhoneInput(raw) {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
+function formatSSNInput(raw) {
+  const digits = raw.replace(/\D/g, "").slice(0, 9);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+}
+
 function PatientPortal({ user, intakeData, onApprovalResult, onSignOut }) {
   const [uwStep, setUwStep] = useState(0);
   const [uwForm, setUwForm] = useState({
@@ -748,7 +755,7 @@ function PatientPortal({ user, intakeData, onApprovalResult, onSignOut }) {
                   </div>
                   <div className="form-group">
                     <label>Social Security Number *</label>
-                    <input className="input-sensitive" placeholder="XXX-XX-XXXX" value={uwForm.ssn} onChange={e => upd("ssn", e.target.value)} maxLength={11} />
+                    <input className="input-sensitive" placeholder="XXX-XX-XXXX" value={uwForm.ssn} onChange={e => upd("ssn", formatSSNInput(e.target.value))} maxLength={11} />
                     <div className="helper-text">256-bit encrypted — never stored in plain text</div>
                   </div>
                 </div>

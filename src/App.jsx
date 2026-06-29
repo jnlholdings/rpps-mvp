@@ -313,18 +313,21 @@ const styles = `
 
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
 
-const FINANCING_OPTIONS = [
-  { id: "rpps_plan", name: "RPPS Flex Pay", type: "Monthly Payment Plan", logo: "🏥", bg: "#F0FDFA", apr: "0%", term: "3–12 mo", approval: "Instant", minAmount: 100, recommended: true },
-  { id: "partner_a", name: "Partner Plan A", type: "Third-Party Monthly Financing", logo: "💳", bg: "#EFF6FF", apr: "0% promo", term: "6–24 mo", approval: "~60 sec", minAmount: 200, recommended: false },
-  { id: "partner_b", name: "Partner Plan B", type: "Extended Monthly Financing", logo: "⚡", bg: "#FFF7ED", apr: "5.9–24.9%", term: "12–60 mo", approval: "~2 min", minAmount: 500, recommended: false },
-];
+const RUBIX_PRODUCT = {
+  name: "Rubix EOB-Verified Financing",
+  type: "Single Rubix-Branded Product",
+  logo: "🏥",
+  apr: "0% if paid within 12 months",
+  terms: "3, 6, 9, or 12 months — auto-assigned based on EOB-verified amount",
+  approval: "Instant for clear EOBs, up to 1 business day if manual review is needed",
+};
 
 const MOCK_PATIENTS = [
-  { name: "Maria L.", amount: "$1,200", plan: "RPPS Flex Pay", status: "approved", date: "Today" },
-  { name: "James R.", amount: "$3,400", plan: "Partner Plan A", status: "reviewing", date: "Yesterday" },
-  { name: "Aisha T.", amount: "$680", plan: "RPPS Flex Pay", status: "approved", date: "May 20" },
-  { name: "Carlos M.", amount: "$2,100", plan: "Partner Plan B", status: "pending", date: "May 19" },
-  { name: "Diane K.", amount: "$890", plan: "RPPS Flex Pay", status: "approved", date: "May 18" },
+  { name: "Maria L.", amount: "$1,200", plan: "Rubix Financing", status: "approved", date: "Today" },
+  { name: "James R.", amount: "$3,400", plan: "Rubix Financing", status: "reviewing", date: "Yesterday" },
+  { name: "Aisha T.", amount: "$680", plan: "Rubix Financing", status: "approved", date: "May 20" },
+  { name: "Carlos M.", amount: "$2,100", plan: "Rubix Financing", status: "pending", date: "May 19" },
+  { name: "Diane K.", amount: "$890", plan: "Rubix Financing", status: "approved", date: "May 18" },
 ];
 
 // ─── MOCK AUTH ────────────────────────────────────────────────────────────────
@@ -337,24 +340,120 @@ function generateMagicLink(email) {
   return `https://rpps-mvp.vercel.app/auth?token=${token}&email=${encodeURIComponent(email)}`;
 }
 
-// ─── MOCK UNDERWRITING ENGINE ─────────────────────────────────────────────────
-// TODO: Replace with real lending partner API call on deployment
-// e.g. POST to Medallion Bank / FinWise decisioning endpoint
+// ─── ORIGINATION FEE TIERS ─────────────────────────────────────────────────────
+// Placeholder tier structure — percentage decreases as loan balance increases,
+// consistent with standard healthcare/consumer financing convention (fixed
+// underwriting costs are a smaller % of larger loans). Adjust once Medallion
+// Bank or another lending partner provides real risk-based pricing guidance.
+// Origination fee is deducted from the provider's disbursement, not charged
+// to the patient. Patient is charged a separate flat 3.5% processing fee.
+//
+// NOT YET WIRED INTO THE UNDERWRITING FLOW — utility only, pending Stage 1.
 
-function runMockUnderwriting(data) {
-  const income = parseFloat(data.annualIncome) || 0;
-  const balance = parseFloat(data.balanceOwed) || 0;
+const ORIGINATION_FEE_TIERS = [
+  { min: 0,     max: 1000,    rate: 0.05 }, // 5.0% — $0–$1,000
+  { min: 1000,  max: 3000,    rate: 0.04 }, // 4.0% — $1,001–$3,000
+  { min: 3000,  max: Infinity, rate: 0.03 }, // 3.0% — $3,001+
+];
+
+const PATIENT_PROCESSING_FEE_RATE = 0.035; // 3.5% flat, charged to the patient
+
+function getOriginationFeeRate(loanAmount) {
+  const amt = parseFloat(loanAmount) || 0;
+  const tier = ORIGINATION_FEE_TIERS.find(t => amt > t.min && amt <= t.max) || ORIGINATION_FEE_TIERS[0];
+  return tier.rate;
+}
+
+function calculateLoanFees(loanAmount) {
+  const amt = parseFloat(loanAmount) || 0;
+  const originationRate = getOriginationFeeRate(amt);
+  const originationFee = amt * originationRate;
+  const processingFee = amt * PATIENT_PROCESSING_FEE_RATE;
+  return {
+    loanAmount: amt,
+    originationRate,
+    originationFee: originationFee.toFixed(2),
+    providerDisbursement: (amt - originationFee).toFixed(2), // provider receives loan minus origination fee
+    processingFee: processingFee.toFixed(2), // charged to patient separately
+  };
+}
+
+// ─── EOB REVIEW & DISPUTE SERVICE — PRICING MENU ──────────────────────────────
+// Placeholder pricing — patient-facing consultative service, separate from financing.
+// Patient submits a request with their EOB attached; Rubix reviews and follows up
+// via email with standard confirmation responses and further updates as needed.
+
+const DISPUTE_SERVICE_TIERS = [
+  { id: "basic_review", name: "Basic EOB Review", price: 49, desc: "We review your EOB for billing errors, duplicate charges, and coding mistakes, and send you a summary of what we find.", includes: ["Line-by-line EOB review", "Written summary of findings", "Guidance on next steps"] },
+  { id: "standard_dispute", name: "Standard Dispute Filing", price: 149, desc: "We file the dispute directly with your insurer or provider on your behalf and manage the initial back-and-forth.", includes: ["Everything in Basic Review", "Dispute filed on your behalf", "Insurer/provider correspondence handled for you"] },
+  { id: "full_representation", name: "Full Representation", price: 299, desc: "End-to-end handling of your dispute from filing through resolution, including follow-up until the issue is closed.", includes: ["Everything in Standard Dispute Filing", "Ongoing follow-up until resolved", "Priority handling and status updates"] },
+];
+
+// ─── TERM AUTO-ASSIGNMENT ──────────────────────────────────────────────────────
+// Placeholder breakpoints — Rubix assigns the term automatically based on the
+// EOB-verified loan amount. Adjust once real portfolio/risk data is available.
+// All terms are 0% APR if paid in full within 12 months.
+
+const TERM_ASSIGNMENT_TIERS = [
+  { min: 0,    max: 500,     term: 3 },
+  { min: 500,  max: 1500,    term: 6 },
+  { min: 1500, max: 3000,    term: 9 },
+  { min: 3000, max: Infinity, term: 12 },
+];
+
+function getAssignedTerm(loanAmount) {
+  const amt = parseFloat(loanAmount) || 0;
+  const tier = TERM_ASSIGNMENT_TIERS.find(t => amt > t.min && amt <= t.max) || TERM_ASSIGNMENT_TIERS[0];
+  return tier.term;
+}
+
+// ─── EOB-BASED UNDERWRITING ENGINE ────────────────────────────────────────────
+// TODO: Replace with real EOB review (AI + human) and live credit pull on deployment.
+// Two possible outcomes:
+//   1. Instant decision — EOB amount confirmed, credit pull clears, decision returned immediately
+//   2. Needs review — EOB cannot be auto-verified, routed to human review; patient is
+//      notified via email and portal status, decision follows within 1 business day
+
+function runEobUnderwriting(data) {
+  const eobAmount = parseFloat(data.eobVerifiedAmount) || parseFloat(data.balanceOwed) || 0;
   const score = parseInt(data.mockCreditScore) || 650;
+  const eobClarity = data.eobClarity || "clear"; // "clear" | "needs_review" — demo toggle
 
-  if (score >= 680 && income >= 30000) {
-    return { decision: "approved", approvedAmount: balance, apr: "0%", term: "12 mo", monthlyPayment: (balance / 12).toFixed(2), partner: data.selectedPlan };
-  } else if (score >= 600 && income >= 20000) {
-    const approvedAmount = Math.min(balance, income * 0.1);
-    return { decision: "approved", approvedAmount: approvedAmount.toFixed(2), apr: "12.9%", term: "24 mo", monthlyPayment: (approvedAmount / 24).toFixed(2), partner: data.selectedPlan };
+  // EOB could not be auto-verified — route to human review
+  if (eobClarity === "needs_review") {
+    return {
+      decision: "eob_review",
+      approvedAmount: null,
+      originationFee: null,
+      providerDisbursement: null,
+      processingFee: null,
+      term: null,
+      monthlyPayment: null,
+      eobAmount,
+    };
+  }
+
+  // EOB is clear — proceed with credit pull and instant decision
+  if (score >= 600) {
+    const fees = calculateLoanFees(eobAmount);
+    const term = getAssignedTerm(eobAmount);
+    const monthlyPayment = (eobAmount / term).toFixed(2);
+    return {
+      decision: "approved",
+      approvedAmount: eobAmount.toFixed(2),
+      originationRate: fees.originationRate,
+      originationFee: fees.originationFee,
+      providerDisbursement: fees.providerDisbursement,
+      processingFee: fees.processingFee,
+      apr: "0% if paid within 12 months",
+      term: `${term} mo`,
+      monthlyPayment,
+      eobAmount,
+    };
   } else if (score >= 560) {
-    return { decision: "review", approvedAmount: null, apr: null, term: null, monthlyPayment: null, partner: data.selectedPlan };
+    return { decision: "review", approvedAmount: null, originationFee: null, providerDisbursement: null, processingFee: null, term: null, monthlyPayment: null, eobAmount };
   } else {
-    return { decision: "declined", approvedAmount: null, apr: null, term: null, monthlyPayment: null, partner: data.selectedPlan };
+    return { decision: "declined", approvedAmount: null, originationFee: null, providerDisbursement: null, processingFee: null, term: null, monthlyPayment: null, eobAmount };
   }
 }
 
@@ -382,7 +481,7 @@ function IntakeForm({ onSubmit }) {
           <div className="form-group"><label>Last Name *</label><input placeholder="Lopez" value={form.lastName} onChange={e => upd("lastName", e.target.value)} /></div>
         </div>
         <div className="form-row">
-          <div className="form-group"><label>Phone Number *</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", formatPhoneInput(e.target.value))} /></div>
+          <div className="form-group"><label>Phone Number *</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
           <div className="form-group"><label>Email Address *</label><input type="email" placeholder="maria@email.com" value={form.email} onChange={e => upd("email", e.target.value)} /></div>
         </div>
         <div className="form-row">
@@ -644,55 +743,36 @@ function AuthPage({ intakeData, onAuthenticated }) {
 
 // ─── PATIENT PORTAL (underwriting + plan selection) ──────────────────────────
 
-function formatDobInput(raw) {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean);
-  return parts.join("/");
-}
-
-function formatPhoneInput(raw) {
-  const digits = raw.replace(/\D/g, "").slice(0, 10);
-  if (digits.length === 0) return "";
-  if (digits.length <= 3) return `(${digits}`;
-  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-
-function formatSSNInput(raw) {
-  const digits = raw.replace(/\D/g, "").slice(0, 9);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
-}
-
-function PatientPortal({ user, intakeData, onApprovalResult, onSignOut }) {
+function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSignOut }) {
   const [uwStep, setUwStep] = useState(0);
   const [uwForm, setUwForm] = useState({
     dob: "", ssn: "", address: "", city: "", state: "", zip: "",
     employmentStatus: "", annualIncome: "", employerName: "",
     mockCreditScore: "670",
+    eobFile: "", eobAmount: intakeData.balanceOwed || "", eobClarity: "clear",
   });
-  const [selectedPlan, setSelectedPlan] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const uwSteps = ["Personal", "Financial", "Select Plan", "Review"];
+  const uwSteps = ["Personal", "Financial", "Upload EOB", "Review"];
   const upd = (k, v) => setUwForm(f => ({ ...f, [k]: v }));
-
-  const filteredOptions = FINANCING_OPTIONS;
 
   const canProceed = [
     uwForm.dob && uwForm.ssn && uwForm.address && uwForm.city && uwForm.state && uwForm.zip,
     uwForm.employmentStatus && uwForm.annualIncome,
-    selectedPlan,
+    uwForm.eobFile && uwForm.eobAmount,
     true,
   ][uwStep];
 
   const handleSubmit = () => {
     setSubmitting(true);
     setTimeout(() => {
-      const result = runMockUnderwriting({ ...uwForm, balanceOwed: intakeData.balanceOwed, selectedPlan: selectedPlan?.name });
+      const result = runEobUnderwriting({ ...uwForm, eobVerifiedAmount: uwForm.eobAmount, balanceOwed: intakeData.balanceOwed });
       setSubmitting(false);
-      onApprovalResult(result, intakeData, selectedPlan);
+      if (result.decision === "eob_review") {
+        onEobReview(result, intakeData);
+      } else {
+        onApprovalResult(result, intakeData, null);
+      }
     }, 2200);
   };
 
@@ -741,21 +821,10 @@ function PatientPortal({ user, intakeData, onApprovalResult, onSignOut }) {
                 <div className="section-title">Personal Information</div>
                 <div className="section-sub">Required for identity verification and underwriting.</div>
                 <div className="form-row">
-                  <div className="form-group">
-                    <label>Date of Birth * <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>(MM/DD/YYYY)</span></label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="MM/DD/YYYY"
-                      maxLength={10}
-                      value={uwForm.dob}
-                      onChange={e => upd("dob", formatDobInput(e.target.value))}
-                    />
-                    <div className="helper-text">Enter as MM/DD/YYYY, e.g. 04/12/1990</div>
-                  </div>
+                  <div className="form-group"><label>Date of Birth *</label><input type="date" value={uwForm.dob} onChange={e => upd("dob", e.target.value)} /></div>
                   <div className="form-group">
                     <label>Social Security Number *</label>
-                    <input className="input-sensitive" placeholder="XXX-XX-XXXX" value={uwForm.ssn} onChange={e => upd("ssn", formatSSNInput(e.target.value))} maxLength={11} />
+                    <input className="input-sensitive" placeholder="XXX-XX-XXXX" value={uwForm.ssn} onChange={e => upd("ssn", e.target.value)} maxLength={11} />
                     <div className="helper-text">256-bit encrypted — never stored in plain text</div>
                   </div>
                 </div>
@@ -815,24 +884,36 @@ function PatientPortal({ user, intakeData, onApprovalResult, onSignOut }) {
 
             {uwStep === 2 && (
               <>
-                <div className="section-title">Choose a Payment Plan</div>
-                <div className="section-sub">{"Select the plan you'd like to apply for. Checking options does not affect your credit score."}</div>
-                <div className="alert info">{"Estimated balance: "}<strong>${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}</strong> {"for "}<strong>{intakeData.careDescription}</strong></div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  {filteredOptions.map(opt => (
-                    <div key={opt.id} className={`financing-card ${selectedPlan?.id === opt.id ? "selected" : ""} ${opt.recommended ? "recommended" : ""}`} onClick={() => setSelectedPlan(opt)}>
-                      <div className="fc-header">
-                        <div className="fc-logo" style={{ background: opt.bg }}>{opt.logo}</div>
-                        <div><div className="fc-name">{opt.name}</div><div className="fc-type">{opt.type}</div></div>
-                        {selectedPlan?.id === opt.id && <div style={{ marginLeft: "auto", color: "var(--teal)", fontSize: 22 }}>✓</div>}
-                      </div>
-                      <div className="fc-details">
-                        <div className="fc-detail"><div className="fc-detail-val">{opt.apr}</div><div className="fc-detail-label">Interest Rate</div></div>
-                        <div className="fc-detail"><div className="fc-detail-val">{opt.term}</div><div className="fc-detail-label">Term Length</div></div>
-                        <div className="fc-detail"><div className="fc-detail-val">{opt.approval}</div><div className="fc-detail-label">Decision</div></div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="section-title">Upload Your EOB or Bill</div>
+                <div className="section-sub">{"We use your Explanation of Benefits (EOB) or provider statement to verify the exact amount owed — this gives you a more accurate, more reliable financing decision than a generic credit check alone."}</div>
+                <div className="alert info">{"Estimated balance from your application: "}<strong>${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}</strong> {"for "}<strong>{intakeData.careDescription}</strong></div>
+
+                <div className="form-group">
+                  <label>Upload EOB or Provider Statement *</label>
+                  <div style={{ border: "2px dashed var(--border)", borderRadius: "var(--radius-sm)", padding: "28px 20px", textAlign: "center", cursor: "pointer", background: "var(--mist2)" }}
+                    onClick={() => upd("eobFile", `EOB_Statement_${Date.now()}.pdf`)}>
+                    {uwForm.eobFile ? (
+                      <div><div style={{ fontSize: 24, marginBottom: 6 }}>📄</div><div style={{ fontWeight: 600, fontSize: 14 }}>{uwForm.eobFile}</div><div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>Click to change file</div></div>
+                    ) : (
+                      <div><div style={{ fontSize: 32, marginBottom: 8 }}>📎</div><div style={{ fontWeight: 500, fontSize: 14, color: "var(--text-secondary)" }}>Click to select a file</div><div style={{ fontSize: 12, color: "var(--text-light)", marginTop: 4 }}>PDF, JPG, or PNG — max 10MB</div></div>
+                    )}
+                  </div>
+                  <div className="helper-text">Demo mode: clicking selects a mock file. On deployment, this opens your file picker.</div>
+                </div>
+
+                <div className="form-group">
+                  <label>Amount Shown on EOB / Statement ($) *</label>
+                  <div className="input-prefix"><span>$</span><input type="number" placeholder="0.00" value={uwForm.eobAmount} onChange={e => upd("eobAmount", e.target.value)} /></div>
+                  <div className="helper-text">This is the amount our team will verify against your uploaded document.</div>
+                </div>
+
+                <div className="form-group">
+                  <label>Demo: EOB Review Outcome</label>
+                  <select value={uwForm.eobClarity} onChange={e => upd("eobClarity", e.target.value)}>
+                    <option value="clear">Clear — verify instantly</option>
+                    <option value="needs_review">Unclear — route to human review</option>
+                  </select>
+                  <div className="helper-text">Demo only — in production, our team or AI review determines this automatically.</div>
                 </div>
               </>
             )}
@@ -849,9 +930,9 @@ function PatientPortal({ user, intakeData, onApprovalResult, onSignOut }) {
                     ["Address", `${uwForm.address}, ${uwForm.city}, ${uwForm.state} ${uwForm.zip}`],
                     ["Employment", uwForm.employmentStatus],
                     ["Annual Income", `$${parseFloat(uwForm.annualIncome || 0).toLocaleString()}`],
-                    ["Balance to Finance", `$${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}`],
                     ["Care Description", intakeData.careDescription],
-                    ["Selected Plan", selectedPlan?.name],
+                    ["EOB Document", uwForm.eobFile],
+                    ["EOB Amount", `$${parseFloat(uwForm.eobAmount || 0).toLocaleString()}`],
                   ].map(([k, v]) => (
                     <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--border)", fontSize: 14 }}>
                       <span style={{ color: "var(--text-secondary)" }}>{k}</span>
@@ -859,12 +940,12 @@ function PatientPortal({ user, intakeData, onApprovalResult, onSignOut }) {
                     </div>
                   ))}
                 </div>
-                <div className="alert info">{"By submitting you authorize Rubix to share your application with "}<strong>{selectedPlan?.name}</strong>{" for a pre-approval decision. A soft credit pull will be performed — this does not affect your credit score."}</div>
+                <div className="alert info">{"By submitting, you authorize Rubix to verify your EOB and perform a soft credit check to determine your financing offer. This does not affect your credit score. If approved, your loan is 0% interest as long as it's paid within 12 months. A 3.5% processing fee applies."}</div>
                 {submitting && (
                   <div style={{ textAlign: "center", padding: "24px 0" }}>
                     <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
                     <div style={{ fontWeight: 600, marginBottom: 6 }}>Submitting your application...</div>
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Connecting with lending partners</div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Verifying your EOB and checking your offer</div>
                   </div>
                 )}
               </>
@@ -906,7 +987,7 @@ function MockEmail({ subject, to, body, note }) {
 
 // ─── APPLICATION SUBMITTED SCREEN ────────────────────────────────────────────
 
-function AppSubmitted({ intakeData, selectedPlan, onSimulateDecision, onSignOut }) {
+function AppSubmitted({ intakeData, onSimulateDecision, onSignOut }) {
   const [showEmail, setShowEmail] = useState(false);
 
   const emailBody =
@@ -914,15 +995,12 @@ function AppSubmitted({ intakeData, selectedPlan, onSimulateDecision, onSignOut 
 
 Thank you for submitting your application through Rubix.
 
-We have received your application for the following payment plan:
+We have received your application and your uploaded EOB / provider statement for:
 
-  Plan: ${selectedPlan?.name}
-  Requested Amount: $${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}
   Care Description: ${intakeData.careDescription}
+  Estimated Amount: $${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}
 
-Our team is reviewing your application and you will receive a decision within 1 business day.
-
-Once a decision has been reached, you will receive a follow-up email with your result and next steps.
+Our team is verifying your EOB and running a credit check. Most applicants receive a decision within minutes — if your EOB needs a closer look, we will let you know and follow up within 1 business day.
 
 If you have any questions in the meantime, please reply to this email.
 
@@ -933,7 +1011,7 @@ If you have any questions in the meantime, please reply to this email.
       <div className="portal-header">
         <div style={{ color: "white" }}>
           <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Application submitted</div>
-          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>{selectedPlan?.name}</div>
+          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>{intakeData.careDescription}</div>
         </div>
         <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
       </div>
@@ -942,7 +1020,7 @@ If you have any questions in the meantime, please reply to this email.
           <div className="success-screen" style={{ paddingBottom: 32 }}>
             <div className="success-icon">📨</div>
             <h2>Application Submitted</h2>
-            <p>{"Your application has been received. You'll be notified of a decision within 1 business day."}</p>
+            <p>{"Your application and EOB have been received. We're verifying your information now."}</p>
             <button className="btn btn-ghost" style={{ marginBottom: 16 }} onClick={() => setShowEmail(v => !v)}>
               {showEmail ? "Hide" : "Preview"} Confirmation Email
             </button>
@@ -958,9 +1036,9 @@ If you have any questions in the meantime, please reply to this email.
               <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12 }}>What happens next</div>
               {[
                 "Application confirmation email sent to your inbox",
-                "Rubix reviews your application (within 1 business day)",
+                "Your EOB is verified and a credit check is run",
+                "Most decisions are instant — some need a closer look from our team",
                 "You receive a decision email with a link to review your offer",
-                "Sign your agreement and funding is sent to your provider",
               ].map((s, i) => (
                 <div className="next-step-item" key={i}>
                   <div className="next-step-num">{i + 1}</div>{s}
@@ -969,10 +1047,72 @@ If you have any questions in the meantime, please reply to this email.
             </div>
             <hr className="divider" />
             <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 13, color: "#92400E", marginBottom: 20, textAlign: "left" }}>
-              <strong>Demo mode:</strong> In production a real decision is returned by the lending partner. Click below to simulate receiving the decision email.
+              <strong>Demo mode:</strong> In production, a real decision comes back from EOB verification and a live credit pull. Click below to simulate it.
             </div>
             <button className="btn btn-primary" style={{ width: "100%" }} onClick={onSimulateDecision}>
-              Simulate: Receive Decision Email
+              Simulate: Receive Decision
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── EOB UNDER REVIEW SCREEN ──────────────────────────────────────────────────
+
+function EobUnderReview({ result, intakeData, onCheckStatus, onSignOut }) {
+  const [showEmail, setShowEmail] = useState(true);
+
+  const emailBody =
+`Hey ${intakeData.firstName},
+
+Just a quick note — we're taking a closer look at the EOB you uploaded to make sure we get your financing offer exactly right.
+
+This usually only takes a little while, and we'll follow up by email as soon as we have a decision. No action is needed from you right now.
+
+Thanks for your patience!
+
+— The Rubix Team`;
+
+  return (
+    <>
+      <div className="portal-header">
+        <div style={{ color: "white" }}>
+          <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Application status</div>
+          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>EOB Under Review</div>
+        </div>
+        <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
+      </div>
+      <div className="main-narrow">
+        {showEmail && (
+          <MockEmail
+            to={intakeData.email}
+            subject="Quick update on your Rubix application"
+            body={emailBody}
+            note="Sends automatically the moment an EOB is routed to human review."
+          />
+        )}
+        <button className="btn btn-ghost" style={{ marginBottom: 20, fontSize: 13 }} onClick={() => setShowEmail(v => !v)}>
+          {showEmail ? "Hide" : "Show"} Email
+        </button>
+
+        <div className="card">
+          <div className="success-screen" style={{ paddingBottom: 32 }}>
+            <div className="success-icon" style={{ background: "linear-gradient(135deg, var(--warning), #FBBF24)" }}>🔍</div>
+            <h2>{"We're reviewing your EOB"}</h2>
+            <p>{"Your EOB needs a closer look before we can finalize your offer. We'll have a decision soon and will email you the moment it's ready."}</p>
+            <div style={{ background: "var(--mist)", borderRadius: "var(--radius-sm)", padding: 20, textAlign: "left", marginTop: 8, marginBottom: 24 }}>
+              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12 }}>What this means</div>
+              <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7 }}>
+                Most EOBs are verified instantly. Yours needs a quick manual check — this is normal and does not mean anything is wrong. You will receive an email as soon as a decision is made, typically within 1 business day.
+              </div>
+            </div>
+            <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 13, color: "#92400E", marginBottom: 20, textAlign: "left" }}>
+              <strong>Demo mode:</strong> Click below to simulate the review finishing and a decision being returned.
+            </div>
+            <button className="btn btn-primary" style={{ width: "100%" }} onClick={() => onCheckStatus(result, intakeData)}>
+              Simulate: Decision Ready
             </button>
           </div>
         </div>
@@ -983,7 +1123,7 @@ If you have any questions in the meantime, please reply to this email.
 
 // ─── DECISION EMAIL + OFFER REVIEW ───────────────────────────────────────────
 
-function OfferReview({ result, intakeData, selectedPlan, onAccept, onDecline, onSignOut }) {
+function OfferReview({ result, intakeData, onAccept, onDecline, onSignOut }) {
   const [showEmail, setShowEmail] = useState(true);
   const approved = result.decision === "approved";
   const review = result.decision === "review";
@@ -991,13 +1131,13 @@ function OfferReview({ result, intakeData, selectedPlan, onAccept, onDecline, on
   const decisionEmailBody = approved
     ? `Dear ${intakeData.firstName},
 
-Great news — your application has been reviewed and you have been pre-approved!
+Great news — your EOB has been verified and you have been approved!
 
-  Plan: ${selectedPlan?.name}
   Approved Amount: $${parseFloat(result.approvedAmount).toLocaleString()}
   Interest Rate: ${result.apr}
   Term: ${result.term}
   Estimated Monthly Payment: $${result.monthlyPayment}
+  Processing Fee (3.5%): $${result.processingFee}
 
 To accept this offer, please sign in to your Rubix portal using the link below and review your loan agreement.
 
@@ -1030,7 +1170,7 @@ A Rubix care coordinator will reach out to discuss alternative options that may 
       <div className="portal-header">
         <div style={{ color: "white" }}>
           <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Decision received</div>
-          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>{approved ? "Pre-Approved" : review ? "Under Review" : "Not Approved"}</div>
+          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>{approved ? "Approved" : review ? "Under Review" : "Not Approved"}</div>
         </div>
         <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
       </div>
@@ -1041,7 +1181,7 @@ A Rubix care coordinator will reach out to discuss alternative options that may 
             to={intakeData.email}
             subject={approved ? "Your Rubix Application — Decision Ready" : review ? "Your Rubix Application — Under Review" : "Your Rubix Application — Update"}
             body={decisionEmailBody}
-            note="On deployment this email sends automatically when a lending partner returns a decision."
+            note="On deployment this email sends automatically when EOB verification and the credit pull are complete."
           />
         )}
         <button className="btn btn-ghost" style={{ marginBottom: 20, fontSize: 13 }} onClick={() => setShowEmail(v => !v)}>
@@ -1051,9 +1191,9 @@ A Rubix care coordinator will reach out to discuss alternative options that may 
         <div className={`approval-card ${approved ? "approval-approved" : review ? "approval-review" : "approval-declined"}`}>
           <div className="approval-body">
             <div className="approval-icon">{approved ? "✅" : review ? "🔍" : "❌"}</div>
-            <div className="approval-title">{approved ? "Pre-Approved!" : review ? "Under Review" : "Not Approved"}</div>
+            <div className="approval-title">{approved ? "You're Approved!" : review ? "Under Review" : "Not Approved"}</div>
             <div className="approval-sub">
-              {approved ? `Your application for ${selectedPlan?.name} has been pre-approved.` : review ? "Your application needs additional review. We will be in touch within 1 business day." : "We were unable to approve your application at this time."}
+              {approved ? "Your EOB has been verified and your financing offer is ready." : review ? "Your application needs additional review. We will be in touch within 1 business day." : "We were unable to approve your application at this time."}
             </div>
             {approved && (
               <>
@@ -1072,6 +1212,19 @@ A Rubix care coordinator will reach out to discuss alternative options that may 
         {approved && (
           <div className="card" style={{ marginTop: 20 }}>
             <div className="card-body">
+              <div className="section-title" style={{ fontSize: 17 }}>Fee Breakdown</div>
+              <div style={{ background: "var(--mist)", borderRadius: "var(--radius-sm)", padding: 16, marginBottom: 20 }}>
+                {[
+                  ["Loan Amount", `$${parseFloat(result.approvedAmount).toLocaleString()}`],
+                  ["Processing Fee (3.5%, charged to you)", `$${result.processingFee}`],
+                  ["Term", `${result.term}, 0% interest if paid in full within 12 months`],
+                ].map(([k, v]) => (
+                  <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13 }}>
+                    <span style={{ color: "var(--text-secondary)" }}>{k}</span>
+                    <span style={{ fontWeight: 600, textAlign: "right" }}>{v}</span>
+                  </div>
+                ))}
+              </div>
               <div className="section-title" style={{ fontSize: 17 }}>Ready to accept your offer?</div>
               <p style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7, marginTop: 8, marginBottom: 20 }}>
                 Review and sign your loan agreement to finalize your payment plan. Funds will be sent to your provider within 1-2 business days of signing.
@@ -1105,7 +1258,7 @@ A Rubix care coordinator will reach out to discuss alternative options that may 
 
 // ─── E-SIGN DOCUMENT ─────────────────────────────────────────────────────────
 
-function ESignDoc({ result, intakeData, selectedPlan, onSigned, onBack }) {
+function ESignDoc({ result, intakeData, onSigned, onBack }) {
   const [agreed, setAgreed] = useState(false);
   const [signed, setSigned] = useState(false);
   const [sigName, setSigName] = useState("");
@@ -1131,22 +1284,23 @@ function ESignDoc({ result, intakeData, selectedPlan, onSigned, onBack }) {
         <div className="card-body">
           <div style={{ background: "var(--mist2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "24px", fontSize: 13, lineHeight: 1.9, color: "var(--slate)", maxHeight: 360, overflowY: "auto", marginBottom: 24 }}>
             <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 16, textAlign: "center" }}>CONSUMER LOAN AGREEMENT</div>
-            <div style={{ marginBottom: 12 }}><strong>Lender:</strong> {selectedPlan?.name} (administered by Rubix — Rubix Patient Payment Solutions)</div>
+            <div style={{ marginBottom: 12 }}><strong>Lender:</strong> Rubix Patient Payment Solutions</div>
             <div style={{ marginBottom: 12 }}><strong>Borrower:</strong> {intakeData.firstName} {intakeData.lastName}</div>
             <div style={{ marginBottom: 12 }}><strong>Date:</strong> {today}</div>
             <div style={{ marginBottom: 12 }}><strong>Loan Amount:</strong> ${parseFloat(result.approvedAmount).toLocaleString()}</div>
             <div style={{ marginBottom: 12 }}><strong>Annual Percentage Rate (APR):</strong> {result.apr}</div>
             <div style={{ marginBottom: 12 }}><strong>Loan Term:</strong> {result.term}</div>
             <div style={{ marginBottom: 12 }}><strong>Estimated Monthly Payment:</strong> ${result.monthlyPayment}</div>
+            <div style={{ marginBottom: 12 }}><strong>Processing Fee (3.5%, charged to borrower):</strong> ${result.processingFee}</div>
             <div style={{ marginBottom: 12 }}><strong>Purpose of Loan:</strong> {intakeData.careDescription}</div>
             <hr style={{ margin: "16px 0", borderColor: "var(--border)" }} />
-            <div style={{ marginBottom: 12 }}><strong>1. Promise to Pay.</strong> Borrower agrees to repay the loan amount plus any applicable interest in monthly installments as described above, beginning 30 days from the date of funding.</div>
-            <div style={{ marginBottom: 12 }}><strong>2. Disbursement.</strong> Loan proceeds will be disbursed directly to the healthcare provider within 1-2 business days of signing this agreement.</div>
+            <div style={{ marginBottom: 12 }}><strong>1. Promise to Pay.</strong> Borrower agrees to repay the loan amount in monthly installments as described above, beginning 30 days from the date of funding. This loan carries 0% interest provided the full balance is repaid within 12 months of funding.</div>
+            <div style={{ marginBottom: 12 }}><strong>2. Disbursement.</strong> Loan proceeds, less an origination fee deducted by Rubix, will be disbursed directly to the healthcare provider within 1-2 business days of signing this agreement.</div>
             <div style={{ marginBottom: 12 }}><strong>3. Prepayment.</strong> Borrower may prepay all or part of the outstanding balance at any time without penalty.</div>
             <div style={{ marginBottom: 12 }}><strong>4. Default.</strong> Borrower will be considered in default if a payment is more than 30 days past due. Default may result in acceleration of the remaining balance and referral to a collections agency.</div>
             <div style={{ marginBottom: 12 }}><strong>5. Autopay Authorization.</strong> By signing this agreement, Borrower authorizes Rubix to initiate ACH debit entries from the bank account provided for monthly payment amounts on the scheduled due date.</div>
             <div style={{ marginBottom: 12 }}><strong>6. TILA Disclosure.</strong> This agreement is governed by the Truth in Lending Act (TILA) and Regulation Z. The APR, finance charges, and total repayment amounts disclosed herein represent the full cost of credit.</div>
-            <div style={{ marginBottom: 12 }}><strong>7. Privacy.</strong> All personal and health information collected in connection with this loan is protected under HIPAA and will not be sold or shared with third parties except as necessary to administer this loan.</div>
+            <div style={{ marginBottom: 12 }}><strong>7. Privacy.</strong> All personal and health information collected in connection with this loan, including any uploaded EOB or provider statement, is protected under HIPAA and will not be sold or shared with third parties except as necessary to administer this loan.</div>
             <div style={{ fontSize: 11, color: "var(--text-light)", marginTop: 16 }}>This is a mock document for demonstration purposes. On deployment, this agreement will be generated by the issuing lender (e.g. Medallion Bank) and will constitute a legally binding consumer loan agreement.</div>
           </div>
 
@@ -1186,7 +1340,7 @@ function ESignDoc({ result, intakeData, selectedPlan, onSigned, onBack }) {
 
 // ─── OFFER ACCEPTED CONFIRMATION ─────────────────────────────────────────────
 
-function OfferAccepted({ result, intakeData, selectedPlan, providerEmail, onStartOver }) {
+function OfferAccepted({ result, intakeData, providerEmail, onStartOver }) {
   const [showPatientEmail, setShowPatientEmail] = useState(false);
   const [showProviderEmail, setShowProviderEmail] = useState(false);
 
@@ -1195,11 +1349,11 @@ function OfferAccepted({ result, intakeData, selectedPlan, providerEmail, onStar
 
 Congratulations — your loan agreement has been signed and your payment plan is now active!
 
-  Plan: ${selectedPlan?.name}
   Funded Amount: $${parseFloat(result.approvedAmount).toLocaleString()}
   Interest Rate: ${result.apr}
   Term: ${result.term}
   Monthly Payment: $${result.monthlyPayment}
+  Processing Fee Charged: $${result.processingFee}
   First Payment Due: 30 days from today
 
 Funds are being disbursed directly to your healthcare provider within 1-2 business days.
@@ -1216,12 +1370,13 @@ Thank you for choosing Rubix.
 This is a notification that a patient has accepted a payment plan through Rubix and funding is on its way to your practice.
 
   Patient: ${intakeData.firstName} ${intakeData.lastName}
-  Plan: ${selectedPlan?.name}
-  Funded Amount: $${parseFloat(result.approvedAmount).toLocaleString()}
   Care Description: ${intakeData.careDescription}
+  Loan Amount: $${parseFloat(result.approvedAmount).toLocaleString()}
+  Origination Fee Deducted: $${result.originationFee}
+  Net Disbursement to Your Practice: $${result.providerDisbursement}
   Expected Disbursement: Within 1-2 business days
 
-Net proceeds (after merchant discount fee) will be deposited via ACH to your account on file.
+Net proceeds will be deposited via ACH to your account on file.
 
 If you have questions please contact your Rubix account manager.
 
@@ -1237,10 +1392,10 @@ If you have questions please contact your Rubix account manager.
 
           <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: "var(--radius-sm)", padding: 20, textAlign: "left", marginBottom: 24 }}>
             {[
-              ["Plan", selectedPlan?.name],
               ["Funded Amount", `$${parseFloat(result.approvedAmount).toLocaleString()}`],
               ["Monthly Payment", `$${result.monthlyPayment}`],
               ["Term", result.term],
+              ["Processing Fee Charged to You", `$${result.processingFee}`],
               ["First Payment Due", "30 days from today"],
             ].map(([k, v]) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid var(--border)", fontSize: 14 }}>
@@ -1558,7 +1713,7 @@ function ContactPage({ audience }) {
                     <div className="form-group"><label>Email Address *</label><input type="email" placeholder="you@email.com" value={form.email} onChange={e => upd("email", e.target.value)} /></div>
                   </div>
                   <div className="form-row">
-                    <div className="form-group"><label>Phone (optional)</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", formatPhoneInput(e.target.value))} /></div>
+                    <div className="form-group"><label>Phone (optional)</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
                     <div className="form-group"><label>Subject *</label>
                       <select value={form.subject} onChange={e => upd("subject", e.target.value)}>
                         <option value="">Select a subject...</option>
@@ -1587,18 +1742,18 @@ function ContactPage({ audience }) {
 function PatientMarketingNav({ activePage, onNavigate }) {
   const links = [["home", "Home"], ["about", "About"], ["services", "Services"], ["blog-patient", "Blog"], ["contact-patient", "Contact"]];
   return (
-    <div style={{ background: "var(--white)", borderBottom: "1px solid var(--border)", padding: "0 32px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, flexWrap: "wrap", gap: 8 }}>
-      <div style={{ display: "flex", gap: 4 }}>
+    <div style={{ background: "var(--white)", borderBottom: "1px solid var(--border)", padding: "10px 16px", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, minHeight: 56 }}>
+      <div style={{ display: "flex", gap: 2, flexWrap: "wrap", flex: "1 1 auto" }}>
         {links.map(([id, label]) => (
-          <button key={id} onClick={() => onNavigate(id)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: activePage === id ? 600 : 400, cursor: "pointer", background: "transparent", color: activePage === id ? "var(--teal-dark)" : "var(--text-secondary)", borderBottom: activePage === id ? "2px solid var(--teal)" : "2px solid transparent", transition: "all 0.2s" }}>
+          <button key={id} onClick={() => onNavigate(id)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: activePage === id ? 600 : 400, cursor: "pointer", background: "transparent", color: activePage === id ? "var(--teal-dark)" : "var(--text-secondary)", borderBottom: activePage === id ? "2px solid var(--teal)" : "2px solid transparent", transition: "all 0.2s", whiteSpace: "nowrap" }}>
             {label}
           </button>
         ))}
       </div>
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <div className="nav-pill">
-          <button className={activePage === "patient-account-login" ? "active" : ""} onClick={() => onNavigate("patient-account-login")}>Sign In</button>
-          <button onClick={() => onNavigate("get-started")}>Get Started</button>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
+        <div className="nav-pill" style={{ display: "flex" }}>
+          <button type="button" className={activePage === "patient-account-login" ? "active" : ""} onClick={() => onNavigate("patient-account-login")} style={{ whiteSpace: "nowrap" }}>Sign In</button>
+          <button type="button" onClick={() => onNavigate("get-started")} style={{ whiteSpace: "nowrap" }}>Get Started</button>
         </div>
       </div>
     </div>
@@ -1617,7 +1772,7 @@ function PatientAbout({ onNavigate }) {
         <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>ABA therapy. Intensive outpatient programs. Psychiatric care. These are not optional treatments — they are essential. Yet for many families, the cost of sustained care becomes an obstacle. Rubix was built to remove that obstacle. We connect patients and families with transparent, flexible monthly payment options designed around the realities of behavioral health treatment.</p>
 
         <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>How We Help You</div>
-        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>Rubix works directly with your ABA center, behavioral health provider, or mental health practice. Whether you are managing ongoing ABA sessions, a PHP program, or outpatient therapy costs, we offer a payment path that fits your family's budget — without disrupting treatment.</p>
+        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>{"Rubix works directly with your ABA center, behavioral health provider, or mental health practice. Whether you are managing ongoing ABA sessions, a PHP program, or outpatient therapy costs, we offer a payment path that fits your family's budget — without disrupting treatment."}</p>
 
         <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>What We Stand For</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginBottom: 48 }}>
@@ -1652,6 +1807,7 @@ function PatientServices({ onNavigate }) {
     { icon: "🔒", title: "Secure and Private", desc: "Every piece of information you submit through Rubix is encrypted and HIPAA-protected. We maintain strict data security standards and never sell or share your personal or health information.", features: ["HIPAA-compliant platform", "Bank-level encryption", "No data sold or shared", "ESIGN Act-compliant agreements"] },
     { icon: "📱", title: "Manage Everything Online", desc: "Your Rubix patient account gives you full visibility into your payment plans, payment history, and upcoming due dates — all in one place, accessible from any device.", features: ["View all active plans", "Make payments anytime", "Upload documents securely", "Message our support team"] },
     { icon: "🤝", title: "Support When You Need It", desc: "Our patient support team is here to help. Whether you have questions about your plan, need to update your account, or want to explore additional financing options, we are just a message away.", features: ["In-app secure messaging", "Typical response within 1 business day", "Document upload and review", "Account management support"] },
+    { icon: "🔍", title: "Bill Review & Dispute Service", desc: "Think there is an error on your medical bill? Submit your EOB and our team will review it for mistakes and help you dispute incorrect charges with your insurer or provider.", features: ["EOB review starting at $49", "Dispute filing on your behalf", "Full representation through resolution"], link: "bill-review-service" },
   ];
 
   return (
@@ -1663,7 +1819,7 @@ function PatientServices({ onNavigate }) {
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "56px 24px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
           {services.map((s, i) => (
-            <div key={i} style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "32px 28px", boxShadow: "var(--shadow)" }}>
+            <div key={i} onClick={s.link ? () => onNavigate(s.link) : undefined} style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "32px 28px", boxShadow: "var(--shadow)", cursor: s.link ? "pointer" : "default" }}>
               <div style={{ fontSize: 36, marginBottom: 16 }}>{s.icon}</div>
               <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 10 }}>{s.title}</div>
               <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7, marginBottom: 20 }}>{s.desc}</div>
@@ -1674,6 +1830,7 @@ function PatientServices({ onNavigate }) {
                   </div>
                 ))}
               </div>
+              {s.link && <div style={{ marginTop: 16, fontSize: 13, fontWeight: 600, color: "var(--teal-dark)" }}>Learn more →</div>}
             </div>
           ))}
         </div>
@@ -1686,6 +1843,68 @@ function PatientServices({ onNavigate }) {
     </>
   );
 }
+
+// ─── BILL REVIEW SERVICE — MARKETING SUB-PAGE ────────────────────────────────
+
+function BillReviewService({ onNavigate }) {
+  return (
+    <>
+      <div className="hero" style={{ padding: "72px 32px" }}>
+        <h1>{"Think there's an "}<em>error</em>{" on your bill?"}</h1>
+        <p>Our team reviews your EOB for mistakes and helps you dispute incorrect charges — so you only pay what you actually owe.</p>
+      </div>
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "56px 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, marginBottom: 12 }}>How it works</div>
+          <div style={{ fontSize: 15, color: "var(--text-secondary)", maxWidth: 560, margin: "0 auto" }}>Medical bills are complicated, and billing errors happen more often than you would think. Submit your EOB and our team will take a closer look.</div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 56 }}>
+          {[["01", "Submit Your EOB", "Sign in to your Rubix account and upload your EOB or bill along with a quick description of what looks wrong."], ["02", "We Review It", "Our team reviews your EOB for billing errors, duplicate charges, and coding mistakes."], ["03", "We Follow Up", "Depending on the service level you choose, we file the dispute on your behalf and follow up with you by email."], ["04", "Issue Resolved", "We keep working the dispute until it's resolved, and update you in your portal along the way."]].map(([num, title, desc]) => (
+            <div key={num} style={{ background: "var(--white)", borderRadius: "var(--radius-sm)", padding: "24px 20px", boxShadow: "var(--shadow)", border: "1px solid var(--border)", textAlign: "center" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, var(--teal), var(--teal-light))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 14, color: "white" }}>{num}</div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 8 }}>{title}</div>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7 }}>{desc}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, marginBottom: 12 }}>Choose your level of service</div>
+          <div style={{ fontSize: 15, color: "var(--text-secondary)" }}>Simple, flat pricing. No surprise fees.</div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20, marginBottom: 56 }}>
+          {DISPUTE_SERVICE_TIERS.map(tier => (
+            <div key={tier.id} style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "28px 24px", boxShadow: "var(--shadow)" }}>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 17, marginBottom: 6 }}>{tier.name}</div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 32, color: "var(--teal-dark)", marginBottom: 12 }}>${tier.price}</div>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 16 }}>{tier.desc}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                {tier.includes.map((inc, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--slate)" }}>
+                    <span style={{ color: "var(--teal)", fontWeight: 700 }}>✓</span>{inc}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ background: "linear-gradient(135deg, var(--navy), var(--navy-mid))", borderRadius: "var(--radius)", padding: "40px 32px", textAlign: "center" }}>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: 22, fontWeight: 700, color: "white", marginBottom: 10 }}>Ready to get your bill reviewed?</div>
+          <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 15, marginBottom: 28 }}>{"Sign in to your account to submit your EOB, or create an account if you're new to Rubix."}</div>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <button className="btn btn-primary" onClick={() => onNavigate("patient-account-login")}>Sign In to Submit a Request</button>
+            <button className="btn btn-outline" onClick={() => onNavigate("get-started")}>New Here? Get Started</button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
 
 // ─── PROVIDER FLOW ────────────────────────────────────────────────────────────
 
@@ -1917,7 +2136,7 @@ function ReferPatientPage({ providerUser }) {
             <div className="form-group"><label>Last Name *</label><input placeholder="Lopez" value={refForm.lastName} onChange={e => updRef("lastName", e.target.value)} /></div>
           </div>
           <div className="form-row">
-            <div className="form-group"><label>Patient Phone</label><input placeholder="(555) 000-0000" value={refForm.phone} onChange={e => updRef("phone", formatPhoneInput(e.target.value))} /></div>
+            <div className="form-group"><label>Patient Phone</label><input placeholder="(555) 000-0000" value={refForm.phone} onChange={e => updRef("phone", e.target.value)} /></div>
             <div className="form-group"><label>Patient Email</label><input placeholder="patient@email.com" value={refForm.email} onChange={e => updRef("email", e.target.value)} /></div>
           </div>
           <div className="form-row">
@@ -1940,7 +2159,6 @@ function ReferPatientPage({ providerUser }) {
 
 function ProviderAccountPage({ onNotifEmailChange }) {
   const [account, setAccount] = useState({ practiceName: "", npi: "", specialty: "", phone: "", address: "", city: "", state: "", zip: "", billingEmail: "", notifEmail: "" });
-  const [partners, setPartners] = useState({ rpps_plan: true, partner_a: true, partner_b: false });
   const [banking, setBanking] = useState({ bankName: "", accountHolder: "", routingNumber: "", accountNumber: "", accountType: "checking" });
   const [bankSaved, setBankSaved] = useState(false);
   const [accountSaved, setAccountSaved] = useState(false);
@@ -1988,22 +2206,20 @@ function ProviderAccountPage({ onNotifEmailChange }) {
           </div>
           <div className="form-row">
             <div className="form-group" style={{ maxWidth: 180 }}><label>ZIP Code</label><input placeholder="33101" value={account.zip} onChange={e => updAcc("zip", e.target.value)} maxLength={5} /></div>
-            <div className="form-group"><label>Practice Phone</label><input placeholder="(555) 000-0000" value={account.phone} onChange={e => updAcc("phone", formatPhoneInput(e.target.value))} /></div>
+            <div className="form-group"><label>Practice Phone</label><input placeholder="(555) 000-0000" value={account.phone} onChange={e => updAcc("phone", e.target.value)} /></div>
           </div>
           <div className="form-row">
             <div className="form-group"><label>Billing Email</label><input placeholder="billing@practice.com" value={account.billingEmail} onChange={e => updAcc("billingEmail", e.target.value)} /></div>
             <div className="form-group"><label>Notification Email</label><input placeholder="admin@practice.com" value={account.notifEmail} onChange={e => updAcc("notifEmail", e.target.value)} /><div className="helper-text">Receives patient payment alerts</div></div>
           </div>
           <hr className="divider" />
-          <div className="section-title" style={{ fontSize: 16, marginBottom: 6 }}>Financing Partners</div>
-          <div className="section-sub">Select which payment plans to offer your patients.</div>
-          {FINANCING_OPTIONS.map(opt => (
-            <div key={opt.id} onClick={() => setPartners(p => ({ ...p, [opt.id]: !p[opt.id] }))} style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 14, border: `2px solid ${partners[opt.id] ? "var(--teal)" : "var(--border)"}`, borderRadius: "var(--radius-sm)", padding: "14px 16px", cursor: "pointer", background: partners[opt.id] ? "#F0FDFA" : "var(--white)" }}>
-              <div className="fc-logo" style={{ background: opt.bg }}>{opt.logo}</div>
-              <div><div style={{ fontWeight: 600, fontSize: 14 }}>{opt.name}</div><div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{opt.type} · {opt.apr} APR · {opt.approval} approval</div></div>
-              <div style={{ marginLeft: "auto", width: 22, height: 22, borderRadius: 6, background: partners[opt.id] ? "var(--teal)" : "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 13, flexShrink: 0 }}>{partners[opt.id] ? "✓" : ""}</div>
-            </div>
-          ))}
+          <div className="section-title" style={{ fontSize: 16, marginBottom: 6 }}>Financing</div>
+          <div className="section-sub">{"Rubix verifies each patient's EOB and offers one straightforward financing product — no partner selection needed."}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, border: "2px solid var(--teal)", borderRadius: "var(--radius-sm)", padding: "14px 16px", background: "#F0FDFA" }}>
+            <div className="fc-logo" style={{ background: "#F0FDFA" }}>🏥</div>
+            <div><div style={{ fontWeight: 600, fontSize: 14 }}>Rubix EOB-Verified Financing</div><div style={{ fontSize: 12, color: "var(--text-secondary)" }}>3/6/9/12-month terms · 0% interest if paid within 12 months</div></div>
+            <div style={{ marginLeft: "auto", width: 22, height: 22, borderRadius: 6, background: "var(--teal)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 13, flexShrink: 0 }}>✓</div>
+          </div>
           <hr className="divider" />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button className="btn btn-primary" onClick={() => { setAccountSaved(true); setTimeout(() => setAccountSaved(false), 3000); }}>Save Changes</button>
@@ -2073,7 +2289,7 @@ function ProviderBillingPage() {
             <div>
               <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>Current Plan</div>
               <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>Rubix Provider</div>
-              <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>$49.99 / month · Billed monthly</div>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>$29.99 / month + $19.99 per additional user · Billed monthly</div>
             </div>
             <div style={{ background: "#D1FAE5", color: "#065F46", fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: "100px" }}>Active</div>
           </div>
@@ -2126,7 +2342,7 @@ function ProviderBillingPage() {
           <table className="patient-table">
             <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead>
             <tbody>
-              {[["May 1, 2026", "Rubix Provider — Monthly Fee", "$49.99", "approved"], ["Apr 1, 2026", "Rubix Provider — Monthly Fee", "$49.99", "approved"], ["Mar 1, 2026", "Rubix Provider — Monthly Fee", "$49.99", "approved"]].map(([date, desc, amt, status], i) => (
+              {[["May 1, 2026", "Rubix Provider — Base Fee + 1 User", "$49.98", "approved"], ["Apr 1, 2026", "Rubix Provider — Base Fee + 1 User", "$49.98", "approved"], ["Mar 1, 2026", "Rubix Provider — Base Fee", "$29.99", "approved"]].map(([date, desc, amt, status], i) => (
                 <tr key={i}>
                   <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>{date}</td>
                   <td style={{ fontSize: 14 }}>{desc}</td>
@@ -2147,18 +2363,18 @@ function ProviderBillingPage() {
 function ProviderMarketingNav({ activePage, onNavigate }) {
   const links = [["home", "Home"], ["about", "About"], ["services", "Services"], ["partners", "Partners"], ["faq", "FAQ"], ["blog-provider", "Blog"], ["contact-provider", "Contact"]];
   return (
-    <div style={{ background: "var(--white)", borderBottom: "1px solid var(--border)", padding: "0 32px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, flexWrap: "wrap", gap: 8 }}>
-      <div style={{ display: "flex", gap: 4 }}>
+    <div style={{ background: "var(--white)", borderBottom: "1px solid var(--border)", padding: "10px 16px", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, minHeight: 56 }}>
+      <div style={{ display: "flex", gap: 2, flexWrap: "wrap", flex: "1 1 auto" }}>
         {links.map(([id, label]) => (
-          <button key={id} onClick={() => onNavigate(id)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: activePage === id ? 600 : 400, cursor: "pointer", background: "transparent", color: activePage === id ? "var(--teal-dark)" : "var(--text-secondary)", borderBottom: activePage === id ? "2px solid var(--teal)" : "2px solid transparent", transition: "all 0.2s" }}>
+          <button key={id} onClick={() => onNavigate(id)} style={{ padding: "6px 10px", borderRadius: 8, border: "none", fontFamily: "DM Sans, sans-serif", fontSize: 14, fontWeight: activePage === id ? 600 : 400, cursor: "pointer", background: "transparent", color: activePage === id ? "var(--teal-dark)" : "var(--text-secondary)", borderBottom: activePage === id ? "2px solid var(--teal)" : "2px solid transparent", transition: "all 0.2s", whiteSpace: "nowrap" }}>
             {label}
           </button>
         ))}
       </div>
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <div className="nav-pill">
-          <button className={activePage === "provider-login" ? "active" : ""} onClick={() => onNavigate("provider-login")}>Sign In</button>
-          <button className={activePage === "register" ? "active" : ""} onClick={() => onNavigate("register")}>Get Started</button>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
+        <div className="nav-pill" style={{ display: "flex" }}>
+          <button type="button" className={activePage === "provider-login" ? "active" : ""} onClick={() => onNavigate("provider-login")} style={{ whiteSpace: "nowrap" }}>Sign In</button>
+          <button type="button" className={activePage === "register" ? "active" : ""} onClick={() => onNavigate("register")} style={{ whiteSpace: "nowrap" }}>Get Started</button>
         </div>
       </div>
     </div>
@@ -2250,10 +2466,11 @@ function ProviderHome({ onNavigate }) {
       {/* Pricing teaser */}
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "64px 24px", textAlign: "center" }}>
         <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(20px, 3vw, 30px)", fontWeight: 700, marginBottom: 12 }}>Simple, transparent pricing</div>
-        <div style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>One flat monthly fee. No setup costs, no hidden fees, no long-term contracts.</div>
+        <div style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 32 }}>One low monthly fee per practice, plus a small per-user add-on. No setup costs, no hidden fees, no long-term contracts.</div>
         <div style={{ background: "var(--white)", border: "2px solid var(--teal)", borderRadius: "var(--radius)", padding: "36px 32px", boxShadow: "var(--shadow-lg)" }}>
-          <div style={{ fontFamily: "Sora, sans-serif", fontSize: 48, fontWeight: 700, color: "var(--teal-dark)" }}>$49.99</div>
-          <div style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 24 }}>per location / month</div>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: 48, fontWeight: 700, color: "var(--teal-dark)" }}>$29.99</div>
+          <div style={{ fontSize: 15, color: "var(--text-secondary)", marginBottom: 8 }}>per practice / month</div>
+          <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 24, background: "var(--mist)", borderRadius: "100px", padding: "6px 14px", display: "inline-block" }}>+ $19.99 / month per additional user</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28, textAlign: "left" }}>
             {["Unlimited patient referrals", "Full dashboard and reporting", "ACH disbursement within 1-2 days", "Multiple lending partner options", "HIPAA-compliant platform", "Email and chat support"].map((f, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--slate)" }}>
@@ -2345,30 +2562,29 @@ function ProviderServices({ onNavigate }) {
 // ── PARTNERS PAGE ──
 
 function ProviderPartners({ onNavigate }) {
-  const partners = [
-    { logo: "🏥", name: "RPPS Flex Pay", type: "Proprietary Plan", desc: "Our in-house 0% monthly payment plan, available instantly to all approved patients. No third-party approval required.", tags: ["0% Interest", "Instant", "$100 minimum"] },
-    { logo: "💳", name: "Partner Plan A", type: "Third-Party Financing", desc: "A promotional 0% financing option through one of our vetted lending partners, offering terms from 6 to 24 months.", tags: ["0% Promo APR", "6-24 months", "$200 minimum"] },
-    { logo: "⚡", name: "Partner Plan B", type: "Extended Financing", desc: "Extended monthly financing for larger balances, with competitive rates and terms up to 60 months.", tags: ["5.9-24.9% APR", "12-60 months", "$500 minimum"] },
+  const pillars = [
+    { logo: "📄", name: "EOB-Verified Amounts", desc: "Patients upload their EOB or provider statement. Our team — supported by AI — verifies the exact amount owed, so financing decisions are based on real, accurate balances instead of self-reported estimates.", tags: ["AI + human review", "Higher accuracy", "Fewer disputes"] },
+    { logo: "💳", name: "Credit Pull, Confirmed Amount", desc: "A soft credit pull runs alongside EOB verification. Combining a confirmed healthcare balance with a standard credit check gives a more reliable underwriting signal than either one alone.", tags: ["Soft pull only", "No score impact to check", "More consistent approvals"] },
+    { logo: "📅", name: "Auto-Assigned Terms", desc: "Rubix automatically assigns a 3, 6, 9, or 12-month term based on the verified loan amount. All terms carry 0% interest as long as the balance is paid in full within 12 months.", tags: ["3/6/9/12 months", "0% within 12 months", "No manual selection needed"] },
   ];
 
   return (
     <>
       <div className="hero" style={{ padding: "72px 32px" }}>
-        <h1>Our <em>lending partners</em></h1>
-        <p>Rubix works with a curated network of vetted lending partners to give your patients the best possible financing options.</p>
+        <h1>How Rubix <em>underwrites</em></h1>
+        <p>A financing model built specifically for healthcare — not a generic credit-score-based product.</p>
       </div>
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "56px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, marginBottom: 12 }}>Payment plans we offer</div>
-          <div style={{ fontSize: 15, color: "var(--text-secondary)", maxWidth: 520, margin: "0 auto" }}>Every partner is vetted for compliance, patient experience, and competitive terms. We are continuously expanding our network.</div>
+          <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, marginBottom: 12 }}>Why EOB-based underwriting</div>
+          <div style={{ fontSize: 15, color: "var(--text-secondary)", maxWidth: 520, margin: "0 auto" }}>Generic BNPL products approve based on credit score alone. Rubix verifies the actual healthcare balance first — leading to more accurate loan amounts and more consistent collections for your practice.</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 56 }}>
-          {partners.map((p, i) => (
+          {pillars.map((p, i) => (
             <div key={i} style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "28px 28px", boxShadow: "var(--shadow)", display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
               <div style={{ width: 56, height: 56, borderRadius: 14, background: "var(--mist)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{p.logo}</div>
               <div style={{ flex: 1, minWidth: 200 }}>
                 <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{p.name}</div>
-                <div style={{ fontSize: 12, color: "var(--teal-dark)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 10 }}>{p.type}</div>
                 <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7, marginBottom: 14 }}>{p.desc}</div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {p.tags.map(t => (<span key={t} style={{ background: "var(--mist)", border: "1px solid #CCFBF1", color: "var(--teal-dark)", fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: "100px" }}>{t}</span>))}
@@ -2379,9 +2595,9 @@ function ProviderPartners({ onNavigate }) {
         </div>
 
         <div style={{ background: "var(--mist)", borderRadius: "var(--radius)", padding: "32px 28px", textAlign: "center" }}>
-          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 20, marginBottom: 10 }}>Interested in becoming a lending partner?</div>
-          <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>We are actively expanding our lending network. If you are a bank, credit union, or specialty finance company interested in reaching qualified healthcare patients, we would like to hear from you.</div>
-          <button className="btn btn-ghost" style={{ color: "var(--teal-dark)" }}>Contact Partnerships</button>
+          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 20, marginBottom: 10 }}>Want to see the full fee structure?</div>
+          <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>Origination fees are tiered by loan amount and deducted from your disbursement — patients pay a flat 3.5% processing fee separately. Our team is happy to walk through the details.</div>
+          <button className="btn btn-ghost" style={{ color: "var(--teal-dark)" }} onClick={() => onNavigate("contact-provider")}>Contact Us</button>
         </div>
       </div>
       <GetStartedCTA onNavigate={onNavigate} />
@@ -2395,14 +2611,14 @@ function ProviderFAQ({ onNavigate }) {
   const [open, setOpen] = useState(null);
   const faqs = [
     { q: "How long does it take to set up my practice on Rubix?", a: "Setup takes under 5 minutes. Create your account, enter your practice details, connect your bank account for ACH disbursements, and select which payment plans to offer. ABA centers, IOP programs, and outpatient practices can refer their first patient the same day." },
-    { q: "How does Rubix make money?", a: "Rubix charges a flat monthly platform fee of $49.99 per practice location. We also collect a small merchant discount fee (deducted from disbursements) when a patient financing transaction is funded. There are no setup fees or long-term contracts." },
+    { q: "How does Rubix make money?", a: "Rubix charges a flat monthly platform fee of $29.99 per practice, plus $19.99 per month for each additional user on the account. We also collect a small merchant discount fee (deducted from disbursements) when a patient financing transaction is funded. There are no setup fees or long-term contracts." },
     { q: "When does my practice receive funds after a patient is approved?", a: "Once a patient accepts their offer and signs the loan agreement, funds are disbursed to your practice bank account via ACH within 1-2 business days. You are paid in full regardless of the patient's repayment behavior." },
     { q: "What happens if a patient defaults on their payment plan?", a: "Your practice bears zero collection risk. Once funds are disbursed to your account, Rubix and our lending partners handle all patient repayment and collections. A patient default has no impact on your practice revenue." },
     { q: "What types of practices can use Rubix?", a: "Rubix is purpose-built for IOP and PHP programs, outpatient mental health and substance use practices, psychiatric providers, ABA therapy centers, and autism treatment providers. We also support dental, physical therapy, and other specialty healthcare." },
     { q: "Is Rubix HIPAA compliant?", a: "Yes. Rubix is built on HIPAA-compliant infrastructure. All patient data is encrypted in transit and at rest. We maintain a Business Associate Agreement (BAA) with all practices on the platform." },
-    { q: "What credit scores do patients need to qualify?", a: "Our lending partners work with a broad credit spectrum. We offer tiered approval options from prime to near-prime borrowers. We also offer our in-house 0% RPPS Flex Pay plan which has more flexible qualification criteria." },
+    { q: "What credit scores do patients need to qualify?", a: "Rubix combines a soft credit pull with EOB verification, so approval is not based on credit score alone. We work with a broad credit spectrum, and a verified healthcare balance often allows us to approve patients that a credit-score-only product would decline." },
     { q: "Can I refer patients from my existing EHR or practice management system?", a: "Direct EHR integration is on our roadmap. Currently, providers refer patients directly from the Rubix dashboard via a personalized SMS or email link. The patient completes their application on any device." },
-    { q: "Is there a minimum volume requirement?", a: "No. There are no minimum patient volume requirements. The $49.99 monthly fee is flat regardless of how many patients you refer in a given month." },
+    { q: "Is there a minimum volume requirement?", a: "No. There are no minimum patient volume requirements. The $29.99 base monthly fee, plus $19.99 per additional user, stays flat regardless of how many patients you refer in a given month." },
     { q: "How do I cancel my Rubix account?", a: "You can cancel at any time with no cancellation fees. Simply contact your account manager or email support. Your account will remain active through the end of your current billing period." },
   ];
 
@@ -2513,7 +2729,7 @@ Welcome aboard.
               </div>
               <div className="form-row">
                 <div className="form-group"><label>Email Address *</label><input type="email" placeholder="admin@practice.com" value={form.email} onChange={e => upd("email", e.target.value)} /></div>
-                <div className="form-group"><label>Phone Number *</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", formatPhoneInput(e.target.value))} /></div>
+                <div className="form-group"><label>Phone Number *</label><input placeholder="(555) 000-0000" value={form.phone} onChange={e => upd("phone", e.target.value)} /></div>
               </div>
               <div className="form-group">
                 <label>Practice Specialty</label>
@@ -2673,15 +2889,15 @@ function PatientAccountLogin({ onAuthenticated }) {
 // ─── PATIENT ACCOUNT PORTAL ───────────────────────────────────────────────────
 
 const MOCK_PLANS = [
-  { id: "plan1", partner: "RPPS Flex Pay", originalAmount: 1200, remaining: 840, apr: "0%", term: "12 mo", monthlyPayment: 100, nextDue: "Jun 15, 2026", status: "active" },
-  { id: "plan2", partner: "Partner Plan A", originalAmount: 2400, remaining: 0, apr: "0% promo", term: "24 mo", monthlyPayment: 100, nextDue: "—", status: "paid_off" },
+  { id: "plan1", partner: "Rubix Financing", originalAmount: 1200, remaining: 840, apr: "0% if paid within 12 mo", term: "12 mo", monthlyPayment: 100, nextDue: "Jun 15, 2026", status: "active" },
+  { id: "plan2", partner: "Rubix Financing", originalAmount: 2400, remaining: 0, apr: "0% if paid within 12 mo", term: "9 mo", monthlyPayment: 100, nextDue: "—", status: "paid_off" },
 ];
 
 const MOCK_PAYMENT_HISTORY = [
-  { date: "May 15, 2026", plan: "RPPS Flex Pay", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
-  { date: "Apr 15, 2026", plan: "RPPS Flex Pay", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
-  { date: "Mar 15, 2026", plan: "RPPS Flex Pay", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
-  { date: "Feb 15, 2026", plan: "Partner Plan A", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "May 15, 2026", plan: "Rubix Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "Apr 15, 2026", plan: "Rubix Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "Mar 15, 2026", plan: "Rubix Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "Feb 15, 2026", plan: "Rubix Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
 ];
 
 function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
@@ -2726,6 +2942,14 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
   const [replyBody, setReplyBody] = useState("");
   const [replySent, setReplySent] = useState(false);
   const unreadCount = messages.filter(m => !m.read).length;
+  // Bill Review / Dispute Service state
+  const [disputeRequests, setDisputeRequests] = useState([
+    { id: 1001, tier: "Standard Dispute Filing", price: 149, eobFile: "EOB_March_Visit.pdf", description: "Charged twice for the same office visit on the same date.", status: "resolved", date: "May 8, 2026", lastUpdate: "Resolved May 14, 2026 — duplicate charge removed, insurer reprocessed claim." },
+  ]);
+  const [disputeForm, setDisputeForm] = useState({ tier: "", eobFile: "", description: "" });
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
+  const [disputeSuccess, setDisputeSuccess] = useState(false);
+
   const updAcct = (k, v) => setAcctForm(f => ({ ...f, [k]: v }));
   const updBank = (k, v) => setBanking(f => ({ ...f, [k]: v }));
   const maskNum = (n) => n.length > 4 ? "•".repeat(n.length - 4) + n.slice(-4) : n;
@@ -2736,7 +2960,7 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
     setTimeout(() => { setPaySubmitting(false); setPaySuccess(true); }, 1500);
   };
 
-  const navItems = [["balances", "💳", "Balances"], ["payments", "💰", "Payments"], ["account", "👤", "Account Info"], ["financing", "➕", "Request Financing"], ["documents", "📎", "Documents"], ["messages", "💬", "Messages"]];
+  const navItems = [["balances", "💳", "Balances"], ["payments", "💰", "Payments"], ["account", "👤", "Account Info"], ["financing", "➕", "Request Financing"], ["documents", "📎", "Documents"], ["billreview", "🔍", "Bill Review"], ["messages", "💬", "Messages"]];
 
   return (
     <>
@@ -2898,7 +3122,7 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
                 </div>
                 <div className="form-row">
                   <div className="form-group"><label>Email Address</label><input type="email" value={acctForm.email} onChange={e => updAcct("email", e.target.value)} /></div>
-                  <div className="form-group"><label>Phone Number</label><input value={acctForm.phone} onChange={e => updAcct("phone", formatPhoneInput(e.target.value))} /></div>
+                  <div className="form-group"><label>Phone Number</label><input value={acctForm.phone} onChange={e => updAcct("phone", e.target.value)} /></div>
                 </div>
                 <div className="form-group"><label>Street Address</label><input value={acctForm.address} onChange={e => updAcct("address", e.target.value)} /></div>
                 <div className="form-row">
@@ -3076,6 +3300,116 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
           </>
         )}
 
+        {acctPage === "billreview" && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-title" style={{ marginBottom: 4 }}>Bill Review & Dispute Service</div>
+              <div className="section-sub">{"Think there's an error on your bill? Our team will review your EOB and help you dispute incorrect charges."}</div>
+            </div>
+
+            {disputeSuccess ? (
+              <div className="card" style={{ marginBottom: 20 }}>
+                <div className="success-screen" style={{ paddingBottom: 32 }}>
+                  <div className="success-icon">✅</div>
+                  <h2>Request submitted</h2>
+                  <p>{"We've received your EOB and request. Our team will review it and follow up by email with next steps."}</p>
+                  <button className="btn btn-ghost" onClick={() => { setDisputeSuccess(false); setDisputeForm({ tier: "", eobFile: "", description: "" }); }}>Submit Another Request</button>
+                </div>
+              </div>
+            ) : (
+              <div className="card" style={{ marginBottom: 24 }}>
+                <div className="card-header">
+                  <div className="card-icon teal">🔍</div>
+                  <div><div className="card-title">Submit a Bill Review Request</div><div className="card-subtitle">Attach your EOB and tell us what looks wrong</div></div>
+                </div>
+                <div className="card-body">
+                  <div className="section-sub" style={{ marginBottom: 16 }}>Choose the level of service you need:</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+                    {DISPUTE_SERVICE_TIERS.map(tier => (
+                      <div key={tier.id} onClick={() => setDisputeForm(f => ({ ...f, tier: tier.id }))} style={{ border: `2px solid ${disputeForm.tier === tier.id ? "var(--teal)" : "var(--border)"}`, borderRadius: "var(--radius-sm)", padding: "16px 18px", cursor: "pointer", background: disputeForm.tier === tier.id ? "#F0FDFA" : "var(--white)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, gap: 12 }}>
+                          <div style={{ fontWeight: 600, fontSize: 15 }}>{tier.name}</div>
+                          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, color: "var(--teal-dark)", whiteSpace: "nowrap" }}>${tier.price}</div>
+                        </div>
+                        <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 10 }}>{tier.desc}</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {tier.includes.map((inc, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--slate)" }}>
+                              <span style={{ color: "var(--teal)", fontWeight: 700 }}>✓</span>{inc}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="form-group">
+                    <label>Attach EOB or Bill *</label>
+                    <div style={{ border: "2px dashed var(--border)", borderRadius: "var(--radius-sm)", padding: "24px 20px", textAlign: "center", cursor: "pointer", background: "var(--mist2)" }}
+                      onClick={() => setDisputeForm(f => ({ ...f, eobFile: `EOB_Dispute_${Date.now()}.pdf` }))}>
+                      {disputeForm.eobFile ? (
+                        <div><div style={{ fontSize: 22, marginBottom: 4 }}>📄</div><div style={{ fontWeight: 600, fontSize: 14 }}>{disputeForm.eobFile}</div><div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>Click to change file</div></div>
+                      ) : (
+                        <div><div style={{ fontSize: 28, marginBottom: 6 }}>📎</div><div style={{ fontWeight: 500, fontSize: 13, color: "var(--text-secondary)" }}>Click to attach your EOB or bill</div></div>
+                      )}
+                    </div>
+                    <div className="helper-text">Demo mode: clicking selects a mock file.</div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>What looks wrong? *</label>
+                    <textarea placeholder="Briefly describe the issue — e.g. duplicate charge, incorrect amount, service not received..." value={disputeForm.description} onChange={e => setDisputeForm(f => ({ ...f, description: e.target.value }))} style={{ minHeight: 100, resize: "vertical", lineHeight: 1.6 }} />
+                  </div>
+
+                  <hr className="divider" />
+                  <button className="btn btn-primary" style={{ width: "100%" }}
+                    disabled={!disputeForm.tier || !disputeForm.eobFile || !disputeForm.description || disputeSubmitting}
+                    onClick={() => {
+                      setDisputeSubmitting(true);
+                      setTimeout(() => {
+                        const tier = DISPUTE_SERVICE_TIERS.find(t => t.id === disputeForm.tier);
+                        const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                        setDisputeRequests(reqs => [{ id: Date.now(), tier: tier.name, price: tier.price, eobFile: disputeForm.eobFile, description: disputeForm.description, status: "submitted", date: today, lastUpdate: "Submitted — our team will review within 1-2 business days." }, ...reqs]);
+                        setDisputeSubmitting(false);
+                        setDisputeSuccess(true);
+                      }, 1200);
+                    }}>
+                    {disputeSubmitting ? "Submitting..." : "Submit Request"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="card">
+              <div className="card-header">
+                <div className="card-icon teal">📋</div>
+                <div><div className="card-title">Your Requests</div><div className="card-subtitle">{disputeRequests.length} request{disputeRequests.length !== 1 ? "s" : ""} on file</div></div>
+              </div>
+              {disputeRequests.length === 0 ? (
+                <div style={{ padding: "32px", textAlign: "center", color: "var(--text-secondary)", fontSize: 14 }}>No bill review requests yet.</div>
+              ) : (
+                <div>
+                  {disputeRequests.map(req => (
+                    <div key={req.id} style={{ padding: "18px 24px", borderBottom: "1px solid var(--border)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, gap: 12, flexWrap: "wrap" }}>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>{req.tier} — ${req.price}</div>
+                          <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>Submitted {req.date} · {req.eobFile}</div>
+                        </div>
+                        <span className={`status-pill ${req.status === "resolved" ? "approved" : req.status === "submitted" ? "pending" : "reviewing"}`}>
+                          {req.status === "resolved" ? "✓ Resolved" : req.status === "submitted" ? "○ Submitted" : "◎ Under Review"}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 13, color: "var(--slate)", lineHeight: 1.6, marginBottom: 8 }}>{req.description}</div>
+                      <div style={{ background: "var(--mist)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--text-secondary)" }}>{req.lastUpdate}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
         {acctPage === "messages" && (
           <>
             <div style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -3207,7 +3541,6 @@ export default function App() {
   const [magicLink, setMagicLink] = useState("");
   const [authUser, setAuthUser] = useState(null);
   const [approvalResult, setApprovalResult] = useState(null);
-  const [approvalPlan, setApprovalPlan] = useState(null);
   const [providerNotifEmail, setProviderNotifEmail] = useState("admin@practice.com");
   // provider auth state
   const [providerUser, setProviderUser] = useState(null);
@@ -3224,13 +3557,15 @@ export default function App() {
 
   const handleSimulateMagicLink = () => setPage("auth");
   const handleAuthenticated = (user) => { setAuthUser(user); setPage("portal"); };
-  const handleApprovalResult = (result, intake, plan) => { setApprovalResult(result); setApprovalPlan(plan); setPage("app-submitted"); };
+  const handleApprovalResult = (result, intake) => { setApprovalResult(result); setPage("app-submitted"); };
+  const handleEobReview = (result, intake) => { setApprovalResult(result); setPage("eob-review"); };
+  const handleEobReviewResolved = (result, intake) => { setApprovalResult(result); setPage("offer-review"); };
   const handleSimulateDecision = () => setPage("offer-review");
   const handleAcceptOffer = () => setPage("esign");
   const handleDeclineOffer = () => setPage("home");
   const handleOfferSigned = () => setPage("offer-accepted");
-  const handleSignOut = () => { setAuthUser(null); setIntakeData(null); setMagicLink(""); setApprovalResult(null); setApprovalPlan(null); setPage("home"); };
-  const handleStartOver = () => { setIntakeData(null); setMagicLink(""); setApprovalResult(null); setApprovalPlan(null); setAuthUser(null); setPage("home"); };
+  const handleSignOut = () => { setAuthUser(null); setIntakeData(null); setMagicLink(""); setApprovalResult(null); setPage("home"); };
+  const handleStartOver = () => { setIntakeData(null); setMagicLink(""); setApprovalResult(null); setAuthUser(null); setPage("home"); };
 
   const handleProviderSignIn = (user) => { setProviderUser(user); setProviderPage("dashboard"); };
   const handleProviderSignOut = () => { setProviderUser(null); setProviderPage("dashboard"); };
@@ -3238,7 +3573,7 @@ export default function App() {
   const handlePatientAcctSignOut = () => { setPatientAcctUser(null); setPage("home"); };
   const handleRequestAdditionalFinancing = () => { setPatientAcctUser(null); setPage("home"); };
 
-  const patientPortalPages = ["portal", "app-submitted", "offer-review", "esign", "offer-accepted", "patient-account"];
+  const patientPortalPages = ["portal", "app-submitted", "eob-review", "offer-review", "esign", "offer-accepted", "patient-account"];
   const isPatientPortal = patientPortalPages.includes(page);
   const isProviderPortal = mode === "provider" && providerUser;
 
@@ -3278,7 +3613,7 @@ export default function App() {
 
         {mode === "patient" && !isPatientPortal && page !== "how-it-works" && (
           <PatientMarketingNav
-            activePage={["about", "services", "patient-account-login", "blog-patient", "contact-patient"].includes(page) ? page : "home"}
+            activePage={["about", "services", "patient-account-login", "blog-patient", "contact-patient", "bill-review-service"].includes(page) ? page : "home"}
             onNavigate={(p) => {
               if (p === "get-started") {
                 setPage("home");
@@ -3330,6 +3665,13 @@ export default function App() {
           </>
         )}
 
+        {mode === "patient" && page === "bill-review-service" && (
+          <>
+            <BillReviewService onNavigate={(p) => { if (p === "get-started") { setPage("home"); setTimeout(() => document.getElementById("intake-form")?.scrollIntoView({ behavior: "smooth" }), 80); } else setPage(p); }} />
+            <SiteFooter mode="patient" onNavigate={setPage} />
+          </>
+        )}
+
         {mode === "patient" && page === "blog-patient" && (
           <>
             <PatientBlog onNavigate={(p) => { if (p === "get-started") { setPage("home"); setTimeout(() => document.getElementById("intake-form")?.scrollIntoView({ behavior: "smooth" }), 80); } else setPage(p); }} />
@@ -3354,11 +3696,12 @@ export default function App() {
 
         {mode === "patient" && page === "magic-link-sent" && <div className="main-narrow" style={{ paddingTop: 48 }}><MagicLinkSent email={intakeData?.email} magicLink={magicLink} onSimulateClick={handleSimulateMagicLink} /></div>}
         {mode === "patient" && page === "auth" && <div className="main-narrow" style={{ paddingTop: 48 }}><AuthPage intakeData={intakeData} onAuthenticated={handleAuthenticated} /></div>}
-        {mode === "patient" && page === "portal" && <PatientPortal user={authUser} intakeData={intakeData} onApprovalResult={handleApprovalResult} onSignOut={handleSignOut} />}
-        {mode === "patient" && page === "app-submitted" && <AppSubmitted intakeData={intakeData} selectedPlan={approvalPlan} onSimulateDecision={handleSimulateDecision} onSignOut={handleSignOut} />}
-        {mode === "patient" && page === "offer-review" && <OfferReview result={approvalResult} intakeData={intakeData} selectedPlan={approvalPlan} onAccept={handleAcceptOffer} onDecline={handleDeclineOffer} onSignOut={handleSignOut} />}
-        {mode === "patient" && page === "esign" && <ESignDoc result={approvalResult} intakeData={intakeData} selectedPlan={approvalPlan} onSigned={handleOfferSigned} onBack={() => setPage("offer-review")} />}
-        {mode === "patient" && page === "offer-accepted" && <OfferAccepted result={approvalResult} intakeData={intakeData} selectedPlan={approvalPlan} providerEmail={providerNotifEmail} onStartOver={handleStartOver} />}
+        {mode === "patient" && page === "portal" && <PatientPortal user={authUser} intakeData={intakeData} onApprovalResult={handleApprovalResult} onEobReview={handleEobReview} onSignOut={handleSignOut} />}
+        {mode === "patient" && page === "app-submitted" && <AppSubmitted intakeData={intakeData} onSimulateDecision={handleSimulateDecision} onSignOut={handleSignOut} />}
+        {mode === "patient" && page === "eob-review" && <EobUnderReview result={approvalResult} intakeData={intakeData} onCheckStatus={handleEobReviewResolved} onSignOut={handleSignOut} />}
+        {mode === "patient" && page === "offer-review" && <OfferReview result={approvalResult} intakeData={intakeData} onAccept={handleAcceptOffer} onDecline={handleDeclineOffer} onSignOut={handleSignOut} />}
+        {mode === "patient" && page === "esign" && <ESignDoc result={approvalResult} intakeData={intakeData} onSigned={handleOfferSigned} onBack={() => setPage("offer-review")} />}
+        {mode === "patient" && page === "offer-accepted" && <OfferAccepted result={approvalResult} intakeData={intakeData} providerEmail={providerNotifEmail} onStartOver={handleStartOver} />}
 
         {/* ── PROVIDER PAGES ── */}
         {mode === "provider" && !providerUser && (
