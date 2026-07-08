@@ -812,7 +812,7 @@ const handlePasswordSignIn = async () => {
 
 // ─── PATIENT PORTAL (underwriting + plan selection) ──────────────────────────
 
-function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSignOut }) {
+function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSignOut, onApplicationCreated }) {
   const [uwStep, setUwStep] = useState(0);
   const [uwForm, setUwForm] = useState({
     dob: "", ssn: "", address: "", city: "", state: "", zip: "",
@@ -843,7 +843,7 @@ function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSign
       .eq("email", user.email)
       .single();
 
-    await supabase.from("applications").insert({
+    const { data: appData } = await supabase.from("applications").insert({
       patient_id: patientData?.id,
       balance_owed: parseFloat(intakeData.balanceOwed),
       care_description: intakeData.careDescription,
@@ -853,9 +853,20 @@ function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSign
       term: result.term,
       monthly_payment: result.monthlyPayment ? parseFloat(result.monthlyPayment) : null,
       status: result.decision,
-    });
+    }).select().single();
+
+    if (uwForm.eobFile) {
+      await supabase.from("documents").insert({
+        patient_id: patientData?.id,
+        document_type: "EOB",
+        file_name: uwForm.eobFile,
+        file_url: null,
+        status: uwForm.eobClarity === "clear" ? "verified" : "reviewing",
+      });
+    }
 
     setSubmitting(false);
+    onApplicationCreated?.(appData?.id, patientData?.id);
 
     if (result.decision === "eob_review") {
       onEobReview(result, intakeData);
@@ -1346,14 +1357,43 @@ A Rubix care coordinator will reach out to discuss alternative options that may 
 
 // ─── E-SIGN DOCUMENT ─────────────────────────────────────────────────────────
 
-function ESignDoc({ result, intakeData, onSigned, onBack }) {
+function ESignDoc({ result, intakeData, patientEmail, applicationId, patientDbId, onSigned, onBack }) {
   const [agreed, setAgreed] = useState(false);
   const [signed, setSigned] = useState(false);
   const [sigName, setSigName] = useState("");
+  const [saveError, setSaveError] = useState("");
 
-  const handleSign = () => {
+  const handleSign = async () => {
     if (!agreed || !sigName.trim()) return;
     setSigned(true);
+
+    try {
+      let patientId = patientDbId;
+      if (!patientId) {
+        const { data: patientData } = await supabase
+          .from("patients")
+          .select("id")
+          .eq("email", patientEmail)
+          .single();
+        patientId = patientData?.id;
+      }
+
+      const nextDueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+      const { error: planError } = await supabase.from("payment_plans").insert({
+        application_id: applicationId,
+        patient_id: patientId,
+        original_amount: parseFloat(result.approvedAmount),
+        remaining_balance: parseFloat(result.approvedAmount),
+        monthly_payment: parseFloat(result.monthlyPayment),
+        next_due_date: nextDueDate,
+        status: "active",
+      });
+      if (planError) setSaveError(planError.message);
+    } catch (err) {
+      setSaveError(err.message);
+    }
+
     setTimeout(() => onSigned(), 1200);
   };
 
@@ -1743,8 +1783,36 @@ function ProviderBlog({ onNavigate }) {
 function ContactPage({ audience }) {
   const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
   const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const valid = form.name && form.email && form.subject && form.message;
+
+  const handleSend = async () => {
+    setSending(true);
+
+    let patientId = null;
+    let providerId = null;
+    if (audience === "provider") {
+      const { data } = await supabase.from("providers").select("id").eq("email", form.email).maybeSingle();
+      providerId = data?.id || null;
+    } else {
+      const { data } = await supabase.from("patients").select("id").eq("email", form.email).maybeSingle();
+      patientId = data?.id || null;
+    }
+
+    const bodyWithContact = `${form.message}\n\n---\nFrom: ${form.name} (${form.email}${form.phone ? ", " + form.phone : ""})`;
+
+    await supabase.from("messages").insert({
+      patient_id: patientId,
+      provider_id: providerId,
+      subject: form.subject,
+      body: bodyWithContact,
+      sender: form.name,
+      read: false,
+    });
+    setSending(false);
+    setSubmitted(true);
+  };
 
   const subjects = audience === "provider"
     ? ["General Inquiry", "Partnership Opportunity", "Technical Support", "Billing Question", "Demo Request", "Other"]
@@ -1813,7 +1881,7 @@ function ContactPage({ audience }) {
                     <label>Message *</label>
                     <textarea placeholder="How can we help you?" value={form.message} onChange={e => upd("message", e.target.value)} style={{ minHeight: 120, resize: "vertical", lineHeight: 1.6 }} />
                   </div>
-                  <button className="btn btn-primary" style={{ width: "100%" }} disabled={!valid} onClick={() => setSubmitted(true)}>Send Message</button>
+                  <button className="btn btn-primary" style={{ width: "100%" }} disabled={!valid || sending} onClick={handleSend}>{sending ? "Sending..." : "Send Message"}</button>
                   <div style={{ fontSize: 11, color: "var(--text-light)", textAlign: "center", marginTop: 12 }}>We typically respond within 1 business day.</div>
                 </>
               )}
@@ -3690,12 +3758,15 @@ export default function App() {
   const [authUser, setAuthUser] = useState(null);
   const [approvalResult, setApprovalResult] = useState(null);
   const [providerNotifEmail, setProviderNotifEmail] = useState("admin@practice.com");
+  const [applicationId, setApplicationId] = useState(null);
+  const [patientDbId, setPatientDbId] = useState(null);
   // provider auth state
   const [providerUser, setProviderUser] = useState(null);
   const [providerPage, setProviderPage] = useState("dashboard");
   // patient account portal state
   const [patientAcctUser, setPatientAcctUser] = useState(null);
 
+  const handleApplicationCreated = (appId, patId) => { setApplicationId(appId); setPatientDbId(patId); };
   const handleIntakeSubmit = (form) => {
     const link = generateMagicLink(form.email);
     setIntakeData(form);
@@ -3718,13 +3789,16 @@ export default function App() {
     setIntakeData(null);
     setMagicLink("");
     setApprovalResult(null);
-    setApprovalPlan(null);
     setPage("home");
   };
   const handleStartOver = () => { setIntakeData(null); setMagicLink(""); setApprovalResult(null); setAuthUser(null); setPage("home"); };
 
   const handleProviderSignIn = (user) => { setProviderUser(user); setProviderPage("dashboard"); };
-  const handleProviderSignOut = () => { setProviderUser(null); setProviderPage("dashboard"); };
+  const handleProviderSignOut = async () => {
+    await supabase.auth.signOut();
+    setProviderUser(null);
+    setProviderPage("dashboard");
+  };
   const handlePatientAcctSignIn = (user) => { setPatientAcctUser(user); setPage("patient-account"); };
   const handlePatientAcctSignOut = () => { setPatientAcctUser(null); setPage("home"); };
   const handleRequestAdditionalFinancing = () => { setPatientAcctUser(null); setPage("home"); };
@@ -3852,11 +3926,11 @@ export default function App() {
 
         {mode === "patient" && page === "magic-link-sent" && <div className="main-narrow" style={{ paddingTop: 48 }}><MagicLinkSent email={intakeData?.email} magicLink={magicLink} onSimulateClick={handleSimulateMagicLink} /></div>}
         {mode === "patient" && page === "auth" && <div className="main-narrow" style={{ paddingTop: 48 }}><AuthPage intakeData={intakeData} onAuthenticated={handleAuthenticated} /></div>}
-        {mode === "patient" && page === "portal" && <PatientPortal user={authUser} intakeData={intakeData} onApprovalResult={handleApprovalResult} onEobReview={handleEobReview} onSignOut={handleSignOut} />}
+        {mode === "patient" && page === "portal" && <PatientPortal user={authUser} intakeData={intakeData} onApprovalResult={handleApprovalResult} onEobReview={handleEobReview} onSignOut={handleSignOut} onApplicationCreated={handleApplicationCreated} />}
         {mode === "patient" && page === "app-submitted" && <AppSubmitted intakeData={intakeData} onSimulateDecision={handleSimulateDecision} onSignOut={handleSignOut} />}
         {mode === "patient" && page === "eob-review" && <EobUnderReview result={approvalResult} intakeData={intakeData} onCheckStatus={handleEobReviewResolved} onSignOut={handleSignOut} />}
         {mode === "patient" && page === "offer-review" && <OfferReview result={approvalResult} intakeData={intakeData} onAccept={handleAcceptOffer} onDecline={handleDeclineOffer} onSignOut={handleSignOut} />}
-        {mode === "patient" && page === "esign" && <ESignDoc result={approvalResult} intakeData={intakeData} onSigned={handleOfferSigned} onBack={() => setPage("offer-review")} />}
+        {mode === "patient" && page === "esign" && <ESignDoc result={approvalResult} intakeData={intakeData} patientEmail={authUser?.email} applicationId={applicationId} patientDbId={patientDbId} onSigned={handleOfferSigned} onBack={() => setPage("offer-review")} />}
         {mode === "patient" && page === "offer-accepted" && <OfferAccepted result={approvalResult} intakeData={intakeData} providerEmail={providerNotifEmail} onStartOver={handleStartOver} />}
 
         {/* ── PROVIDER PAGES ── */}
