@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 
 const styles = `
@@ -812,7 +812,7 @@ const handlePasswordSignIn = async () => {
 
 // ─── PATIENT PORTAL (underwriting + plan selection) ──────────────────────────
 
-function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSignOut, onApplicationCreated }) {
+function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSignOut, onApplicationCreated, embedded }) {
   const [uwStep, setUwStep] = useState(0);
   const [uwForm, setUwForm] = useState({
     dob: "", ssn: "", address: "", city: "", state: "", zip: "",
@@ -879,22 +879,29 @@ function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSign
 
   return (
     <>
-      <div className="portal-header">
-        <div className="portal-user">
-          <div className="portal-avatar">{initials}</div>
-          <div>
-            <div className="portal-name">{user.firstName ? `${user.firstName} ${user.lastName}` : "Patient"}</div>
-            <div className="portal-email">{user.email}</div>
+      {!embedded ? (
+        <div className="portal-header">
+          <div className="portal-user">
+            <div className="portal-avatar">{initials}</div>
+            <div>
+              <div className="portal-name">{user.firstName ? `${user.firstName} ${user.lastName}` : "Patient"}</div>
+              <div className="portal-email">{user.email}</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12 }}>Balance to finance</div>
+              <div style={{ color: "white", fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 20 }}>${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}</div>
+            </div>
+            <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12 }}>Balance to finance</div>
-            <div style={{ color: "white", fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 20 }}>${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}</div>
-          </div>
-          <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
+      ) : (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <button onClick={onSignOut} style={{ background: "none", border: "none", color: "var(--teal-dark)", cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, padding: 0 }}>{"← Cancel"}</button>
+          <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Balance to finance: <strong style={{ color: "var(--text-primary)" }}>${parseFloat(intakeData.balanceOwed || 0).toLocaleString()}</strong></div>
         </div>
-      </div>
+      )}
 
       <div className="main-narrow">
         <div className="card">
@@ -1086,7 +1093,7 @@ function MockEmail({ subject, to, body, note }) {
 
 // ─── APPLICATION SUBMITTED SCREEN ────────────────────────────────────────────
 
-function AppSubmitted({ intakeData, onSimulateDecision, onSignOut }) {
+function AppSubmitted({ intakeData, onSimulateDecision, onSignOut, embedded }) {
   const [showEmail, setShowEmail] = useState(false);
 
   const emailBody =
@@ -1107,13 +1114,19 @@ If you have any questions in the meantime, please reply to this email.
 
   return (
     <>
-      <div className="portal-header">
-        <div style={{ color: "white" }}>
-          <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Application submitted</div>
-          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>{intakeData.careDescription}</div>
+      {!embedded ? (
+        <div className="portal-header">
+          <div style={{ color: "white" }}>
+            <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Application submitted</div>
+            <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>{intakeData.careDescription}</div>
+          </div>
+          <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
         </div>
-        <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
-      </div>
+      ) : (
+        <div style={{ marginBottom: 16 }}>
+          <button onClick={onSignOut} style={{ background: "none", border: "none", color: "var(--teal-dark)", cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, padding: 0 }}>{"← Cancel"}</button>
+        </div>
+      )}
       <div className="main-narrow">
         <div className="card">
           <div className="success-screen" style={{ paddingBottom: 32 }}>
@@ -1160,7 +1173,7 @@ If you have any questions in the meantime, please reply to this email.
 
 // ─── EOB UNDER REVIEW SCREEN ──────────────────────────────────────────────────
 
-function EobUnderReview({ result, intakeData, onCheckStatus, onSignOut }) {
+function EobUnderReview({ result, intakeData, onCheckStatus, onSignOut, embedded }) {
   const [showEmail, setShowEmail] = useState(true);
 
   const emailBody =
@@ -1176,13 +1189,19 @@ Thanks for your patience!
 
   return (
     <>
-      <div className="portal-header">
-        <div style={{ color: "white" }}>
-          <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Application status</div>
-          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>EOB Under Review</div>
+      {!embedded ? (
+        <div className="portal-header">
+          <div style={{ color: "white" }}>
+            <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Application status</div>
+            <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>EOB Under Review</div>
+          </div>
+          <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
         </div>
-        <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
-      </div>
+      ) : (
+        <div style={{ marginBottom: 16 }}>
+          <button onClick={onSignOut} style={{ background: "none", border: "none", color: "var(--teal-dark)", cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, padding: 0 }}>{"← Cancel"}</button>
+        </div>
+      )}
       <div className="main-narrow">
         {showEmail && (
           <MockEmail
@@ -1222,7 +1241,7 @@ Thanks for your patience!
 
 // ─── DECISION EMAIL + OFFER REVIEW ───────────────────────────────────────────
 
-function OfferReview({ result, intakeData, onAccept, onDecline, onSignOut }) {
+function OfferReview({ result, intakeData, onAccept, onDecline, onSignOut, embedded }) {
   const [showEmail, setShowEmail] = useState(true);
   const approved = result.decision === "approved";
   const review = result.decision === "review";
@@ -1266,13 +1285,19 @@ A Rubix care coordinator will reach out to discuss alternative options that may 
 
   return (
     <>
-      <div className="portal-header">
-        <div style={{ color: "white" }}>
-          <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Decision received</div>
-          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>{approved ? "Approved" : review ? "Under Review" : "Not Approved"}</div>
+      {!embedded ? (
+        <div className="portal-header">
+          <div style={{ color: "white" }}>
+            <div style={{ fontSize: 13, opacity: 0.6, marginBottom: 2 }}>Decision received</div>
+            <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>{approved ? "Approved" : review ? "Under Review" : "Not Approved"}</div>
+          </div>
+          <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
         </div>
-        <button className="btn btn-ghost" style={{ fontSize: 13, padding: "8px 16px" }} onClick={onSignOut}>Sign Out</button>
-      </div>
+      ) : (
+        <div style={{ marginBottom: 16 }}>
+          <button onClick={onSignOut} style={{ background: "none", border: "none", color: "var(--teal-dark)", cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, padding: 0 }}>{"← Cancel"}</button>
+        </div>
+      )}
 
       <div className="main-narrow">
         {showEmail && (
@@ -3116,7 +3141,7 @@ const MOCK_PAYMENT_HISTORY = [
   { date: "Feb 15, 2026", plan: "Rubix Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
 ];
 
-function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
+function PatientAccountPortal({ user, onSignOut }) {
   const [acctPage, setAcctPage] = useState("balances");
   const [paymentPlan, setPaymentPlan] = useState(null);
   const [payAmount, setPayAmount] = useState("");
@@ -3126,6 +3151,58 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
   const [banking, setBanking] = useState({ bankName: "Chase", accountHolder: "Maria Lopez", routingNumber: "021000021", accountNumber: "4521987654", accountType: "checking" });
   const [bankSaved, setBankSaved] = useState(true);
   const [acctSaved, setAcctSaved] = useState(false);
+
+  // Real payment plan data (falls back to MOCK_PLANS for demo accounts with nothing signed yet)
+  const [realPlans, setRealPlans] = useState([]);
+  const [patientDbId, setPatientDbId] = useState(null);
+  const [plansLoading, setPlansLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data: patientRow } = await supabase.from("patients").select("id").eq("email", user.email).single();
+      if (patientRow?.id) {
+        setPatientDbId(patientRow.id);
+        const { data: plansData } = await supabase
+          .from("payment_plans")
+          .select("*")
+          .eq("patient_id", patientRow.id)
+          .order("created_at", { ascending: false });
+        if (plansData) {
+          setRealPlans(plansData.map(p => ({
+            id: p.id,
+            isReal: true,
+            partner: "Rubix Financing",
+            originalAmount: Number(p.original_amount) || 0,
+            remaining: Number(p.remaining_balance) || 0,
+            apr: "0% if paid within 12 mo",
+            term: "—",
+            monthlyPayment: Number(p.monthly_payment) || 0,
+            nextDue: p.next_due_date ? new Date(p.next_due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—",
+            nextDueRaw: p.next_due_date,
+            status: p.status === "active" ? "active" : (p.status || "active"),
+            autopayEnabled: p.autopay_enabled,
+            autopayAmount: p.autopay_amount,
+            autopayUseDueDate: p.autopay_use_due_date,
+            autopayChargeDay: p.autopay_charge_day,
+            autopayStatus: p.autopay_status || "none",
+          })));
+        }
+      }
+      setPlansLoading(false);
+    })();
+  }, [user.email]);
+
+  const plans = realPlans.length > 0 ? realPlans : MOCK_PLANS;
+
+  const logEmail = async (emailType, subject, body) => {
+    await supabase.from("email_log").insert({
+      patient_id: patientDbId,
+      recipient_email: user.email,
+      subject,
+      body,
+      email_type: emailType,
+    });
+  };
 
   // Documents state
   const [docs, setDocs] = useState([
@@ -3157,6 +3234,7 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
   const [newMsg, setNewMsg] = useState({ subject: "", body: "" });
   const [replyBody, setReplyBody] = useState("");
   const [replySent, setReplySent] = useState(false);
+  const [sendingMsg, setSendingMsg] = useState(false);
   const unreadCount = messages.filter(m => !m.read).length;
   // Bill Review / Dispute Service state
   const [disputeRequests, setDisputeRequests] = useState([
@@ -3174,6 +3252,102 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
   const handlePaySubmit = () => {
     setPaySubmitting(true);
     setTimeout(() => { setPaySubmitting(false); setPaySuccess(true); }, 1500);
+  };
+
+  // Embedded "Request Additional Financing" sub-flow (stays within the authenticated portal — no sign-out)
+  const [financingStep, setFinancingStep] = useState("choose"); // choose | intake | portal | app-submitted | eob-review | offer-review | esign | offer-accepted
+  const [financingIntakeData, setFinancingIntakeData] = useState(null);
+  const [financingResult, setFinancingResult] = useState(null);
+  const [financingAppId, setFinancingAppId] = useState(null);
+  const refetchRealPlans = async () => {
+    if (!patientDbId) return;
+    const { data: plansData } = await supabase.from("payment_plans").select("*").eq("patient_id", patientDbId).order("created_at", { ascending: false });
+    if (plansData) {
+      setRealPlans(plansData.map(p => ({
+        id: p.id, isReal: true, partner: "Rubix Financing",
+        originalAmount: Number(p.original_amount) || 0, remaining: Number(p.remaining_balance) || 0,
+        apr: "0% if paid within 12 mo", term: "—", monthlyPayment: Number(p.monthly_payment) || 0,
+        nextDue: p.next_due_date ? new Date(p.next_due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—",
+        nextDueRaw: p.next_due_date, status: p.status === "active" ? "active" : (p.status || "active"),
+        autopayEnabled: p.autopay_enabled, autopayAmount: p.autopay_amount, autopayUseDueDate: p.autopay_use_due_date,
+        autopayChargeDay: p.autopay_charge_day, autopayStatus: p.autopay_status || "none",
+      })));
+    }
+  };
+  const resetFinancingFlow = () => {
+    setFinancingStep("choose"); setFinancingIntakeData(null); setFinancingResult(null); setFinancingAppId(null);
+  };
+
+  // Autopay state
+  const activeRealPlans = plans.filter(p => p.isReal && p.status === "active");
+  const [autopayPlanId, setAutopayPlanId] = useState("");
+  const [autopayAmountMode, setAutopayAmountMode] = useState("minimum");
+  const [autopayCustomAmount, setAutopayCustomAmount] = useState("");
+  const [autopayTiming, setAutopayTiming] = useState("due_date");
+  const [autopayDay, setAutopayDay] = useState("");
+  const [autopaySubmitting, setAutopaySubmitting] = useState(false);
+  const [autopayError, setAutopayError] = useState("");
+  const [autopayResultMsg, setAutopayResultMsg] = useState("");
+
+  const autopayPlan = plans.find(p => p.id === autopayPlanId) || activeRealPlans[0] || null;
+
+  const handleAutopaySetup = async () => {
+    setAutopayError("");
+    if (!autopayPlan || !autopayPlan.isReal) { setAutopayError("Autopay is only available on an active financed plan."); return; }
+
+    const amount = autopayAmountMode === "minimum" ? autopayPlan.monthlyPayment : parseFloat(autopayCustomAmount);
+    if (!amount || isNaN(amount)) { setAutopayError("Please enter a valid payment amount."); return; }
+    if (amount < autopayPlan.monthlyPayment) { setAutopayError(`Custom amount must be at least the minimum payment of $${autopayPlan.monthlyPayment}.`); return; }
+
+    let chargeDay = null;
+    let needsReview = false;
+    const dueDay = autopayPlan.nextDueRaw ? new Date(autopayPlan.nextDueRaw + "T00:00:00").getDate() : null;
+    if (autopayTiming === "custom_day") {
+      chargeDay = parseInt(autopayDay, 10);
+      if (!chargeDay || chargeDay < 1 || chargeDay > 28) { setAutopayError("Please choose a day between 1 and 28."); return; }
+      needsReview = dueDay != null && chargeDay > dueDay;
+    }
+
+    setAutopaySubmitting(true);
+    const newStatus = needsReview ? "pending_review" : "active";
+    const { error } = await supabase.from("payment_plans").update({
+      autopay_enabled: !needsReview,
+      autopay_amount: amount,
+      autopay_use_due_date: autopayTiming === "due_date",
+      autopay_charge_day: autopayTiming === "custom_day" ? chargeDay : null,
+      autopay_status: newStatus,
+    }).eq("id", autopayPlan.id);
+
+    if (error) { setAutopaySubmitting(false); setAutopayError(error.message); return; }
+
+    setRealPlans(prev => prev.map(p => p.id === autopayPlan.id ? { ...p, autopayEnabled: !needsReview, autopayAmount: amount, autopayUseDueDate: autopayTiming === "due_date", autopayChargeDay: chargeDay, autopayStatus: newStatus } : p));
+
+    if (needsReview) {
+      await logEmail(
+        "autopay_pending_review",
+        "Your Autopay Request is Under Review",
+        `Hi, we've received your request to set up autopay of $${amount} charged on day ${chargeDay} of each month. Since this falls after your plan's current due date, a Rubix team member will review it and a decision will be reached within 1-2 business days.`
+      );
+      setAutopayResultMsg("Your autopay request needs a quick review since the day you chose falls after your due date. You'll get a decision within 1-2 business days.");
+    } else {
+      const timingText = autopayTiming === "due_date" ? "your plan's due date each month" : `day ${chargeDay} of each month`;
+      await logEmail(
+        "autopay_enabled",
+        "Autopay Confirmed",
+        `Hi, autopay has been set up on your Rubix payment plan for $${amount}, charged on ${timingText}.`
+      );
+      setAutopayResultMsg("Autopay is set up and active.");
+    }
+    setAutopaySubmitting(false);
+  };
+
+  const handleAutopayDisable = async (plan) => {
+    setAutopaySubmitting(true);
+    await supabase.from("payment_plans").update({ autopay_enabled: false, autopay_status: "none" }).eq("id", plan.id);
+    setRealPlans(prev => prev.map(p => p.id === plan.id ? { ...p, autopayEnabled: false, autopayStatus: "none" } : p));
+    await logEmail("autopay_disabled", "Autopay Turned Off", `Hi, autopay has been turned off for your Rubix payment plan. You can re-enable it any time from your account.`);
+    setAutopayResultMsg("Autopay has been turned off.");
+    setAutopaySubmitting(false);
   };
 
   const navItems = [["balances", "💳", "Balances"], ["payments", "💰", "Payments"], ["account", "👤", "Account Info"], ["financing", "➕", "Request Financing"], ["documents", "📎", "Documents"], ["billreview", "🔍", "Bill Review"], ["messages", "💬", "Messages"]];
@@ -3210,7 +3384,7 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
               <div className="section-title" style={{ marginBottom: 4 }}>Your Payment Plans</div>
               <div className="section-sub">All active and completed financing through Rubix.</div>
             </div>
-            {MOCK_PLANS.map(plan => (
+            {plans.map(plan => (
               <div key={plan.id} className="card" style={{ marginBottom: 16 }}>
                 <div style={{ padding: "20px 24px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
@@ -3266,9 +3440,9 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
                   <>
                     <div className="form-group">
                       <label>Select Plan</label>
-                      <select value={paymentPlan?.id || ""} onChange={e => setPaymentPlan(MOCK_PLANS.find(p => p.id === e.target.value) || null)}>
+                      <select value={paymentPlan?.id || ""} onChange={e => setPaymentPlan(plans.find(p => p.id === e.target.value) || null)}>
                         <option value="">Select a plan...</option>
-                        {MOCK_PLANS.filter(p => p.status === "active").map(p => (
+                        {plans.filter(p => p.status === "active").map(p => (
                           <option key={p.id} value={p.id}>{p.partner} — ${p.remaining.toLocaleString()} remaining</option>
                         ))}
                       </select>
@@ -3294,6 +3468,93 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
                 )}
               </div>
             </div>
+
+            <div className="card" style={{ marginBottom: 20 }}>
+              <div className="card-header">
+                <div className="card-icon teal">🔁</div>
+                <div><div className="card-title">Autopay</div><div className="card-subtitle">Automatically charge your payment each month</div></div>
+              </div>
+              <div className="card-body">
+                {activeRealPlans.length === 0 ? (
+                  <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>Autopay becomes available once you have an active financed plan.</div>
+                ) : (
+                  <>
+                    {autopayPlan?.autopayStatus === "active" && (
+                      <div style={{ background: "#F0FDFA", border: "1px solid #CCFBF1", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 14, marginBottom: 16 }}>
+                        <div style={{ fontWeight: 600, marginBottom: 4 }}>✓ Autopay is active</div>
+                        <div style={{ color: "var(--slate)" }}>${autopayPlan.autopayAmount} charged {autopayPlan.autopayUseDueDate ? "on your due date" : `on day ${autopayPlan.autopayChargeDay}`} each month.</div>
+                        <button className="btn btn-ghost" style={{ marginTop: 10, fontSize: 13, padding: "6px 14px" }} disabled={autopaySubmitting} onClick={() => handleAutopayDisable(autopayPlan)}>Turn Off Autopay</button>
+                      </div>
+                    )}
+                    {autopayPlan?.autopayStatus === "pending_review" && (
+                      <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 14, marginBottom: 16 }}>
+                        <div style={{ fontWeight: 600, marginBottom: 4 }}>⏳ Autopay request under review</div>
+                        <div style={{ color: "var(--slate)" }}>Requested ${autopayPlan.autopayAmount} on day {autopayPlan.autopayChargeDay} of each month. A Rubix team member will make a decision within 1-2 business days.</div>
+                      </div>
+                    )}
+                    {(!autopayPlan || autopayPlan.autopayStatus === "none" || autopayPlan.autopayStatus === "rejected") && (
+                      <>
+                        {autopayPlan?.autopayStatus === "rejected" && (
+                          <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 14, marginBottom: 16, color: "#991B1B" }}>
+                            Your previous autopay day request wasn't approved. You can submit a new request below.
+                          </div>
+                        )}
+                        {activeRealPlans.length > 1 && (
+                          <div className="form-group">
+                            <label>Plan</label>
+                            <select value={autopayPlanId} onChange={e => setAutopayPlanId(e.target.value)}>
+                              {activeRealPlans.map(p => <option key={p.id} value={p.id}>{p.partner} — ${p.remaining.toLocaleString()} remaining</option>)}
+                            </select>
+                          </div>
+                        )}
+                        <div className="form-group">
+                          <label>Amount</label>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 400, fontSize: 14 }}>
+                              <input type="radio" checked={autopayAmountMode === "minimum"} onChange={() => setAutopayAmountMode("minimum")} />
+                              Minimum payment (${autopayPlan?.monthlyPayment || 0}/mo)
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 400, fontSize: 14 }}>
+                              <input type="radio" checked={autopayAmountMode === "custom"} onChange={() => setAutopayAmountMode("custom")} />
+                              Custom amount
+                            </label>
+                            {autopayAmountMode === "custom" && (
+                              <div className="input-prefix" style={{ maxWidth: 200 }}>
+                                <span>$</span>
+                                <input type="text" inputMode="numeric" placeholder={String(autopayPlan?.monthlyPayment || 0)} value={autopayCustomAmount} onChange={e => setAutopayCustomAmount(formatIncome(e.target.value))} />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label>When to charge</label>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 400, fontSize: 14 }}>
+                              <input type="radio" checked={autopayTiming === "due_date"} onChange={() => setAutopayTiming("due_date")} />
+                              On my plan's due date each month
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 400, fontSize: 14 }}>
+                              <input type="radio" checked={autopayTiming === "custom_day"} onChange={() => setAutopayTiming("custom_day")} />
+                              On a day I choose
+                            </label>
+                            {autopayTiming === "custom_day" && (
+                              <input type="text" inputMode="numeric" placeholder="Day of month (1-28)" style={{ maxWidth: 200 }} value={autopayDay} onChange={e => setAutopayDay(e.target.value.replace(/\D/g, ""))} />
+                            )}
+                          </div>
+                          <div className="helper-text">If the day you choose falls after your plan's due date, a Rubix team member will need to review and approve it first.</div>
+                        </div>
+                        {autopayError && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{autopayError}</div>}
+                        <button className="btn btn-primary" style={{ width: "100%" }} disabled={autopaySubmitting} onClick={handleAutopaySetup}>
+                          {autopaySubmitting ? "Setting up..." : "Set Up Autopay"}
+                        </button>
+                      </>
+                    )}
+                    {autopayResultMsg && <div style={{ fontSize: 13, color: "var(--teal-dark)", marginTop: 12 }}>{autopayResultMsg}</div>}
+                  </>
+                )}
+              </div>
+            </div>
+
             <div className="card">
               <div className="card-header">
                 <div className="card-icon teal">📋</div>
@@ -3396,30 +3657,73 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
 
         {acctPage === "financing" && (
           <>
-            <div style={{ marginBottom: 20 }}>
-              <div className="section-title" style={{ marginBottom: 4 }}>Request Additional Financing</div>
-              <div className="section-sub">Apply for a new payment plan for upcoming ABA, behavioral health, or mental health care expenses.</div>
-            </div>
-            <div className="card">
-              <div className="card-body">
-                <div className="alert info" style={{ marginBottom: 20 }}>{"Checking your options does not affect your credit score."}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 28 }}>
-                  {[["💊", "New or upcoming treatment", "Apply for financing for a new episode of care or upcoming procedure."], ["🏥", "Existing balance", "Finance an outstanding balance with your current provider."], ["🔄", "Refinance existing plan", "Request different terms on an existing Rubix payment plan."]].map(([icon, title, desc]) => (
-                    <div key={title} style={{ display: "flex", gap: 14, padding: "18px", border: "1.5px solid var(--border)", borderRadius: "var(--radius-sm)", cursor: "pointer", background: "var(--white)", transition: "all 0.2s" }} onClick={onRequestFinancing}>
-                      <div style={{ fontSize: 28, flexShrink: 0 }}>{icon}</div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{title}</div>
-                        <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{desc}</div>
-                      </div>
-                      <div style={{ marginLeft: "auto", color: "var(--teal)", fontSize: 18, alignSelf: "center" }}>→</div>
+            {financingStep === "choose" && (
+              <>
+                <div style={{ marginBottom: 20 }}>
+                  <div className="section-title" style={{ marginBottom: 4 }}>Request Additional Financing</div>
+                  <div className="section-sub">Apply for a new payment plan for upcoming ABA, behavioral health, or mental health care expenses.</div>
+                </div>
+                <div className="card">
+                  <div className="card-body">
+                    <div className="alert info" style={{ marginBottom: 20 }}>{"Checking your options does not affect your credit score."}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 28 }}>
+                      {[["💊", "New or upcoming treatment", "Apply for financing for a new episode of care or upcoming procedure."], ["🏥", "Existing balance", "Finance an outstanding balance with your current provider."], ["🔄", "Refinance existing plan", "Request different terms on an existing Rubix payment plan."]].map(([icon, title, desc]) => (
+                        <div key={title} style={{ display: "flex", gap: 14, padding: "18px", border: "1.5px solid var(--border)", borderRadius: "var(--radius-sm)", cursor: "pointer", background: "var(--white)", transition: "all 0.2s" }} onClick={() => setFinancingStep("intake")}>
+                          <div style={{ fontSize: 28, flexShrink: 0 }}>{icon}</div>
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{title}</div>
+                            <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{desc}</div>
+                          </div>
+                          <div style={{ marginLeft: "auto", color: "var(--teal)", fontSize: 18, alignSelf: "center" }}>→</div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.6 }}>
+                      Your new application stays in your account — your existing plans will not be affected, and you won't be signed out.
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.6 }}>
-                  Selecting an option above will take you to a new financing application. Your existing plans will not be affected.
-                </div>
-              </div>
-            </div>
+              </>
+            )}
+
+            {financingStep === "intake" && (
+              <>
+                <button onClick={() => setFinancingStep("choose")} style={{ background: "none", border: "none", color: "var(--teal-dark)", cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, padding: 0, marginBottom: 16 }}>{"← Back"}</button>
+                <IntakeForm onSubmit={(form) => { setFinancingIntakeData({ ...form, firstName: form.firstName || acctForm.firstName, lastName: form.lastName || acctForm.lastName, email: form.email || user.email }); setFinancingStep("portal"); }} />
+              </>
+            )}
+
+            {financingStep === "portal" && financingIntakeData && (
+              <PatientPortal
+                embedded
+                user={user}
+                intakeData={financingIntakeData}
+                onApplicationCreated={(appId) => setFinancingAppId(appId)}
+                onApprovalResult={(result) => { setFinancingResult(result); setFinancingStep("app-submitted"); }}
+                onEobReview={(result) => { setFinancingResult(result); setFinancingStep("eob-review"); }}
+                onSignOut={resetFinancingFlow}
+              />
+            )}
+
+            {financingStep === "app-submitted" && (
+              <AppSubmitted embedded intakeData={financingIntakeData} onSimulateDecision={() => setFinancingStep("offer-review")} onSignOut={resetFinancingFlow} />
+            )}
+
+            {financingStep === "eob-review" && (
+              <EobUnderReview embedded result={financingResult} intakeData={financingIntakeData} onCheckStatus={() => setFinancingStep("offer-review")} onSignOut={resetFinancingFlow} />
+            )}
+
+            {financingStep === "offer-review" && (
+              <OfferReview embedded result={financingResult} intakeData={financingIntakeData} onAccept={() => setFinancingStep("esign")} onDecline={resetFinancingFlow} onSignOut={resetFinancingFlow} />
+            )}
+
+            {financingStep === "esign" && (
+              <ESignDoc result={financingResult} intakeData={financingIntakeData} patientEmail={user.email} applicationId={financingAppId} patientDbId={patientDbId} onSigned={async () => { await refetchRealPlans(); setFinancingStep("offer-accepted"); }} onBack={() => setFinancingStep("offer-review")} />
+            )}
+
+            {financingStep === "offer-accepted" && (
+              <OfferAccepted result={financingResult} intakeData={financingIntakeData} onStartOver={() => { resetFinancingFlow(); setAcctPage("balances"); }} />
+            )}
           </>
         )}
 
@@ -3649,14 +3953,24 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
                   <hr className="divider" />
                   <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
                     <button className="btn btn-ghost" onClick={() => setComposing(false)}>Cancel</button>
-                    <button className="btn btn-primary" disabled={!newMsg.subject || !newMsg.body}
-                      onClick={() => {
+                    <button className="btn btn-primary" disabled={!newMsg.subject || !newMsg.body || sendingMsg}
+                      onClick={async () => {
+                        setSendingMsg(true);
                         const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                        await supabase.from("messages").insert({
+                          patient_id: patientDbId,
+                          provider_id: null,
+                          subject: newMsg.subject,
+                          body: newMsg.body,
+                          sender: `${acctForm.firstName} ${acctForm.lastName}`,
+                          read: true,
+                        });
                         const msg = { id: Date.now(), subject: newMsg.subject, from: "Me", date: today, read: true, thread: [{ from: "Me", date: today, body: newMsg.body }] };
                         setMessages(msgs => [msg, ...msgs]);
+                        setSendingMsg(false);
                         setComposing(false);
                         setActiveThread(msg);
-                      }}>Send Message</button>
+                      }}>{sendingMsg ? "Sending..." : "Send Message"}</button>
                   </div>
                 </div>
               </div>
@@ -3692,15 +4006,25 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
                     <>
                       <div className="form-group"><label>Reply</label><textarea placeholder="Type your reply..." value={replyBody} onChange={e => setReplyBody(e.target.value)} style={{ minHeight: 90, resize: "vertical", lineHeight: 1.6 }} /></div>
                       <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                        <button className="btn btn-primary" disabled={!replyBody.trim()}
-                          onClick={() => {
+                        <button className="btn btn-primary" disabled={!replyBody.trim() || sendingMsg}
+                          onClick={async () => {
+                            setSendingMsg(true);
                             const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                            await supabase.from("messages").insert({
+                              patient_id: patientDbId,
+                              provider_id: null,
+                              subject: `Re: ${activeThread.subject}`,
+                              body: replyBody,
+                              sender: `${acctForm.firstName} ${acctForm.lastName}`,
+                              read: true,
+                            });
                             const updated = { ...activeThread, thread: [...activeThread.thread, { from: "Me", date: today, body: replyBody }] };
                             setMessages(msgs => msgs.map(m => m.id === activeThread.id ? updated : m));
                             setActiveThread(updated);
                             setReplyBody("");
+                            setSendingMsg(false);
                             setReplySent(true);
-                          }}>Send Reply</button>
+                          }}>{sendingMsg ? "Sending..." : "Send Reply"}</button>
                       </div>
                     </>
                   )}
@@ -3749,7 +4073,122 @@ function PatientAccountPortal({ user, onSignOut, onRequestFinancing }) {
 }
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
-export default function App() {
+// ── INTERNAL ADMIN (hidden route: ?admin=1) ──
+// NOTE: this is a simple shared-passcode gate for internal use during the demo/beta phase.
+// It is not real authentication and should be replaced with proper admin auth before real patient data flows.
+const ADMIN_PASSCODE = "RubixAdmin2026"; // TODO: change this, and move to a real auth system before production
+
+function AdminLogin({ onAuthed }) {
+  const [passcode, setPasscode] = useState("");
+  const [error, setError] = useState("");
+  const handleSubmit = () => {
+    if (passcode === ADMIN_PASSCODE) onAuthed();
+    else setError("Incorrect passcode.");
+  };
+  return (
+    <div style={{ maxWidth: 360, margin: "80px auto", padding: 24, fontFamily: "DM Sans, sans-serif", background: "white", border: "1px solid #E2E8F0", borderRadius: 12 }}>
+      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 16 }}>Rubix Internal Access</div>
+      <input type="password" placeholder="Passcode" value={passcode} onChange={e => setPasscode(e.target.value)}
+        onKeyDown={e => e.key === "Enter" && handleSubmit()}
+        style={{ width: "100%", padding: "10px 12px", border: "1px solid #CBD5E1", borderRadius: 8, marginBottom: 12, fontFamily: "DM Sans, sans-serif" }} />
+      {error && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+      <button onClick={handleSubmit} style={{ width: "100%", padding: "10px 12px", background: "#0F766E", color: "white", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>Enter</button>
+    </div>
+  );
+}
+
+function AdminDashboard() {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actioning, setActioning] = useState(null);
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("payment_plans")
+      .select("*, patients(first_name, last_name, email)")
+      .eq("autopay_status", "pending_review")
+      .order("created_at", { ascending: false });
+    setRequests(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchRequests(); }, []);
+
+  const handleDecision = async (plan, approve) => {
+    setActioning(plan.id);
+    const newStatus = approve ? "active" : "rejected";
+    await supabase.from("payment_plans").update({ autopay_status: newStatus, autopay_enabled: approve }).eq("id", plan.id);
+
+    const timingText = plan.autopay_use_due_date ? "your plan's due date" : `day ${plan.autopay_charge_day} of each month`;
+    await supabase.from("email_log").insert({
+      patient_id: plan.patient_id,
+      recipient_email: plan.patients?.email,
+      subject: approve ? "Your Autopay Day Has Been Approved" : "Update on Your Autopay Request",
+      body: approve
+        ? `Hi, your requested autopay day has been approved. Autopay is now active for $${plan.autopay_amount}, charged on ${timingText}.`
+        : `Hi, we're unable to approve autopay on the day you requested. Please log back in to select a different day, or contact us with questions.`,
+      email_type: approve ? "autopay_approved" : "autopay_rejected",
+    });
+
+    await fetchRequests();
+    setActioning(null);
+  };
+
+  return (
+    <div style={{ maxWidth: 960, margin: "40px auto", padding: 24, fontFamily: "DM Sans, sans-serif" }}>
+      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 22, marginBottom: 4 }}>Autopay Requests — Internal Review</div>
+      <div style={{ fontSize: 13, color: "#64748B", marginBottom: 24 }}>Requests where the patient chose a charge day after their plan's due date.</div>
+      {loading ? (
+        <div>Loading...</div>
+      ) : requests.length === 0 ? (
+        <div style={{ color: "#64748B" }}>No pending requests.</div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <thead>
+              <tr style={{ textAlign: "left", borderBottom: "2px solid #E2E8F0" }}>
+                <th style={{ padding: "8px 12px" }}>Patient</th>
+                <th style={{ padding: "8px 12px" }}>Email</th>
+                <th style={{ padding: "8px 12px" }}>Requested Amount</th>
+                <th style={{ padding: "8px 12px" }}>Requested Day</th>
+                <th style={{ padding: "8px 12px" }}>Plan Due Date</th>
+                <th style={{ padding: "8px 12px" }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.map(r => (
+                <tr key={r.id} style={{ borderBottom: "1px solid #E2E8F0" }}>
+                  <td style={{ padding: "10px 12px" }}>{r.patients?.first_name} {r.patients?.last_name}</td>
+                  <td style={{ padding: "10px 12px" }}>{r.patients?.email}</td>
+                  <td style={{ padding: "10px 12px" }}>${r.autopay_amount}</td>
+                  <td style={{ padding: "10px 12px" }}>Day {r.autopay_charge_day}</td>
+                  <td style={{ padding: "10px 12px" }}>{r.next_due_date}</td>
+                  <td style={{ padding: "10px 12px", display: "flex", gap: 8 }}>
+                    <button disabled={actioning === r.id} onClick={() => handleDecision(r, true)} style={{ padding: "6px 14px", background: "#0F766E", color: "white", border: "none", borderRadius: 6, cursor: "pointer" }}>Approve</button>
+                    <button disabled={actioning === r.id} onClick={() => handleDecision(r, false)} style={{ padding: "6px 14px", background: "white", color: "#DC2626", border: "1px solid #DC2626", borderRadius: 6, cursor: "pointer" }}>Reject</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminApp() {
+  const [authed, setAuthed] = useState(false);
+  return authed ? <AdminDashboard /> : <AdminLogin onAuthed={() => setAuthed(true)} />;
+}
+
+export default function Root() {
+  const isAdminRoute = typeof window !== "undefined" && window.location.search.includes("admin");
+  return isAdminRoute ? <AdminApp /> : <MainApp />;
+}
+
+function MainApp() {
   const [mode, setMode] = useState("patient");
   const [page, setPage] = useState("home");
   // patient flow state
@@ -3765,6 +4204,7 @@ export default function App() {
   const [providerPage, setProviderPage] = useState("dashboard");
   // patient account portal state
   const [patientAcctUser, setPatientAcctUser] = useState(null);
+  const [acctResetKey, setAcctResetKey] = useState(0);
 
   const handleApplicationCreated = (appId, patId) => { setApplicationId(appId); setPatientDbId(patId); };
   const handleIntakeSubmit = (form) => {
@@ -3801,7 +4241,6 @@ export default function App() {
   };
   const handlePatientAcctSignIn = (user) => { setPatientAcctUser(user); setPage("patient-account"); };
   const handlePatientAcctSignOut = () => { setPatientAcctUser(null); setPage("home"); };
-  const handleRequestAdditionalFinancing = () => { setPatientAcctUser(null); setPage("home"); };
 
   const patientPortalPages = ["portal", "app-submitted", "eob-review", "offer-review", "esign", "offer-accepted", "patient-account"];
   const isPatientPortal = patientPortalPages.includes(page);
@@ -3813,7 +4252,19 @@ export default function App() {
       <div className="app">
 
         <nav className="nav">
-          <div className="nav-logo" style={{ cursor: "pointer" }} onClick={() => { handleStartOver(); if (mode === "provider") handleProviderSignOut(); setPatientAcctUser(null); }}>
+          <div className="nav-logo" style={{ cursor: "pointer" }} onClick={() => {
+            if (isProviderPortal) {
+              setProviderPage("dashboard");
+            } else if (patientAcctUser && page === "patient-account") {
+              setAcctResetKey(k => k + 1);
+            } else if (authUser && isPatientPortal) {
+              setPage("portal");
+            } else {
+              handleStartOver();
+              if (mode === "provider") handleProviderSignOut();
+              setPatientAcctUser(null);
+            }
+          }}>
             <svg width="190" height="60" viewBox="0 0 1600 520" fill="none" xmlns="http://www.w3.org/2000/svg">
               <g transform="translate(120,92) scale(1.25)">
                 <path d="M120 0 L240 68 L120 136 L0 68 Z" fill="#14B8A6"/>
@@ -3921,7 +4372,7 @@ export default function App() {
         )}
 
         {mode === "patient" && page === "patient-account" && patientAcctUser && (
-          <PatientAccountPortal user={patientAcctUser} onSignOut={handlePatientAcctSignOut} onRequestFinancing={handleRequestAdditionalFinancing} />
+          <PatientAccountPortal key={acctResetKey} user={patientAcctUser} onSignOut={handlePatientAcctSignOut} />
         )}
 
         {mode === "patient" && page === "magic-link-sent" && <div className="main-narrow" style={{ paddingTop: 48 }}><MagicLinkSent email={intakeData?.email} magicLink={magicLink} onSimulateClick={handleSimulateMagicLink} /></div>}
