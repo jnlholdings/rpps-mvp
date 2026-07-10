@@ -363,6 +363,26 @@ function formatIncome(value) {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
+function formatCardNumber(value) {
+  const digits = value.replace(/\D/g, "");
+  const isAmex = digits.startsWith("34") || digits.startsWith("37");
+  if (isAmex) {
+    const d = digits.slice(0, 15);
+    const parts = [d.slice(0, 4), d.slice(4, 10), d.slice(10, 15)].filter(Boolean);
+    return parts.join(" ");
+  }
+  const d = digits.slice(0, 16);
+  const parts = [];
+  for (let i = 0; i < d.length; i += 4) parts.push(d.slice(i, i + 4));
+  return parts.join(" ");
+}
+
+function formatExpiry(value) {
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+  if (digits.length < 3) return digits;
+  return `${digits.slice(0, 2)} / ${digits.slice(2)}`;
+}
+
 // ─── ORIGINATION FEE TIERS ─────────────────────────────────────────────────────
 // Placeholder tier structure — percentage decreases as loan balance increases,
 // consistent with standard healthcare/consumer financing convention (fixed
@@ -488,8 +508,8 @@ function IntakeForm({ onSubmit, prefill, hideContactFields }) {
     lastName: prefill?.lastName || "",
     phone: prefill?.phone || "",
     email: prefill?.email || "",
-    balanceOwed: "",
-    careDescription: "",
+    balanceOwed: prefill?.balanceOwed || "",
+    careDescription: prefill?.careDescription || "",
     provider: "",
   });
   const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -2257,16 +2277,16 @@ function ProviderLogin({ onAuthenticated }) {
 
 function ProviderPortalNav({ providerUser, activePage, onNavigate, onSignOut }) {
   return (
-    <div style={{ background: "var(--navy)", borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, gap: 16 }}>
-      <LogoDark width={130} height={32} />
-      <div style={{ display: "flex", gap: 4, flex: 1, justifyContent: "center" }}>
+    <div style={{ background: "var(--navy)", borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "0 24px", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", height: 56, gap: 16 }}>
+      <div />
+      <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
         {[["dashboard", "Dashboard"], ["refer", "Refer Patient"], ["account", "Account"], ["billing", "Billing"]].map(([id, label]) => (
           <button key={id} onClick={() => onNavigate(id)} style={{ padding: "6px 16px", borderRadius: 8, border: "none", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, cursor: "pointer", background: activePage === id ? "rgba(255,255,255,0.15)" : "transparent", color: activePage === id ? "white" : "rgba(255,255,255,0.55)", transition: "all 0.2s" }}>
             {label}
           </button>
         ))}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, justifySelf: "end" }}>
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>{providerUser?.email}</div>
         <button className="btn btn-ghost" style={{ fontSize: 12, padding: "5px 12px" }} onClick={onSignOut}>Sign Out</button>
       </div>
@@ -2343,27 +2363,81 @@ function ReferPatientPage({ providerUser }) {
   const APP_URL = "https://rpps-mvp.vercel.app";
   const [refForm, setRefForm] = useState({ firstName: "", lastName: "", phone: "", email: "", balance: "", careDescription: "" });
   const [refSent, setRefSent] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [providerId, setProviderId] = useState(null);
+  const [referrals, setReferrals] = useState([]);
+  const [loadingReferrals, setLoadingReferrals] = useState(true);
   const updRef = (k, v) => setRefForm(f => ({ ...f, [k]: v }));
 
+  const fetchReferrals = async (provId) => {
+    setLoadingReferrals(true);
+    const { data } = await supabase
+      .from("referrals")
+      .select("*")
+      .eq("provider_id", provId)
+      .order("created_at", { ascending: false });
+    setReferrals(data || []);
+    setLoadingReferrals(false);
+  };
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("providers").select("id").eq("email", providerUser?.email).order("created_at", { ascending: false }).limit(1);
+      const provId = data?.[0]?.id || null;
+      setProviderId(provId);
+      if (provId) await fetchReferrals(provId);
+      else setLoadingReferrals(false);
+    })();
+  }, [providerUser?.email]);
+
   const buildAppLink = () => {
-    const params = new URLSearchParams({ firstName: refForm.firstName, lastName: refForm.lastName, balance: refForm.balance, care: refForm.careDescription });
+    const params = new URLSearchParams({
+      firstName: refForm.firstName,
+      lastName: refForm.lastName,
+      phone: refForm.phone,
+      email: refForm.email,
+      balance: refForm.balance,
+      care: refForm.careDescription,
+    });
     return `${APP_URL}?${params.toString()}`;
   };
 
-  const handleSendSMS = () => {
+  const recordReferral = async (method, link) => {
+    await supabase.from("referrals").insert({
+      provider_id: providerId,
+      patient_first_name: refForm.firstName,
+      patient_last_name: refForm.lastName,
+      patient_phone: refForm.phone || null,
+      patient_email: refForm.email || null,
+      balance_owed: refForm.balance ? parseFloat(refForm.balance) : null,
+      care_description: refForm.careDescription,
+      method,
+      link,
+      status: "sent",
+    });
+    if (providerId) await fetchReferrals(providerId);
+  };
+
+  const handleSendSMS = async () => {
+    setSending(true);
     const link = buildAppLink();
     const name = refForm.firstName || "there";
     const message = `Hi ${name}, your provider has invited you to apply for a patient payment plan through Rubix. It takes under 2 minutes and won't affect your credit score. Apply here: ${link}`;
     window.open(`sms:${refForm.phone.replace(/\D/g, "")}?body=${encodeURIComponent(message)}`);
+    await recordReferral("sms", link);
+    setSending(false);
     setRefSent("sms");
   };
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
+    setSending(true);
     const link = buildAppLink();
     const name = refForm.firstName || "there";
     const subject = "Your Patient Payment Options — Rubix";
     const body = `Hi ${name},\n\nYour provider has invited you to explore flexible payment options for your upcoming care.\n\nApplying takes under 2 minutes and won't affect your credit score.\n\nGet started here:\n${link}\n\n— Your Care Team`;
     window.open(`mailto:${refForm.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    await recordReferral("email", link);
+    setSending(false);
     setRefSent("email");
   };
 
@@ -2371,7 +2445,7 @@ function ReferPatientPage({ providerUser }) {
 
   return (
     <div className="main-narrow">
-      <div className="card">
+      <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-header">
           <div className="card-icon teal">➕</div>
           <div><div className="card-title">Refer a Patient</div><div className="card-subtitle">Send a patient their payment options link</div></div>
@@ -2398,10 +2472,40 @@ function ReferPatientPage({ providerUser }) {
           <div className="helper-text" style={{ marginBottom: 16 }}>* Required. Phone needed for text, email needed for email link.</div>
           <hr className="divider" />
           <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-            <button className="btn btn-ghost" disabled={!refFormValid || !refForm.phone} onClick={handleSendSMS}>Send via Text</button>
-            <button className="btn btn-primary" disabled={!refFormValid || !refForm.email} onClick={handleSendEmail}>Send Application Link</button>
+            <button className="btn btn-ghost" disabled={!refFormValid || !refForm.phone || sending} onClick={handleSendSMS}>Send via Text</button>
+            <button className="btn btn-primary" disabled={!refFormValid || !refForm.email || sending} onClick={handleSendEmail}>{sending ? "Sending..." : "Send Application Link"}</button>
           </div>
         </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <div className="card-icon teal">📋</div>
+          <div><div className="card-title">Recent Referrals</div><div className="card-subtitle">Patients you've referred through this portal</div></div>
+        </div>
+        {loadingReferrals ? (
+          <div style={{ padding: 24, color: "var(--text-secondary)", fontSize: 14 }}>Loading...</div>
+        ) : referrals.length === 0 ? (
+          <div style={{ padding: 24, color: "var(--text-secondary)", fontSize: 14 }}>No referrals sent yet.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="patient-table">
+              <thead><tr><th>Patient</th><th>Balance</th><th>Care</th><th>Method</th><th>Status</th><th>Sent</th></tr></thead>
+              <tbody>
+                {referrals.map(r => (
+                  <tr key={r.id}>
+                    <td style={{ fontWeight: 500 }}>{r.patient_first_name} {r.patient_last_name}</td>
+                    <td>{r.balance_owed ? `$${Number(r.balance_owed).toLocaleString()}` : "—"}</td>
+                    <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>{r.care_description}</td>
+                    <td style={{ fontSize: 13, textTransform: "uppercase" }}>{r.method}</td>
+                    <td><span className={`status-pill ${r.status === "applied" ? "approved" : "reviewing"}`}>{r.status === "applied" ? "✓ Applied" : "Sent"}</span></td>
+                    <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>{new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2409,8 +2513,8 @@ function ReferPatientPage({ providerUser }) {
 
 // ─── PROVIDER ACCOUNT PAGE ────────────────────────────────────────────────────
 
-function ProviderAccountPage({ onNotifEmailChange }) {
-  const [account, setAccount] = useState({ practiceName: "", npi: "", specialty: "", phone: "", address: "", city: "", state: "", zip: "", billingEmail: "", notifEmail: "" });
+function ProviderAccountPage({ onNotifEmailChange, sharedAddress, onSharedAddressChange }) {
+  const [account, setAccount] = useState({ practiceName: "", npi: "", specialty: "", phone: "", billingEmail: "", notifEmail: "" });
   const [banking, setBanking] = useState({ bankName: "", accountHolder: "", routingNumber: "", accountNumber: "", accountType: "checking" });
   const [bankSaved, setBankSaved] = useState(false);
   const [accountSaved, setAccountSaved] = useState(false);
@@ -2418,6 +2522,7 @@ function ProviderAccountPage({ onNotifEmailChange }) {
     setAccount(f => ({ ...f, [k]: v }));
     if (k === "notifEmail" && onNotifEmailChange) onNotifEmailChange(v);
   };
+  const updAddress = (k, v) => onSharedAddressChange?.({ [k]: v });
   const updBank = (k, v) => setBanking(f => ({ ...f, [k]: v }));
 
   const maskAccount = (num) => num.length > 4 ? "•".repeat(num.length - 4) + num.slice(-4) : num;
@@ -2446,18 +2551,18 @@ function ProviderAccountPage({ onNotifEmailChange }) {
               </select>
             </div>
           </div>
-          <div className="form-group"><label>Street Address</label><input placeholder="123 Main Street" value={account.address} onChange={e => updAcc("address", e.target.value)} /></div>
+          <div className="form-group"><label>Street Address</label><input placeholder="123 Main Street" value={sharedAddress?.address || ""} onChange={e => updAddress("address", e.target.value)} /></div>
           <div className="form-row">
-            <div className="form-group"><label>City</label><input placeholder="Miami" value={account.city} onChange={e => updAcc("city", e.target.value)} /></div>
+            <div className="form-group"><label>City</label><input placeholder="Miami" value={sharedAddress?.city || ""} onChange={e => updAddress("city", e.target.value)} /></div>
             <div className="form-group"><label>State</label>
-              <select value={account.state} onChange={e => updAcc("state", e.target.value)}>
+              <select value={sharedAddress?.state || ""} onChange={e => updAddress("state", e.target.value)}>
                 <option value="">Select...</option>
                 {["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"].map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
           </div>
           <div className="form-row">
-            <div className="form-group" style={{ maxWidth: 180 }}><label>ZIP Code</label><input placeholder="33101" value={account.zip} onChange={e => updAcc("zip", e.target.value)} maxLength={5} /></div>
+            <div className="form-group" style={{ maxWidth: 180 }}><label>ZIP Code</label><input placeholder="33101" value={sharedAddress?.zip || ""} onChange={e => updAddress("zip", e.target.value)} maxLength={5} /></div>
             <div className="form-group"><label>Practice Phone</label><input placeholder="(555) 000-0000" value={account.phone} onChange={e => updAcc("phone", formatPhone(e.target.value))} /></div>
           </div>
           <div className="form-row">
@@ -2523,18 +2628,32 @@ function ProviderAccountPage({ onNotifEmailChange }) {
 
 // ─── PROVIDER BILLING PAGE ────────────────────────────────────────────────────
 
-function ProviderBillingPage() {
+function ProviderBillingPage({ accountAddress }) {
+  const [paymentMethod, setPaymentMethod] = useState("card");
   const [card, setCard] = useState({ cardNumber: "", expiry: "", cvv: "", name: "", address: "", city: "", state: "", zip: "" });
   const [cardSaved, setCardSaved] = useState(false);
+  const [showCvv, setShowCvv] = useState(false);
+  const [sameAsAccount, setSameAsAccount] = useState(false);
+  const [ach, setAch] = useState({ bankName: "", accountHolder: "", routingNumber: "", accountNumber: "", accountType: "checking" });
+  const [achSaved, setAchSaved] = useState(false);
   const updCard = (k, v) => setCard(f => ({ ...f, [k]: v }));
-  const maskCard = (num) => num.length >= 4 ? "•••• •••• •••• " + num.replace(/\s/g, "").slice(-4) : num;
+  const updAch = (k, v) => setAch(f => ({ ...f, [k]: v }));
+  const maskCard = (num) => num.replace(/\s/g, "").length >= 4 ? "•••• •••• •••• " + num.replace(/\s/g, "").slice(-4) : num;
+  const maskNum = (n) => n.length > 4 ? "•".repeat(n.length - 4) + n.slice(-4) : n;
+
+  const handleSameAsAccount = (checked) => {
+    setSameAsAccount(checked);
+    if (checked && accountAddress) {
+      setCard(f => ({ ...f, address: accountAddress.address || "", city: accountAddress.city || "", state: accountAddress.state || "", zip: accountAddress.zip || "" }));
+    }
+  };
 
   return (
     <div className="main-narrow">
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header">
           <div className="card-icon teal">💳</div>
-          <div><div className="card-title">Billing</div><div className="card-subtitle">Credit card on file for Rubix monthly platform fee</div></div>
+          <div><div className="card-title">Billing</div><div className="card-subtitle">Payment method on file for Rubix monthly platform fee</div></div>
         </div>
         <div className="card-body">
           <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: "var(--radius-sm)", padding: "16px 20px", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
@@ -2546,44 +2665,109 @@ function ProviderBillingPage() {
             <div style={{ background: "#D1FAE5", color: "#065F46", fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: "100px" }}>Active</div>
           </div>
 
-          {cardSaved && <div className="alert success" style={{ marginBottom: 16 }}>Card saved securely.</div>}
+          {(cardSaved || achSaved) && <div className="alert success" style={{ marginBottom: 16 }}>Payment method saved securely.</div>}
 
           <div className="section-title" style={{ fontSize: 16, marginBottom: 6 }}>Payment Method</div>
-          <div className="section-sub">Your card is charged on the 1st of each month.</div>
-
-          <div className="form-group">
-            <label>Cardholder Name</label>
-            <input placeholder="Name as it appears on card" value={card.name} onChange={e => updCard("name", e.target.value)} readOnly={cardSaved} />
-          </div>
-          <div className="form-group">
-            <label>Card Number</label>
-            <input className="input-sensitive" placeholder="1234 5678 9012 3456" value={cardSaved ? maskCard(card.cardNumber) : card.cardNumber} onChange={e => updCard("cardNumber", e.target.value)} maxLength={19} readOnly={cardSaved} />
-          </div>
-          <div className="form-row">
-            <div className="form-group"><label>Expiration Date</label><input placeholder="MM / YY" value={card.expiry} onChange={e => updCard("expiry", e.target.value)} maxLength={7} readOnly={cardSaved} /></div>
-            <div className="form-group"><label>CVV</label><input className="input-sensitive" placeholder="•••" value={cardSaved ? "•••" : card.cvv} onChange={e => updCard("cvv", e.target.value)} maxLength={4} readOnly={cardSaved} /></div>
+          <div className="section-sub">
+            {paymentMethod === "card" ? "Your card is charged on the 1st of each month." : "Your bank account is debited via ACH on the 1st of each month."}
           </div>
 
-          <hr className="divider" />
-          <div className="section-title" style={{ fontSize: 16, marginBottom: 6 }}>Billing Address</div>
-          <div className="form-group"><label>Street Address</label><input placeholder="123 Main Street" value={card.address} onChange={e => updCard("address", e.target.value)} readOnly={cardSaved} /></div>
-          <div className="form-row">
-            <div className="form-group"><label>City</label><input placeholder="Miami" value={card.city} onChange={e => updCard("city", e.target.value)} readOnly={cardSaved} /></div>
-            <div className="form-group"><label>State</label>
-              <select value={card.state} onChange={e => updCard("state", e.target.value)} disabled={cardSaved}>
-                <option value="">Select...</option>
-                {["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"].map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
+          <div className="nav-pill" style={{ marginBottom: 20 }}>
+            <button className={paymentMethod === "card" ? "active" : ""} onClick={() => setPaymentMethod("card")}>Credit Card</button>
+            <button className={paymentMethod === "ach" ? "active" : ""} onClick={() => setPaymentMethod("ach")}>ACH / Bank Transfer</button>
           </div>
-          <div className="form-group" style={{ maxWidth: 180 }}><label>ZIP Code</label><input placeholder="33101" value={card.zip} onChange={e => updCard("zip", e.target.value)} maxLength={5} readOnly={cardSaved} /></div>
 
-          <div className="helper-text" style={{ marginBottom: 20 }}>Card details are masked after saving. Click Edit to update your payment method.</div>
-          <hr className="divider" />
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-            {cardSaved && <button className="btn btn-ghost" onClick={() => setCardSaved(false)}>Edit Card</button>}
-            {!cardSaved && <button className="btn btn-primary" disabled={!card.cardNumber || !card.expiry || !card.cvv || !card.name} onClick={() => setCardSaved(true)}>Save Card</button>}
-          </div>
+          {paymentMethod === "card" ? (
+            <>
+              <div className="form-group">
+                <label>Cardholder Name</label>
+                <input placeholder="Name as it appears on card" value={card.name} onChange={e => updCard("name", e.target.value)} readOnly={cardSaved} />
+              </div>
+              <div className="form-group">
+                <label>Card Number</label>
+                <input className="input-sensitive" placeholder="1234 5678 9012 3456" value={cardSaved ? maskCard(card.cardNumber) : card.cardNumber} onChange={e => updCard("cardNumber", formatCardNumber(e.target.value))} maxLength={19} readOnly={cardSaved} />
+              </div>
+              <div className="form-row">
+                <div className="form-group"><label>Expiration Date</label><input placeholder="MM / YY" value={card.expiry} onChange={e => updCard("expiry", formatExpiry(e.target.value))} maxLength={7} readOnly={cardSaved} /></div>
+                <div className="form-group">
+                  <label>CVV</label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      className="input-sensitive"
+                      type={cardSaved || !showCvv ? "password" : "text"}
+                      placeholder="•••"
+                      value={cardSaved ? "•••" : card.cvv}
+                      onChange={e => updCard("cvv", e.target.value.replace(/\D/g, ""))}
+                      maxLength={4}
+                      readOnly={cardSaved}
+                      style={{ paddingRight: 40 }}
+                    />
+                    {!cardSaved && (
+                      <button
+                        type="button"
+                        onClick={() => setShowCvv(v => !v)}
+                        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, color: "var(--text-secondary)" }}
+                        aria-label={showCvv ? "Hide CVV" : "Show CVV"}
+                      >
+                        {showCvv ? "🙈" : "👁"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <hr className="divider" />
+              <div className="section-title" style={{ fontSize: 16, marginBottom: 6 }}>Billing Address</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                <input type="checkbox" id="sameAsAccount" checked={sameAsAccount} onChange={e => handleSameAsAccount(e.target.checked)} style={{ width: "auto" }} />
+                <label htmlFor="sameAsAccount" style={{ fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Same as Account Info address</label>
+              </div>
+              {sameAsAccount && !accountAddress?.address && (
+                <div className="helper-text" style={{ marginBottom: 12, color: "#B45309" }}>No address is saved under Account Info yet — fill it in there first, or uncheck this to enter one here.</div>
+              )}
+              <div className="form-group"><label>Street Address</label><input placeholder="123 Main Street" value={card.address} onChange={e => updCard("address", e.target.value)} readOnly={cardSaved || sameAsAccount} /></div>
+              <div className="form-row">
+                <div className="form-group"><label>City</label><input placeholder="Miami" value={card.city} onChange={e => updCard("city", e.target.value)} readOnly={cardSaved || sameAsAccount} /></div>
+                <div className="form-group"><label>State</label>
+                  <select value={card.state} onChange={e => updCard("state", e.target.value)} disabled={cardSaved || sameAsAccount}>
+                    <option value="">Select...</option>
+                    {["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"].map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-group" style={{ maxWidth: 180 }}><label>ZIP Code</label><input placeholder="33101" value={card.zip} onChange={e => updCard("zip", e.target.value)} maxLength={5} readOnly={cardSaved || sameAsAccount} /></div>
+
+              <div className="helper-text" style={{ marginBottom: 20 }}>Card details are masked after saving. Click Edit to update your payment method.</div>
+              <hr className="divider" />
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                {cardSaved && <button className="btn btn-ghost" onClick={() => setCardSaved(false)}>Edit Card</button>}
+                {!cardSaved && <button className="btn btn-primary" disabled={!card.cardNumber || !card.expiry || !card.cvv || !card.name} onClick={() => setCardSaved(true)}>Save Card</button>}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="form-group"><label>Bank Name</label><input placeholder="Chase" value={ach.bankName} onChange={e => updAch("bankName", e.target.value)} readOnly={achSaved} /></div>
+              <div className="form-group"><label>Account Holder Name</label><input placeholder="Name on the account" value={ach.accountHolder} onChange={e => updAch("accountHolder", e.target.value)} readOnly={achSaved} /></div>
+              <div className="form-row">
+                <div className="form-group"><label>Routing Number</label><input className="input-sensitive" placeholder="9 digits" value={achSaved ? maskNum(ach.routingNumber) : ach.routingNumber} onChange={e => updAch("routingNumber", e.target.value.replace(/\D/g, ""))} maxLength={9} readOnly={achSaved} /></div>
+                <div className="form-group"><label>Account Number</label><input className="input-sensitive" placeholder="Account number" value={achSaved ? maskNum(ach.accountNumber) : ach.accountNumber} onChange={e => updAch("accountNumber", e.target.value.replace(/\D/g, ""))} readOnly={achSaved} /></div>
+              </div>
+              <div className="form-group" style={{ maxWidth: 220 }}>
+                <label>Account Type</label>
+                <select value={ach.accountType} onChange={e => updAch("accountType", e.target.value)} disabled={achSaved}>
+                  <option value="checking">Checking</option>
+                  <option value="savings">Savings</option>
+                </select>
+              </div>
+
+              <div className="helper-text" style={{ marginBottom: 20 }}>Bank details are masked after saving. Click Edit to update your payment method.</div>
+              <hr className="divider" />
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                {achSaved && <button className="btn btn-ghost" onClick={() => setAchSaved(false)}>Edit Bank Info</button>}
+                {!achSaved && <button className="btn btn-primary" disabled={!ach.bankName || !ach.accountHolder || !ach.routingNumber || !ach.accountNumber} onClick={() => setAchSaved(true)}>Save Bank Info</button>}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -4184,6 +4368,8 @@ function AdminDashboard() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState(null);
+  const [referrals, setReferrals] = useState([]);
+  const [loadingReferrals, setLoadingReferrals] = useState(true);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -4196,7 +4382,17 @@ function AdminDashboard() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchRequests(); }, []);
+  const fetchReferrals = async () => {
+    setLoadingReferrals(true);
+    const { data } = await supabase
+      .from("referrals")
+      .select("*, providers(practice_name)")
+      .order("created_at", { ascending: false });
+    setReferrals(data || []);
+    setLoadingReferrals(false);
+  };
+
+  useEffect(() => { fetchRequests(); fetchReferrals(); }, []);
 
   const handleDecision = async (plan, approve) => {
     setActioning(plan.id);
@@ -4257,6 +4453,43 @@ function AdminDashboard() {
           </table>
         </div>
       )}
+
+      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 22, marginTop: 48, marginBottom: 4 }}>Patient Referrals — All Providers</div>
+      <div style={{ fontSize: 13, color: "#64748B", marginBottom: 24 }}>Every referral sent across all provider accounts.</div>
+      {loadingReferrals ? (
+        <div>Loading...</div>
+      ) : referrals.length === 0 ? (
+        <div style={{ color: "#64748B" }}>No referrals sent yet.</div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <thead>
+              <tr style={{ textAlign: "left", borderBottom: "2px solid #E2E8F0" }}>
+                <th style={{ padding: "8px 12px" }}>Provider</th>
+                <th style={{ padding: "8px 12px" }}>Patient</th>
+                <th style={{ padding: "8px 12px" }}>Balance</th>
+                <th style={{ padding: "8px 12px" }}>Care</th>
+                <th style={{ padding: "8px 12px" }}>Method</th>
+                <th style={{ padding: "8px 12px" }}>Status</th>
+                <th style={{ padding: "8px 12px" }}>Sent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {referrals.map(r => (
+                <tr key={r.id} style={{ borderBottom: "1px solid #E2E8F0" }}>
+                  <td style={{ padding: "10px 12px" }}>{r.providers?.practice_name || "—"}</td>
+                  <td style={{ padding: "10px 12px" }}>{r.patient_first_name} {r.patient_last_name}</td>
+                  <td style={{ padding: "10px 12px" }}>{r.balance_owed ? `$${Number(r.balance_owed).toLocaleString()}` : "—"}</td>
+                  <td style={{ padding: "10px 12px" }}>{r.care_description}</td>
+                  <td style={{ padding: "10px 12px", textTransform: "uppercase" }}>{r.method}</td>
+                  <td style={{ padding: "10px 12px" }}>{r.status === "applied" ? "✓ Applied" : "Sent"}</td>
+                  <td style={{ padding: "10px 12px" }}>{new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -4279,11 +4512,26 @@ function MainApp() {
   const [magicLink, setMagicLink] = useState("");
   const [authUser, setAuthUser] = useState(null);
   const [approvalResult, setApprovalResult] = useState(null);
+  const [referralPrefill] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    const hasReferralData = params.get("firstName") || params.get("lastName") || params.get("care");
+    if (!hasReferralData) return null;
+    return {
+      firstName: params.get("firstName") || "",
+      lastName: params.get("lastName") || "",
+      phone: params.get("phone") || "",
+      email: params.get("email") || "",
+      balanceOwed: params.get("balance") || "",
+      careDescription: params.get("care") || "",
+    };
+  });
   const [providerNotifEmail, setProviderNotifEmail] = useState("admin@practice.com");
   const [applicationId, setApplicationId] = useState(null);
   const [patientDbId, setPatientDbId] = useState(null);
   // provider auth state
   const [providerUser, setProviderUser] = useState(null);
+  const [providerAddress, setProviderAddress] = useState({ address: "", city: "", state: "", zip: "" });
   const [providerPage, setProviderPage] = useState("dashboard");
   // patient account portal state
   const [patientAcctUser, setPatientAcctUser] = useState(null);
@@ -4474,7 +4722,7 @@ function MainApp() {
                 Sign in to view your payment plans
               </button>
             </div>
-            <div id="intake-form" className="main"><IntakeForm onSubmit={handleIntakeSubmit} /></div>
+            <div id="intake-form" className="main"><IntakeForm onSubmit={handleIntakeSubmit} prefill={referralPrefill} /></div>
             <SiteFooter mode="patient" onNavigate={setPage} />
           </>
         )}
@@ -4545,8 +4793,8 @@ function MainApp() {
             <ProviderPortalNav providerUser={providerUser} activePage={providerPage} onNavigate={setProviderPage} onSignOut={handleProviderSignOut} />
             {providerPage === "dashboard" && <ProviderDashboard onNavigate={setProviderPage} />}
             {providerPage === "refer" && <ReferPatientPage providerUser={providerUser} />}
-            {providerPage === "account" && <ProviderAccountPage onNotifEmailChange={setProviderNotifEmail} />}
-            {providerPage === "billing" && <ProviderBillingPage />}
+            {providerPage === "account" && <ProviderAccountPage onNotifEmailChange={setProviderNotifEmail} sharedAddress={providerAddress} onSharedAddressChange={(patch) => setProviderAddress(a => ({ ...a, ...patch }))} />}
+            {providerPage === "billing" && <ProviderBillingPage accountAddress={providerAddress} />}
           </>
         )}
 

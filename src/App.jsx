@@ -502,18 +502,40 @@ function runEobUnderwriting(data) {
 
 // ─── INTAKE FORM (pre-auth) ───────────────────────────────────────────────────
 
-function IntakeForm({ onSubmit, prefill, hideContactFields }) {
-  const [form, setForm] = useState({
-    firstName: prefill?.firstName || "",
-    lastName: prefill?.lastName || "",
-    phone: prefill?.phone || "",
-    email: prefill?.email || "",
-    balanceOwed: prefill?.balanceOwed || "",
-    careDescription: prefill?.careDescription || "",
-    provider: "",
+function IntakeForm({ onSubmit, prefill, hideContactFields, storageKey }) {
+  const [form, setForm] = useState(() => {
+    let draft = null;
+    if (storageKey) {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) draft = JSON.parse(saved);
+      } catch (e) { /* ignore corrupt/unavailable storage */ }
+    }
+    return {
+      firstName: prefill?.firstName || draft?.firstName || "",
+      lastName: prefill?.lastName || draft?.lastName || "",
+      phone: prefill?.phone || draft?.phone || "",
+      email: prefill?.email || draft?.email || "",
+      balanceOwed: prefill?.balanceOwed || draft?.balanceOwed || "",
+      careDescription: prefill?.careDescription || draft?.careDescription || "",
+      provider: draft?.provider || "",
+      referralCode: prefill?.referralCode || draft?.referralCode || "",
+    };
   });
-  const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const upd = (k, v) => setForm(f => {
+    const next = { ...f, [k]: v };
+    if (storageKey) {
+      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch (e) { /* ignore storage errors */ }
+    }
+    return next;
+  });
   const valid = form.firstName && form.lastName && form.email && form.phone && form.balanceOwed && form.careDescription;
+  const handleSubmit = () => {
+    if (storageKey) {
+      try { localStorage.removeItem(storageKey); } catch (e) { /* ignore storage errors */ }
+    }
+    onSubmit(form);
+  };
 
   return (
     <div className="card">
@@ -557,7 +579,7 @@ function IntakeForm({ onSubmit, prefill, hideContactFields }) {
           <div className="helper-text">Required — helps us match you with the right payment options.</div>
         </div>
         <hr className="divider" />
-        <button className="btn btn-primary" style={{ width: "100%" }} disabled={!valid} onClick={() => onSubmit(form)}>
+        <button className="btn btn-primary" style={{ width: "100%" }} disabled={!valid} onClick={handleSubmit}>
           Continue — Check My Options
         </button>
       </div>
@@ -899,6 +921,10 @@ function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSign
       monthly_payment: result.monthlyPayment ? parseFloat(result.monthlyPayment) : null,
       status: result.decision,
     }).select().single();
+
+    if (intakeData.referralCode) {
+      await supabase.from("referrals").update({ status: "applied" }).eq("referral_code", intakeData.referralCode);
+    }
 
     if (uwForm.eobFile) {
       await supabase.from("documents").insert({
@@ -1875,6 +1901,7 @@ function ContactPage({ audience }) {
     await supabase.from("messages").insert({
       patient_id: patientId,
       provider_id: providerId,
+      thread_id: Date.now(),
       subject: form.subject,
       body: bodyWithContact,
       sender: form.name,
@@ -2174,6 +2201,10 @@ function ProviderLogin({ onAuthenticated }) {
     onAuthenticated({
       email: form.email,
       practiceName: providerRow.practice_name || "",
+      address: providerRow.address || "",
+      city: providerRow.city || "",
+      state: providerRow.state || "",
+      zip: providerRow.zip || "",
     });
   };
 
@@ -2390,7 +2421,7 @@ function ReferPatientPage({ providerUser }) {
     })();
   }, [providerUser?.email]);
 
-  const buildAppLink = () => {
+  const buildAppLink = (code) => {
     const params = new URLSearchParams({
       firstName: refForm.firstName,
       lastName: refForm.lastName,
@@ -2398,11 +2429,15 @@ function ReferPatientPage({ providerUser }) {
       email: refForm.email,
       balance: refForm.balance,
       care: refForm.careDescription,
+      ref: code,
     });
     return `${APP_URL}?${params.toString()}`;
   };
 
-  const recordReferral = async (method, link) => {
+  const generateReferralCode = () =>
+    (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `ref_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+  const recordReferral = async (method, link, code) => {
     await supabase.from("referrals").insert({
       provider_id: providerId,
       patient_first_name: refForm.firstName,
@@ -2413,6 +2448,7 @@ function ReferPatientPage({ providerUser }) {
       care_description: refForm.careDescription,
       method,
       link,
+      referral_code: code,
       status: "sent",
     });
     if (providerId) await fetchReferrals(providerId);
@@ -2420,23 +2456,25 @@ function ReferPatientPage({ providerUser }) {
 
   const handleSendSMS = async () => {
     setSending(true);
-    const link = buildAppLink();
+    const code = generateReferralCode();
+    const link = buildAppLink(code);
     const name = refForm.firstName || "there";
     const message = `Hi ${name}, your provider has invited you to apply for a patient payment plan through Rubix. It takes under 2 minutes and won't affect your credit score. Apply here: ${link}`;
     window.open(`sms:${refForm.phone.replace(/\D/g, "")}?body=${encodeURIComponent(message)}`);
-    await recordReferral("sms", link);
+    await recordReferral("sms", link, code);
     setSending(false);
     setRefSent("sms");
   };
 
   const handleSendEmail = async () => {
     setSending(true);
-    const link = buildAppLink();
+    const code = generateReferralCode();
+    const link = buildAppLink(code);
     const name = refForm.firstName || "there";
     const subject = "Your Patient Payment Options — Rubix";
     const body = `Hi ${name},\n\nYour provider has invited you to explore flexible payment options for your upcoming care.\n\nApplying takes under 2 minutes and won't affect your credit score.\n\nGet started here:\n${link}\n\n— Your Care Team`;
     window.open(`mailto:${refForm.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-    await recordReferral("email", link);
+    await recordReferral("email", link, code);
     setSending(false);
     setRefSent("email");
   };
@@ -2513,17 +2551,33 @@ function ReferPatientPage({ providerUser }) {
 
 // ─── PROVIDER ACCOUNT PAGE ────────────────────────────────────────────────────
 
-function ProviderAccountPage({ onNotifEmailChange, sharedAddress, onSharedAddressChange }) {
+function ProviderAccountPage({ providerEmail, onNotifEmailChange, sharedAddress, onSharedAddressChange }) {
   const [account, setAccount] = useState({ practiceName: "", npi: "", specialty: "", phone: "", billingEmail: "", notifEmail: "" });
   const [banking, setBanking] = useState({ bankName: "", accountHolder: "", routingNumber: "", accountNumber: "", accountType: "checking" });
   const [bankSaved, setBankSaved] = useState(false);
   const [accountSaved, setAccountSaved] = useState(false);
+  const [savingAccount, setSavingAccount] = useState(false);
   const updAcc = (k, v) => {
     setAccount(f => ({ ...f, [k]: v }));
     if (k === "notifEmail" && onNotifEmailChange) onNotifEmailChange(v);
   };
   const updAddress = (k, v) => onSharedAddressChange?.({ [k]: v });
   const updBank = (k, v) => setBanking(f => ({ ...f, [k]: v }));
+
+  const handleSaveAccount = async () => {
+    setSavingAccount(true);
+    if (providerEmail) {
+      await supabase.from("providers").update({
+        address: sharedAddress?.address || null,
+        city: sharedAddress?.city || null,
+        state: sharedAddress?.state || null,
+        zip: sharedAddress?.zip || null,
+      }).eq("email", providerEmail);
+    }
+    setSavingAccount(false);
+    setAccountSaved(true);
+    setTimeout(() => setAccountSaved(false), 3000);
+  };
 
   const maskAccount = (num) => num.length > 4 ? "•".repeat(num.length - 4) + num.slice(-4) : num;
   const maskRouting = (num) => num.length > 4 ? "•".repeat(num.length - 4) + num.slice(-4) : num;
@@ -2541,7 +2595,7 @@ function ProviderAccountPage({ onNotifEmailChange, sharedAddress, onSharedAddres
           {accountSaved && <div className="alert success" style={{ marginBottom: 16 }}>Changes saved successfully.</div>}
           <div className="form-group"><label>Practice Name</label><input placeholder="Sunrise Health Clinic" value={account.practiceName} onChange={e => updAcc("practiceName", e.target.value)} /></div>
           <div className="form-row">
-            <div className="form-group"><label>NPI Number</label><input placeholder="1234567890" value={account.npi} onChange={e => updAcc("npi", e.target.value)} /></div>
+            <div className="form-group"><label>NPI Number</label><input placeholder="1234567890" inputMode="numeric" maxLength={10} value={account.npi} onChange={e => updAcc("npi", e.target.value.replace(/\D/g, "").slice(0, 10))} /></div>
             <div className="form-group"><label>Specialty</label>
               <select value={account.specialty} onChange={e => updAcc("specialty", e.target.value)}>
                 <option value="">Select...</option>
@@ -2579,7 +2633,7 @@ function ProviderAccountPage({ onNotifEmailChange, sharedAddress, onSharedAddres
           </div>
           <hr className="divider" />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button className="btn btn-primary" onClick={() => { setAccountSaved(true); setTimeout(() => setAccountSaved(false), 3000); }}>Save Changes</button>
+            <button className="btn btn-primary" disabled={savingAccount} onClick={handleSaveAccount}>{savingAccount ? "Saving..." : "Save Changes"}</button>
           </div>
         </div>
       </div>
@@ -4224,15 +4278,17 @@ function PatientAccountPortal({ user, onSignOut }) {
                       onClick={async () => {
                         setSendingMsg(true);
                         const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                        const threadId = Date.now();
                         await supabase.from("messages").insert({
                           patient_id: patientDbId,
                           provider_id: null,
+                          thread_id: threadId,
                           subject: newMsg.subject,
                           body: newMsg.body,
                           sender: `${acctForm.firstName} ${acctForm.lastName}`,
                           read: true,
                         });
-                        const msg = { id: Date.now(), subject: newMsg.subject, from: "Me", date: today, read: true, thread: [{ from: "Me", date: today, body: newMsg.body }] };
+                        const msg = { id: threadId, subject: newMsg.subject, from: "Me", date: today, read: true, thread: [{ from: "Me", date: today, body: newMsg.body }] };
                         setMessages(msgs => [msg, ...msgs]);
                         setSendingMsg(false);
                         setComposing(false);
@@ -4280,6 +4336,7 @@ function PatientAccountPortal({ user, onSignOut }) {
                             await supabase.from("messages").insert({
                               patient_id: patientDbId,
                               provider_id: null,
+                              thread_id: activeThread.id,
                               subject: `Re: ${activeThread.subject}`,
                               body: replyBody,
                               sender: `${acctForm.firstName} ${acctForm.lastName}`,
@@ -4524,6 +4581,7 @@ function MainApp() {
       email: params.get("email") || "",
       balanceOwed: params.get("balance") || "",
       careDescription: params.get("care") || "",
+      referralCode: params.get("ref") || "",
     };
   });
   const [providerNotifEmail, setProviderNotifEmail] = useState("admin@practice.com");
@@ -4559,6 +4617,7 @@ function MainApp() {
           const providerRow = await lookupProvider();
           if (providerRow) {
             setProviderUser({ email, practiceName: providerRow.practice_name || "", contactName: providerRow.contact_name || "" });
+            setProviderAddress({ address: providerRow.address || "", city: providerRow.city || "", state: providerRow.state || "", zip: providerRow.zip || "" });
             setMode("provider");
             setProviderPage("dashboard");
           }
@@ -4580,6 +4639,7 @@ function MainApp() {
             const providerRow = await lookupProvider();
             if (providerRow) {
               setProviderUser({ email, practiceName: providerRow.practice_name || "", contactName: providerRow.contact_name || "" });
+              setProviderAddress({ address: providerRow.address || "", city: providerRow.city || "", state: providerRow.state || "", zip: providerRow.zip || "" });
               setMode("provider");
               setProviderPage("dashboard");
             }
@@ -4617,7 +4677,11 @@ function MainApp() {
   };
   const handleStartOver = () => { setIntakeData(null); setMagicLink(""); setApprovalResult(null); setAuthUser(null); setPage("home"); };
 
-  const handleProviderSignIn = (user) => { setProviderUser(user); setProviderPage("dashboard"); };
+  const handleProviderSignIn = (user) => {
+    setProviderUser(user);
+    setProviderAddress({ address: user.address || "", city: user.city || "", state: user.state || "", zip: user.zip || "" });
+    setProviderPage("dashboard");
+  };
   const handleProviderSignOut = async () => {
     await supabase.auth.signOut();
     setProviderUser(null);
@@ -4722,7 +4786,7 @@ function MainApp() {
                 Sign in to view your payment plans
               </button>
             </div>
-            <div id="intake-form" className="main"><IntakeForm onSubmit={handleIntakeSubmit} prefill={referralPrefill} /></div>
+            <div id="intake-form" className="main"><IntakeForm onSubmit={handleIntakeSubmit} prefill={referralPrefill} storageKey="rpps_public_intake_draft" /></div>
             <SiteFooter mode="patient" onNavigate={setPage} />
           </>
         )}
@@ -4793,7 +4857,7 @@ function MainApp() {
             <ProviderPortalNav providerUser={providerUser} activePage={providerPage} onNavigate={setProviderPage} onSignOut={handleProviderSignOut} />
             {providerPage === "dashboard" && <ProviderDashboard onNavigate={setProviderPage} />}
             {providerPage === "refer" && <ReferPatientPage providerUser={providerUser} />}
-            {providerPage === "account" && <ProviderAccountPage onNotifEmailChange={setProviderNotifEmail} sharedAddress={providerAddress} onSharedAddressChange={(patch) => setProviderAddress(a => ({ ...a, ...patch }))} />}
+            {providerPage === "account" && <ProviderAccountPage providerEmail={providerUser?.email} onNotifEmailChange={setProviderNotifEmail} sharedAddress={providerAddress} onSharedAddressChange={(patch) => setProviderAddress(a => ({ ...a, ...patch }))} />}
             {providerPage === "billing" && <ProviderBillingPage accountAddress={providerAddress} />}
           </>
         )}
