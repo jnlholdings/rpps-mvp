@@ -2311,7 +2311,7 @@ function ProviderPortalNav({ providerUser, activePage, onNavigate, onSignOut }) 
     <div style={{ background: "var(--navy)", borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "0 24px", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", height: 56, gap: 16 }}>
       <div />
       <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
-        {[["dashboard", "Dashboard"], ["refer", "Refer Patient"], ["account", "Account"], ["billing", "Billing"]].map(([id, label]) => (
+        {[["dashboard", "Dashboard"], ["refer", "Refer Patient"], ["account", "Account"], ["billing", "Billing"], ["messages", "Messages"]].map(([id, label]) => (
           <button key={id} onClick={() => onNavigate(id)} style={{ padding: "6px 16px", borderRadius: 8, border: "none", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, cursor: "pointer", background: activePage === id ? "rgba(255,255,255,0.15)" : "transparent", color: activePage === id ? "white" : "rgba(255,255,255,0.55)", transition: "all 0.2s" }}>
             {label}
           </button>
@@ -2844,6 +2844,175 @@ function ProviderBillingPage({ accountAddress }) {
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── PROVIDER MESSAGES / CONTACT US ──────────────────────────────────────────
+
+function ProviderMessagesPage({ providerUser }) {
+  const [providerId, setProviderId] = useState(null);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("providers").select("id").eq("email", providerUser?.email).order("created_at", { ascending: false }).limit(1);
+      setProviderId(data?.[0]?.id || null);
+    })();
+  }, [providerUser?.email]);
+  const MOCK_PROVIDER_MESSAGES = [
+    { id: 1, subject: "Welcome to Rubix", from: "Rubix Team", date: "May 1, 2026", read: true, thread: [
+      { from: "Rubix Team", date: "May 1, 2026", body: "Welcome to Rubix! Your practice account is now active. If you have questions about referrals, billing, or your account, please reach out any time — we're here to help." },
+    ]},
+  ];
+  const [messages, setMessages] = useState(MOCK_PROVIDER_MESSAGES);
+  const [activeThread, setActiveThread] = useState(null);
+  const [composing, setComposing] = useState(false);
+  const [newMsg, setNewMsg] = useState({ subject: "", body: "" });
+  const [replyBody, setReplyBody] = useState("");
+  const [replySent, setReplySent] = useState(false);
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const senderName = providerUser?.practiceName || providerUser?.contactName || providerUser?.email || "Me";
+  const senderInitial = (senderName || "M")[0].toUpperCase();
+
+  return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px" }}>
+      <div style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div className="section-title" style={{ marginBottom: 4 }}>Messages</div>
+          <div className="section-sub">Contact the Rubix support team with any questions about referrals, billing, or your account.</div>
+        </div>
+        {!composing && !activeThread && (
+          <button className="btn btn-primary" style={{ padding: "8px 18px", fontSize: 13 }} onClick={() => { setComposing(true); setNewMsg({ subject: "", body: "" }); }}>+ New Message</button>
+        )}
+      </div>
+
+      {composing && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-header">
+            <div className="card-icon teal">✏️</div>
+            <div><div className="card-title">New Message</div><div className="card-subtitle">Our team typically responds within 1 business day</div></div>
+          </div>
+          <div className="card-body">
+            <div className="form-group"><label>Subject *</label><input placeholder="e.g. Question about a referral" value={newMsg.subject} onChange={e => setNewMsg(m => ({ ...m, subject: e.target.value }))} /></div>
+            <div className="form-group"><label>Message *</label><textarea placeholder="Type your message here..." value={newMsg.body} onChange={e => setNewMsg(m => ({ ...m, body: e.target.value }))} style={{ minHeight: 120, resize: "vertical", lineHeight: 1.6 }} /></div>
+            <hr className="divider" />
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <button className="btn btn-ghost" onClick={() => setComposing(false)}>Cancel</button>
+              <button className="btn btn-primary" disabled={!newMsg.subject || !newMsg.body || sendingMsg}
+                onClick={async () => {
+                  setSendingMsg(true);
+                  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                  const threadId = Date.now();
+                  await supabase.from("messages").insert({
+                    patient_id: null,
+                    provider_id: providerId,
+                    thread_id: threadId,
+                    subject: newMsg.subject,
+                    body: newMsg.body,
+                    sender: senderName,
+                    read: true,
+                  });
+                  const msg = { id: threadId, subject: newMsg.subject, from: "Me", date: today, read: true, thread: [{ from: "Me", date: today, body: newMsg.body }] };
+                  setMessages(msgs => [msg, ...msgs]);
+                  setSendingMsg(false);
+                  setComposing(false);
+                  setActiveThread(msg);
+                }}>{sendingMsg ? "Sending..." : "Send Message"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeThread && !composing && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-header">
+            <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
+              <button onClick={() => { setActiveThread(null); setReplyBody(""); setReplySent(false); }} style={{ background: "none", border: "none", color: "var(--teal-dark)", cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontSize: 13, fontWeight: 500, padding: 0 }}>{"← Back"}</button>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 16 }}>{activeThread.subject}</div>
+            </div>
+          </div>
+          <div style={{ padding: "0 28px" }}>
+            {activeThread.thread.map((msg, i) => (
+              <div key={i} style={{ padding: "20px 0", borderBottom: "1px solid var(--border)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: msg.from === "Me" ? "var(--teal)" : "var(--coral)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 13, fontWeight: 700 }}>
+                    {msg.from === "Me" ? senderInitial : "R"}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{msg.from === "Me" ? senderName : "Rubix Support Team"}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{msg.date}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.8, paddingLeft: 42 }}>{msg.body}</div>
+              </div>
+            ))}
+          </div>
+          <div className="card-body" style={{ paddingTop: 16 }}>
+            {replySent ? (
+              <div className="alert success">{"Reply sent. Our team will respond within 1 business day."}</div>
+            ) : (
+              <>
+                <div className="form-group"><label>Reply</label><textarea placeholder="Type your reply..." value={replyBody} onChange={e => setReplyBody(e.target.value)} style={{ minHeight: 90, resize: "vertical", lineHeight: 1.6 }} /></div>
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button className="btn btn-primary" disabled={!replyBody.trim() || sendingMsg}
+                    onClick={async () => {
+                      setSendingMsg(true);
+                      const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                      await supabase.from("messages").insert({
+                        patient_id: null,
+                        provider_id: providerId,
+                        thread_id: activeThread.id,
+                        subject: `Re: ${activeThread.subject}`,
+                        body: replyBody,
+                        sender: senderName,
+                        read: true,
+                      });
+                      const updated = { ...activeThread, thread: [...activeThread.thread, { from: "Me", date: today, body: replyBody }] };
+                      setMessages(msgs => msgs.map(m => m.id === activeThread.id ? updated : m));
+                      setActiveThread(updated);
+                      setReplyBody("");
+                      setSendingMsg(false);
+                      setReplySent(true);
+                    }}>{sendingMsg ? "Sending..." : "Send Reply"}</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!activeThread && !composing && (
+        <div className="card">
+          <div className="card-header">
+            <div className="card-icon teal">📬</div>
+            <div><div className="card-title">Inbox</div><div className="card-subtitle">{messages.length} conversation{messages.length !== 1 ? "s" : ""}</div></div>
+          </div>
+          {messages.length === 0 ? (
+            <div style={{ padding: "32px", textAlign: "center", color: "var(--text-secondary)", fontSize: 14 }}>No messages yet.</div>
+          ) : (
+            <div>
+              {messages.map(msg => (
+                <div key={msg.id}
+                  onClick={() => { setActiveThread(msg); setMessages(msgs => msgs.map(m => m.id === msg.id ? { ...m, read: true } : m)); setReplySent(false); setReplyBody(""); }}
+                  style={{ padding: "16px 24px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: msg.read ? "var(--white)" : "#F0FDFA", display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: msg.from === "Me" ? "var(--teal)" : "var(--coral)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+                    {msg.from === "Me" ? senderInitial : "R"}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                      <div style={{ fontWeight: msg.read ? 500 : 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{msg.subject}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{msg.date}</div>
+                    </div>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
+                      {msg.from === "Me" ? "Me" : "Rubix Team"}{": "}{msg.thread[msg.thread.length - 1].body.slice(0, 60)}{"..."}
+                    </div>
+                  </div>
+                  {!msg.read && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--teal)", flexShrink: 0 }} />}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -4859,6 +5028,7 @@ function MainApp() {
             {providerPage === "refer" && <ReferPatientPage providerUser={providerUser} />}
             {providerPage === "account" && <ProviderAccountPage providerEmail={providerUser?.email} onNotifEmailChange={setProviderNotifEmail} sharedAddress={providerAddress} onSharedAddressChange={(patch) => setProviderAddress(a => ({ ...a, ...patch }))} />}
             {providerPage === "billing" && <ProviderBillingPage accountAddress={providerAddress} />}
+            {providerPage === "messages" && <ProviderMessagesPage providerUser={providerUser} />}
           </>
         )}
 
