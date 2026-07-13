@@ -7,23 +7,23 @@ const styles = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --teal: #0D9488;
-    --teal-light: #14B8A6;
-    --teal-dark: #0F766E;
-    --coral: #F97316;
-    --coral-light: #FB923C;
-    --navy: #0F2237;
-    --navy-mid: #1A3550;
-    --slate: #334155;
-    --mist: #F0FDFA;
+    --teal: #0FB8AB;
+    --teal-light: #3DD9CC;
+    --teal-dark: #01665E;
+    --coral: #F7A106;
+    --coral-light: #FBBF4A;
+    --navy: #001936;
+    --navy-mid: #0A2A4D;
+    --slate: #656972;
+    --mist: #E6FBF9;
     --mist2: #F8FAFC;
     --border: #E2E8F0;
-    --text-primary: #0F2237;
-    --text-secondary: #64748B;
-    --text-light: #94A3B8;
+    --text-primary: #001936;
+    --text-secondary: #656972;
+    --text-light: #9BA0A9;
     --white: #FFFFFF;
     --success: #10B981;
-    --warning: #F59E0B;
+    --warning: #F7A106;
     --radius: 16px;
     --radius-sm: 10px;
     --shadow: 0 4px 24px rgba(15,34,55,0.08);
@@ -58,7 +58,7 @@ const styles = `
   .nav-logo span { color: var(--coral); }
   .nav-pill {
     background: var(--mist);
-    border: 1px solid #CCFBF1;
+    border: 1px solid #B3EEE9;
     border-radius: 100px;
     display: flex;
     padding: 4px;
@@ -135,8 +135,8 @@ const styles = `
   .btn-primary:hover { background: var(--teal-light); transform: translateY(-1px); }
   .btn-outline { background: transparent; color: white; border: 1.5px solid rgba(255,255,255,0.3); }
   .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.6); }
-  .btn-ghost { background: var(--mist); color: var(--teal-dark); border: 1.5px solid #CCFBF1; }
-  .btn-ghost:hover { background: #CCFBF1; }
+  .btn-ghost { background: var(--mist); color: var(--teal-dark); border: 1.5px solid #B3EEE9; }
+  .btn-ghost:hover { background: #B3EEE9; }
   .btn-danger { background: #FEE2E2; color: #991B1B; border: none; }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
@@ -159,7 +159,7 @@ const styles = `
   .card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
   .card-header { padding: 24px 28px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
   .card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-  .card-icon.teal { background: #CCFBF1; }
+  .card-icon.teal { background: #B3EEE9; }
   .card-title { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 600; }
   .card-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
   .card-body { padding: 28px; }
@@ -197,7 +197,7 @@ const styles = `
 
   .financing-card { border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 20px; cursor: pointer; transition: all 0.2s; position: relative; background: var(--white); }
   .financing-card:hover { border-color: var(--teal-light); transform: translateY(-2px); box-shadow: var(--shadow); }
-  .financing-card.selected { border-color: var(--teal); background: #F0FDFA; }
+  .financing-card.selected { border-color: var(--teal); background: #E6FBF9; }
   .financing-card.recommended::before { content: 'Best Match'; position: absolute; top: -1px; right: 16px; background: var(--coral); color: white; font-size: 11px; font-weight: 600; padding: 3px 12px; border-radius: 0 0 8px 8px; }
   .fc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
   .fc-logo { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
@@ -314,9 +314,9 @@ const styles = `
 
 // ─── MOCK DATA ────────────────────────────────────────────────────────────────
 
-const RUBIX_PRODUCT = {
-  name: "Rubix EOB-Verified Financing",
-  type: "Single Rubix-Branded Product",
+const PRISM_PRODUCT = {
+  name: "Prism Patient EOB-Verified Financing",
+  type: "Single Prism Patient-Branded Product",
   logo: "🏥",
   apr: "0% if paid within 12 months",
   terms: "3, 6, 9, or 12 months — auto-assigned based on EOB-verified amount",
@@ -324,11 +324,11 @@ const RUBIX_PRODUCT = {
 };
 
 const MOCK_PATIENTS = [
-  { name: "Maria L.", amount: "$1,200", plan: "Rubix Financing", status: "approved", date: "Today" },
-  { name: "James R.", amount: "$3,400", plan: "Rubix Financing", status: "reviewing", date: "Yesterday" },
-  { name: "Aisha T.", amount: "$680", plan: "Rubix Financing", status: "approved", date: "May 20" },
-  { name: "Carlos M.", amount: "$2,100", plan: "Rubix Financing", status: "pending", date: "May 19" },
-  { name: "Diane K.", amount: "$890", plan: "Rubix Financing", status: "approved", date: "May 18" },
+  { name: "Maria L.", amount: "$1,200", plan: "Prism Patient Financing", status: "approved", date: "Today" },
+  { name: "James R.", amount: "$3,400", plan: "Prism Patient Financing", status: "reviewing", date: "Yesterday" },
+  { name: "Aisha T.", amount: "$680", plan: "Prism Patient Financing", status: "approved", date: "May 20" },
+  { name: "Carlos M.", amount: "$2,100", plan: "Prism Patient Financing", status: "pending", date: "May 19" },
+  { name: "Diane K.", amount: "$890", plan: "Prism Patient Financing", status: "approved", date: "May 18" },
 ];
 
 // ─── MOCK AUTH ────────────────────────────────────────────────────────────────
@@ -338,7 +338,7 @@ const MOCK_PATIENTS = [
 
 function generateMagicLink(email) {
   const token = Math.random().toString(36).slice(2, 10).toUpperCase();
-  return `https://rpps-mvp.vercel.app/auth?token=${token}&email=${encodeURIComponent(email)}`;
+  return `https://prism-mvp.vercel.app/auth?token=${token}&email=${encodeURIComponent(email)}`;
 }
 
 // ─── INPUT FORMATTERS ─────────────────────────────────────────────────────────
@@ -423,7 +423,7 @@ function calculateLoanFees(loanAmount) {
 
 // ─── EOB REVIEW & DISPUTE SERVICE — PRICING MENU ──────────────────────────────
 // Placeholder pricing — patient-facing consultative service, separate from financing.
-// Patient submits a request with their EOB attached; Rubix reviews and follows up
+// Patient submits a request with their EOB attached; Prism Patient reviews and follows up
 // via email with standard confirmation responses and further updates as needed.
 
 const DISPUTE_SERVICE_TIERS = [
@@ -433,7 +433,7 @@ const DISPUTE_SERVICE_TIERS = [
 ];
 
 // ─── TERM AUTO-ASSIGNMENT ──────────────────────────────────────────────────────
-// Placeholder breakpoints — Rubix assigns the term automatically based on the
+// Placeholder breakpoints — Prism Patient assigns the term automatically based on the
 // EOB-verified loan amount. Adjust once real portfolio/risk data is available.
 // All terms are 0% APR if paid in full within 12 months.
 
@@ -629,18 +629,17 @@ function MagicLinkSent({ email, magicLink, onSimulateClick }) {
 
 // ─── SHARED AUTH UTILITIES ────────────────────────────────────────────────────
 
-function LogoDark({ width = 200, height = 60 }) {
+function LogoDark({ width = 158, height = 63 }) {
   return (
-    <svg width={width} height={height} viewBox="0 0 1600 520" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <g transform="translate(120,92) scale(1.25)">
-        <path d="M120 0 L240 68 L120 136 L0 68 Z" fill="#14B8A6"/>
-        <path d="M0 78 L112 142 L112 275 L0 211 Z" fill="#0F766E"/>
-        <path d="M128 142 L240 78 L240 211 L128 275 Z" fill="#F59E0B"/>
+    <svg width={width} height={height} viewBox="0 0 1983 793" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#001936" strokeWidth="7" strokeLinejoin="round">
+        <polygon points="430,164 560,391 415,453 203,550" fill="#0FB8AB"/>
+        <polygon points="203,550 172,597 430,590 415,453" fill="#01665E"/>
+        <polygon points="560,391 687,597 430,590 415,453" fill="#F7A106"/>
       </g>
-      <g transform="translate(545,128)">
-        <text x="0" y="160" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="205" fontWeight="800" letterSpacing="-8" fill="#F8FAFC">Rubix</text>
-        <text x="4" y="250" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="76" fontWeight="400" letterSpacing="-1" fill="#CBD5E1">Patient Payment Solutions</text>
-      </g>
+      <text x="750" y="520" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="400" fontWeight="900" letterSpacing="-8" fill="#F8FAFC">Pr{"\u0131"}sm</text>
+      <circle cx="1225" cy="215" r="42" fill="#0FB8AB"/>
+      <text x="755" y="615" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="95" fontWeight="400" letterSpacing="2" fill="#CBD5E1">Patient Payment Solutions</text>
     </svg>
   );
 }
@@ -1117,7 +1116,7 @@ function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSign
                     </div>
                   ))}
                 </div>
-                <div className="alert info">{"By submitting, you authorize Rubix to verify your EOB and perform a soft credit check to determine your financing offer. This does not affect your credit score. If approved, your loan is 0% interest as long as it's paid within 12 months. A 3.5% processing fee applies."}</div>
+                <div className="alert info">{"By submitting, you authorize Prism Patient to verify your EOB and perform a soft credit check to determine your financing offer. This does not affect your credit score. If approved, your loan is 0% interest as long as it's paid within 12 months. A 3.5% processing fee applies."}</div>
                 {submitting && (
                   <div style={{ textAlign: "center", padding: "24px 0" }}>
                     <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
@@ -1170,7 +1169,7 @@ function AppSubmitted({ intakeData, onSimulateDecision, onSignOut, embedded }) {
   const emailBody =
 `Dear ${intakeData.firstName},
 
-Thank you for submitting your application through Rubix.
+Thank you for submitting your application through Prism Patient.
 
 We have received your application and your uploaded EOB / provider statement for:
 
@@ -1181,7 +1180,7 @@ Our team is verifying your EOB and running a credit check. Most applicants recei
 
 If you have any questions in the meantime, please reply to this email.
 
-— The Rubix Team`;
+— The Prism Patient Team`;
 
   return (
     <>
@@ -1210,7 +1209,7 @@ If you have any questions in the meantime, please reply to this email.
             {showEmail && (
               <MockEmail
                 to={intakeData.email}
-                subject="Your Rubix Application Has Been Received"
+                subject="Your Prism Patient Application Has Been Received"
                 body={emailBody}
                 note="On deployment this email sends automatically via SendGrid when the application is submitted."
               />
@@ -1256,7 +1255,7 @@ This usually only takes a little while, and we'll follow up by email as soon as 
 
 Thanks for your patience!
 
-— The Rubix Team`;
+— The Prism Patient Team`;
 
   return (
     <>
@@ -1277,7 +1276,7 @@ Thanks for your patience!
         {showEmail && (
           <MockEmail
             to={intakeData.email}
-            subject="Quick update on your Rubix application"
+            subject="Quick update on your Prism Patient application"
             body={emailBody}
             note="Sends automatically the moment an EOB is routed to human review."
           />
@@ -1328,14 +1327,14 @@ Great news — your EOB has been verified and you have been approved!
   Estimated Monthly Payment: $${result.monthlyPayment}
   Processing Fee (3.5%): $${result.processingFee}
 
-To accept this offer, please sign in to your Rubix portal using the link below and review your loan agreement.
+To accept this offer, please sign in to your Prism Patient portal using the link below and review your loan agreement.
 
   [View and Accept Your Offer]
-  https://rpps-mvp.vercel.app/portal
+  https://prism-mvp.vercel.app/portal
 
 This offer expires in 30 days.
 
-— The Rubix Team`
+— The Prism Patient Team`
     : review
     ? `Dear ${intakeData.firstName},
 
@@ -1345,14 +1344,14 @@ We will contact you within 1 business day with a final decision. You may be aske
 
 If you have questions please reply to this email.
 
-— The Rubix Team`
+— The Prism Patient Team`
     : `Dear ${intakeData.firstName},
 
-Thank you for applying through Rubix. After careful review, we are unable to approve your application at this time.
+Thank you for applying through Prism Patient. After careful review, we are unable to approve your application at this time.
 
-A Rubix care coordinator will reach out to discuss alternative options that may be available to you, including hardship programs and extended payment arrangements.
+A Prism Patient care coordinator will reach out to discuss alternative options that may be available to you, including hardship programs and extended payment arrangements.
 
-— The Rubix Team`;
+— The Prism Patient Team`;
 
   return (
     <>
@@ -1374,7 +1373,7 @@ A Rubix care coordinator will reach out to discuss alternative options that may 
         {showEmail && (
           <MockEmail
             to={intakeData.email}
-            subject={approved ? "Your Rubix Application — Decision Ready" : review ? "Your Rubix Application — Under Review" : "Your Rubix Application — Update"}
+            subject={approved ? "Your Prism Patient Application — Decision Ready" : review ? "Your Prism Patient Application — Under Review" : "Your Prism Patient Application — Update"}
             body={decisionEmailBody}
             note="On deployment this email sends automatically when EOB verification and the credit pull are complete."
           />
@@ -1438,8 +1437,8 @@ A Rubix care coordinator will reach out to discuss alternative options that may 
           <div className="card" style={{ marginTop: 20 }}>
             <div className="card-body">
               {review
-                ? <p style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7 }}>A Rubix specialist will contact you at <strong>{intakeData.email}</strong> within 1 business day.</p>
-                : <p style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7 }}>A Rubix care coordinator will reach out to discuss alternatives including hardship programs and extended payment arrangements.</p>
+                ? <p style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7 }}>A Prism Patient specialist will contact you at <strong>{intakeData.email}</strong> within 1 business day.</p>
+                : <p style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7 }}>A Prism Patient care coordinator will reach out to discuss alternatives including hardship programs and extended payment arrangements.</p>
               }
               <hr className="divider" />
               <button className="btn btn-ghost" style={{ width: "100%" }} onClick={onSignOut}>Return to Home</button>
@@ -1508,7 +1507,7 @@ function ESignDoc({ result, intakeData, patientEmail, applicationId, patientDbId
         <div className="card-body">
           <div style={{ background: "var(--mist2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "24px", fontSize: 13, lineHeight: 1.9, color: "var(--slate)", maxHeight: 360, overflowY: "auto", marginBottom: 24 }}>
             <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 16, textAlign: "center" }}>CONSUMER LOAN AGREEMENT</div>
-            <div style={{ marginBottom: 12 }}><strong>Lender:</strong> Rubix Patient Payment Solutions</div>
+            <div style={{ marginBottom: 12 }}><strong>Lender:</strong> Prism Patient Payment Solutions</div>
             <div style={{ marginBottom: 12 }}><strong>Borrower:</strong> {intakeData.firstName} {intakeData.lastName}</div>
             <div style={{ marginBottom: 12 }}><strong>Date:</strong> {today}</div>
             <div style={{ marginBottom: 12 }}><strong>Loan Amount:</strong> ${parseFloat(result.approvedAmount).toLocaleString()}</div>
@@ -1519,10 +1518,10 @@ function ESignDoc({ result, intakeData, patientEmail, applicationId, patientDbId
             <div style={{ marginBottom: 12 }}><strong>Purpose of Loan:</strong> {intakeData.careDescription}</div>
             <hr style={{ margin: "16px 0", borderColor: "var(--border)" }} />
             <div style={{ marginBottom: 12 }}><strong>1. Promise to Pay.</strong> Borrower agrees to repay the loan amount in monthly installments as described above, beginning 30 days from the date of funding. This loan carries 0% interest provided the full balance is repaid within 12 months of funding.</div>
-            <div style={{ marginBottom: 12 }}><strong>2. Disbursement.</strong> Loan proceeds, less an origination fee deducted by Rubix, will be disbursed directly to the healthcare provider within 1-2 business days of signing this agreement.</div>
+            <div style={{ marginBottom: 12 }}><strong>2. Disbursement.</strong> Loan proceeds, less an origination fee deducted by Prism Patient, will be disbursed directly to the healthcare provider within 1-2 business days of signing this agreement.</div>
             <div style={{ marginBottom: 12 }}><strong>3. Prepayment.</strong> Borrower may prepay all or part of the outstanding balance at any time without penalty.</div>
             <div style={{ marginBottom: 12 }}><strong>4. Default.</strong> Borrower will be considered in default if a payment is more than 30 days past due. Default may result in acceleration of the remaining balance and referral to a collections agency.</div>
-            <div style={{ marginBottom: 12 }}><strong>5. Autopay Authorization.</strong> By signing this agreement, Borrower authorizes Rubix to initiate ACH debit entries from the bank account provided for monthly payment amounts on the scheduled due date.</div>
+            <div style={{ marginBottom: 12 }}><strong>5. Autopay Authorization.</strong> By signing this agreement, Borrower authorizes Prism Patient to initiate ACH debit entries from the bank account provided for monthly payment amounts on the scheduled due date.</div>
             <div style={{ marginBottom: 12 }}><strong>6. TILA Disclosure.</strong> This agreement is governed by the Truth in Lending Act (TILA) and Regulation Z. The APR, finance charges, and total repayment amounts disclosed herein represent the full cost of credit.</div>
             <div style={{ marginBottom: 12 }}><strong>7. Privacy.</strong> All personal and health information collected in connection with this loan, including any uploaded EOB or provider statement, is protected under HIPAA and will not be sold or shared with third parties except as necessary to administer this loan.</div>
             <div style={{ fontSize: 11, color: "var(--text-light)", marginTop: 16 }}>This is a mock document for demonstration purposes. On deployment, this agreement will be generated by the issuing lender (e.g. Medallion Bank) and will constitute a legally binding consumer loan agreement.</div>
@@ -1584,14 +1583,14 @@ Funds are being disbursed directly to your healthcare provider within 1-2 busine
 
 Your monthly payments will be automatically debited from your account on file. You will receive a reminder 3 days before each payment.
 
-Thank you for choosing Rubix.
+Thank you for choosing Prism Patient.
 
-— The Rubix Team`;
+— The Prism Patient Team`;
 
   const providerEmailBody =
 `Dear ${intakeData.provider || "Healthcare Provider"},
 
-This is a notification that a patient has accepted a payment plan through Rubix and funding is on its way to your practice.
+This is a notification that a patient has accepted a payment plan through Prism Patient and funding is on its way to your practice.
 
   Patient: ${intakeData.firstName} ${intakeData.lastName}
   Care Description: ${intakeData.careDescription}
@@ -1602,9 +1601,9 @@ This is a notification that a patient has accepted a payment plan through Rubix 
 
 Net proceeds will be deposited via ACH to your account on file.
 
-If you have questions please contact your Rubix account manager.
+If you have questions please contact your Prism Patient account manager.
 
-— The Rubix Team`;
+— The Prism Patient Team`;
 
   return (
     <div className="main-narrow" style={{ paddingTop: 32 }}>
@@ -1614,7 +1613,7 @@ If you have questions please contact your Rubix account manager.
           <h2>{"You're all set!"}</h2>
           <p>Your payment plan is active and funds are on their way to your provider.</p>
 
-          <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: "var(--radius-sm)", padding: 20, textAlign: "left", marginBottom: 24 }}>
+          <div style={{ background: "var(--mist)", border: "1px solid #B3EEE9", borderRadius: "var(--radius-sm)", padding: 20, textAlign: "left", marginBottom: 24 }}>
             {[
               ["Funded Amount", `$${parseFloat(result.approvedAmount).toLocaleString()}`],
               ["Monthly Payment", `$${result.monthlyPayment}`],
@@ -1636,7 +1635,7 @@ If you have questions please contact your Rubix account manager.
             {showPatientEmail && (
               <MockEmail
                 to={intakeData.email}
-                subject="Your Rubix Payment Plan is Active"
+                subject="Your Prism Patient Payment Plan is Active"
                 body={patientEmailBody}
                 note="Sends automatically to the patient upon offer acceptance."
               />
@@ -1647,7 +1646,7 @@ If you have questions please contact your Rubix account manager.
             {showProviderEmail && (
               <MockEmail
                 to={providerEmail || "provider@practice.com"}
-                subject="Rubix — Upcoming Patient Payment to Your Practice"
+                subject="Prism Patient — Upcoming Patient Payment to Your Practice"
                 body={providerEmailBody}
                 note="Sends automatically to the provider notification email on file."
               />
@@ -1685,14 +1684,14 @@ function HowItWorks({ onBack, onApply }) {
       <div style={{ background: "linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #1B4F72 100%)", padding: "60px 32px 48px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 60% at 50% 100%, rgba(13,148,136,0.18) 0%, transparent 70%)" }} />
         <button onClick={onBack} style={{ position: "absolute", top: 24, left: 24, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "8px 16px", borderRadius: "100px", cursor: "pointer", fontSize: 13, fontFamily: "DM Sans, sans-serif", display: "flex", alignItems: "center", gap: 6 }}>Back</button>
-        <h1 style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 700, color: "white", lineHeight: 1.15, marginBottom: 16, position: "relative" }}>How <em style={{ color: "var(--teal-light)", fontStyle: "normal" }}>Rubix</em> Works</h1>
+        <h1 style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 700, color: "white", lineHeight: 1.15, marginBottom: 16, position: "relative" }}>How <em style={{ color: "var(--teal-light)", fontStyle: "normal" }}>Prism Patient</em> Works</h1>
         <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 17, maxWidth: 480, margin: "0 auto", lineHeight: 1.6, position: "relative" }}>{"From checking your options to starting care \u2014 here is exactly what to expect."}</p>
       </div>
 
       <div style={{ maxWidth: "780px", margin: "0 auto", padding: "40px 24px 0" }}>
-        <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: "var(--radius)", padding: "28px 32px" }}>
+        <div style={{ background: "var(--mist)", border: "1px solid #B3EEE9", borderRadius: "var(--radius)", padding: "28px 32px" }}>
           <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, margin: 0 }}>
-            Rubix is a patient financing platform designed specifically for behavioral and mental health care — including ABA therapy, IOP, PHP, outpatient therapy, and psychiatric services. We connect patients with flexible monthly payment options so cost never becomes a reason to pause or stop treatment.
+            Prism Patient is a patient financing platform designed specifically for behavioral and mental health care — including ABA therapy, IOP, PHP, outpatient therapy, and psychiatric services. We connect patients with flexible monthly payment options so cost never becomes a reason to pause or stop treatment.
           </p>
         </div>
       </div>
@@ -1767,7 +1766,7 @@ function SiteFooter({ mode, onNavigate }) {
         <div>
           <div className="footer-col-title">Contact</div>
           <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.8 }}>
-            <div>support@rubix.com</div>
+            <div>support@prism.com</div>
             <div>(800) 000-0000</div>
             <div style={{ marginTop: 8 }}>Mon–Fri, 9am–6pm ET</div>
             <div style={{ marginTop: 12, fontSize: 12 }}>123 Health Ave, Suite 100<br />Miami, FL 33101</div>
@@ -1775,7 +1774,7 @@ function SiteFooter({ mode, onNavigate }) {
         </div>
       </div>
       <div className="footer-bottom">
-        <div>© {new Date().getFullYear()} Rubix Patient Payment Solutions. All rights reserved.</div>
+        <div>© {new Date().getFullYear()} Prism Patient Payment Solutions. All rights reserved.</div>
         <div className="footer-legal">
           <span style={{ cursor: "pointer" }} onClick={() => onNavigate("privacy")}>Privacy Policy</span>
           <span style={{ cursor: "pointer" }} onClick={() => onNavigate("terms")}>Terms of Service</span>
@@ -1789,12 +1788,12 @@ function SiteFooter({ mode, onNavigate }) {
 // ─── PATIENT BLOG ─────────────────────────────────────────────────────────────
 
 const PATIENT_POSTS = [
-  { icon: "🧩", tag: "Autism & ABA", title: "Understanding the Cost of ABA Therapy", excerpt: "ABA therapy is one of the most effective interventions for autism spectrum disorder — and one of the most expensive. This guide breaks down what families typically pay and what options exist.", author: "Rubix Team", date: "May 20, 2026" },
-  { icon: "🧠", tag: "Behavioral Health", title: "When Insurance Falls Short: Financing Behavioral Health Care", excerpt: "Insurance coverage for IOP, PHP, and ABA therapy is often partial or contested. This guide explains what families can do when their benefits run out before treatment is complete.", author: "Rubix Team", date: "May 12, 2026" },
-  { icon: "💳", tag: "Financing", title: "Does Applying for a Payment Plan Affect My Credit Score?", excerpt: "One of the most common questions families ask before applying for a behavioral health payment plan is whether it will impact their credit. The short answer: checking your options does not. Here is the full picture.", author: "Rubix Team", date: "May 5, 2026" },
-  { icon: "💚", tag: "Mental Health", title: "The Cost of Stopping Treatment Early", excerpt: "Research consistently shows that interrupted behavioral health treatment leads to setbacks. Here is how families can plan ahead financially to protect continuity of care.", author: "Rubix Team", date: "Apr 28, 2026" },
-  { icon: "🏡", tag: "IOP & PHP", title: "What to Expect Financially from an IOP or PHP Program", excerpt: "Intensive outpatient and partial hospitalization programs are highly effective — and often come with substantial out-of-pocket costs. This guide walks you through what to expect and how to plan.", author: "Rubix Team", date: "Apr 18, 2026" },
-  { icon: "📋", tag: "Family Resources", title: "A Family Guide to Managing Autism Treatment Costs", excerpt: "For families navigating an autism diagnosis, the financial picture can feel overwhelming. This guide covers insurance, public funding, and private financing options from start to finish.", author: "Rubix Team", date: "Apr 10, 2026" },
+  { icon: "🧩", tag: "Autism & ABA", title: "Understanding the Cost of ABA Therapy", excerpt: "ABA therapy is one of the most effective interventions for autism spectrum disorder — and one of the most expensive. This guide breaks down what families typically pay and what options exist.", author: "Prism Patient Team", date: "May 20, 2026" },
+  { icon: "🧠", tag: "Behavioral Health", title: "When Insurance Falls Short: Financing Behavioral Health Care", excerpt: "Insurance coverage for IOP, PHP, and ABA therapy is often partial or contested. This guide explains what families can do when their benefits run out before treatment is complete.", author: "Prism Patient Team", date: "May 12, 2026" },
+  { icon: "💳", tag: "Financing", title: "Does Applying for a Payment Plan Affect My Credit Score?", excerpt: "One of the most common questions families ask before applying for a behavioral health payment plan is whether it will impact their credit. The short answer: checking your options does not. Here is the full picture.", author: "Prism Patient Team", date: "May 5, 2026" },
+  { icon: "💚", tag: "Mental Health", title: "The Cost of Stopping Treatment Early", excerpt: "Research consistently shows that interrupted behavioral health treatment leads to setbacks. Here is how families can plan ahead financially to protect continuity of care.", author: "Prism Patient Team", date: "Apr 28, 2026" },
+  { icon: "🏡", tag: "IOP & PHP", title: "What to Expect Financially from an IOP or PHP Program", excerpt: "Intensive outpatient and partial hospitalization programs are highly effective — and often come with substantial out-of-pocket costs. This guide walks you through what to expect and how to plan.", author: "Prism Patient Team", date: "Apr 18, 2026" },
+  { icon: "📋", tag: "Family Resources", title: "A Family Guide to Managing Autism Treatment Costs", excerpt: "For families navigating an autism diagnosis, the financial picture can feel overwhelming. This guide covers insurance, public funding, and private financing options from start to finish.", author: "Prism Patient Team", date: "Apr 10, 2026" },
 ];
 
 function PatientBlog({ onNavigate }) {
@@ -1833,12 +1832,12 @@ function PatientBlog({ onNavigate }) {
 // ─── PROVIDER BLOG ────────────────────────────────────────────────────────────
 
 const PROVIDER_POSTS = [
-  { icon: "📈", tag: "Revenue Cycle", title: "How ABA Centers Are Reducing Write-Offs with Point-of-Service Financing", excerpt: "ABA therapy practices face some of the highest rates of patient balance write-offs in behavioral health. Point-of-service financing is changing that — here is the data.", author: "Rubix Team", date: "May 22, 2026" },
-  { icon: "🧩", tag: "ABA & Autism", title: "Why ABA Practices Need a Purpose-Built Financing Solution", excerpt: "Generic medical financing products were not designed for the session-based, insurance-complex world of ABA therapy. Here is what purpose-built looks like.", author: "Rubix Team", date: "May 15, 2026" },
-  { icon: "💚", tag: "Patient Retention", title: "Financial Stress is the Leading Cause of ABA Dropout", excerpt: "Studies show that financial burden is the number one reason families discontinue ABA therapy before goals are met. Patient financing at the point of service directly addresses this.", author: "Rubix Team", date: "May 8, 2026" },
-  { icon: "📋", tag: "Compliance", title: "TILA, Reg Z, and Behavioral Health Financing: What Providers Need to Know", excerpt: "When your IOP, PHP, or ABA practice offers payment plans, specific federal disclosure requirements apply. This guide clarifies what you are responsible for and what Rubix handles.", author: "Rubix Team", date: "Apr 30, 2026" },
-  { icon: "🔗", tag: "Integrations", title: "Embedding Patient Financing Into Your Behavioral Health EHR", excerpt: "For ABA and behavioral health practices using Kipu, Netsmart, or Qualifacts, embedding financing into existing intake workflows can dramatically increase uptake. Here is how it works.", author: "Rubix Team", date: "Apr 22, 2026" },
-  { icon: "💰", tag: "Practice Management", title: "The Real Cost of Uncollected Balances in ABA and IOP Practices", excerpt: "Behavioral health practices write off a disproportionate share of patient balances compared to other specialties. Payment plans close that gap before it opens — here is how to calculate your exposure.", author: "Rubix Team", date: "Apr 14, 2026" },
+  { icon: "📈", tag: "Revenue Cycle", title: "How ABA Centers Are Reducing Write-Offs with Point-of-Service Financing", excerpt: "ABA therapy practices face some of the highest rates of patient balance write-offs in behavioral health. Point-of-service financing is changing that — here is the data.", author: "Prism Patient Team", date: "May 22, 2026" },
+  { icon: "🧩", tag: "ABA & Autism", title: "Why ABA Practices Need a Purpose-Built Financing Solution", excerpt: "Generic medical financing products were not designed for the session-based, insurance-complex world of ABA therapy. Here is what purpose-built looks like.", author: "Prism Patient Team", date: "May 15, 2026" },
+  { icon: "💚", tag: "Patient Retention", title: "Financial Stress is the Leading Cause of ABA Dropout", excerpt: "Studies show that financial burden is the number one reason families discontinue ABA therapy before goals are met. Patient financing at the point of service directly addresses this.", author: "Prism Patient Team", date: "May 8, 2026" },
+  { icon: "📋", tag: "Compliance", title: "TILA, Reg Z, and Behavioral Health Financing: What Providers Need to Know", excerpt: "When your IOP, PHP, or ABA practice offers payment plans, specific federal disclosure requirements apply. This guide clarifies what you are responsible for and what Prism Patient handles.", author: "Prism Patient Team", date: "Apr 30, 2026" },
+  { icon: "🔗", tag: "Integrations", title: "Embedding Patient Financing Into Your Behavioral Health EHR", excerpt: "For ABA and behavioral health practices using Kipu, Netsmart, or Qualifacts, embedding financing into existing intake workflows can dramatically increase uptake. Here is how it works.", author: "Prism Patient Team", date: "Apr 22, 2026" },
+  { icon: "💰", tag: "Practice Management", title: "The Real Cost of Uncollected Balances in ABA and IOP Practices", excerpt: "Behavioral health practices write off a disproportionate share of patient balances compared to other specialties. Payment plans close that gap before it opens — here is how to calculate your exposure.", author: "Prism Patient Team", date: "Apr 14, 2026" },
 ];
 
 function ProviderBlog({ onNavigate }) {
@@ -1928,7 +1927,7 @@ function ContactPage({ audience }) {
           <div>
             <div style={{ fontFamily: "Sora, sans-serif", fontSize: 20, fontWeight: 700, marginBottom: 24 }}>Contact Information</div>
             {[
-              ["📧", "Email", "support@rubix.com", audience === "provider" ? "providers@rubix.com" : null],
+              ["📧", "Email", "support@prism.com", audience === "provider" ? "providers@prism.com" : null],
               ["📞", "Phone", "(800) 000-0000", null],
               ["🕐", "Hours", "Monday – Friday", "9:00 AM – 6:00 PM ET"],
               ["📍", "Address", "123 Health Ave, Suite 100", "Miami, FL 33101"],
@@ -2017,15 +2016,15 @@ function PatientAbout({ onNavigate }) {
   return (
     <>
       <div className="hero" style={{ padding: "72px 32px" }}>
-        <h1>About <em>Rubix</em></h1>
-        <p>We built Rubix for the families and patients navigating some of the most demanding treatment journeys — behavioral health, mental health, autism, and ABA therapy.</p>
+        <h1>About <em>Prism Patient</em></h1>
+        <p>We built Prism Patient for the families and patients navigating some of the most demanding treatment journeys — behavioral health, mental health, autism, and ABA therapy.</p>
       </div>
       <div style={{ maxWidth: 780, margin: "0 auto", padding: "56px 24px" }}>
         <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Why We Exist</div>
-        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>ABA therapy. Intensive outpatient programs. Psychiatric care. These are not optional treatments — they are essential. Yet for many families, the cost of sustained care becomes an obstacle. Rubix was built to remove that obstacle. We connect patients and families with transparent, flexible monthly payment options designed around the realities of behavioral health treatment.</p>
+        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>ABA therapy. Intensive outpatient programs. Psychiatric care. These are not optional treatments — they are essential. Yet for many families, the cost of sustained care becomes an obstacle. Prism Patient was built to remove that obstacle. We connect patients and families with transparent, flexible monthly payment options designed around the realities of behavioral health treatment.</p>
 
         <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>How We Help You</div>
-        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>{"Rubix works directly with your ABA center, behavioral health provider, or mental health practice. Whether you are managing ongoing ABA sessions, a PHP program, or outpatient therapy costs, we offer a payment path that fits your family's budget — without disrupting treatment."}</p>
+        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>{"Prism Patient works directly with your ABA center, behavioral health provider, or mental health practice. Whether you are managing ongoing ABA sessions, a PHP program, or outpatient therapy costs, we offer a payment path that fits your family's budget — without disrupting treatment."}</p>
 
         <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>What We Stand For</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginBottom: 48 }}>
@@ -2033,7 +2032,7 @@ function PatientAbout({ onNavigate }) {
             ["Transparency", "No hidden fees, no surprise charges. You always know exactly what you are agreeing to before you sign."],
             ["Accessibility", "We work with patients across the credit spectrum. Getting care should not require a perfect credit score."],
             ["Privacy", "Your health and financial information is HIPAA-protected and encrypted. We never sell your data."],
-            ["Simplicity", "We designed Rubix to be straightforward. Apply in minutes, get a decision fast, and start your care."],
+            ["Simplicity", "We designed Prism Patient to be straightforward. Apply in minutes, get a decision fast, and start your care."],
           ].map(([title, desc]) => (
             <div key={title} style={{ background: "var(--mist)", borderRadius: "var(--radius-sm)", padding: "24px 20px" }}>
               <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 15, marginBottom: 8, color: "var(--teal-dark)" }}>{title}</div>
@@ -2054,11 +2053,11 @@ function PatientAbout({ onNavigate }) {
 
 function PatientServices({ onNavigate }) {
   const services = [
-    { icon: "💳", title: "Flexible Payment Plans", desc: "Instead of paying your full balance upfront, Rubix lets you spread the cost into manageable monthly payments. Plans are available from 3 to 60 months depending on your balance and the option you choose.", features: ["Multiple term options", "0% and low-interest plans available", "No prepayment penalties", "Plans starting from $100"] },
+    { icon: "💳", title: "Flexible Payment Plans", desc: "Instead of paying your full balance upfront, Prism Patient lets you spread the cost into manageable monthly payments. Plans are available from 3 to 60 months depending on your balance and the option you choose.", features: ["Multiple term options", "0% and low-interest plans available", "No prepayment penalties", "Plans starting from $100"] },
     { icon: "⚡", title: "Fast Pre-Approval", desc: "Most patients receive a pre-approval decision in under 60 seconds. Checking your options uses a soft credit pull, which means there is no impact to your credit score until you formally apply.", features: ["Soft credit pull to check options", "Decision in seconds", "84% average approval rate", "Multiple options if one does not fit"] },
-    { icon: "🏥", title: "Works With Your Provider", desc: "Rubix is offered directly through your healthcare provider. Your provider is paid in full by Rubix — your monthly payments go directly to us, not to collections.", features: ["Provider-integrated platform", "No collection risk to you", "Coordinated with your care team", "Available at point of service"] },
-    { icon: "🔒", title: "Secure and Private", desc: "Every piece of information you submit through Rubix is encrypted and HIPAA-protected. We maintain strict data security standards and never sell or share your personal or health information.", features: ["HIPAA-compliant platform", "Bank-level encryption", "No data sold or shared", "ESIGN Act-compliant agreements"] },
-    { icon: "📱", title: "Manage Everything Online", desc: "Your Rubix patient account gives you full visibility into your payment plans, payment history, and upcoming due dates — all in one place, accessible from any device.", features: ["View all active plans", "Make payments anytime", "Upload documents securely", "Message our support team"] },
+    { icon: "🏥", title: "Works With Your Provider", desc: "Prism Patient is offered directly through your healthcare provider. Your provider is paid in full by Prism Patient — your monthly payments go directly to us, not to collections.", features: ["Provider-integrated platform", "No collection risk to you", "Coordinated with your care team", "Available at point of service"] },
+    { icon: "🔒", title: "Secure and Private", desc: "Every piece of information you submit through Prism Patient is encrypted and HIPAA-protected. We maintain strict data security standards and never sell or share your personal or health information.", features: ["HIPAA-compliant platform", "Bank-level encryption", "No data sold or shared", "ESIGN Act-compliant agreements"] },
+    { icon: "📱", title: "Manage Everything Online", desc: "Your Prism Patient patient account gives you full visibility into your payment plans, payment history, and upcoming due dates — all in one place, accessible from any device.", features: ["View all active plans", "Make payments anytime", "Upload documents securely", "Message our support team"] },
     { icon: "🤝", title: "Support When You Need It", desc: "Our patient support team is here to help. Whether you have questions about your plan, need to update your account, or want to explore additional financing options, we are just a message away.", features: ["In-app secure messaging", "Typical response within 1 business day", "Document upload and review", "Account management support"] },
     { icon: "🔍", title: "Bill Review & Dispute Service", desc: "Think there is an error on your medical bill? Submit your EOB and our team will review it for mistakes and help you dispute incorrect charges with your insurer or provider.", features: ["EOB review starting at $49", "Dispute filing on your behalf", "Full representation through resolution"], link: "bill-review-service" },
   ];
@@ -2067,7 +2066,7 @@ function PatientServices({ onNavigate }) {
     <>
       <div className="hero" style={{ padding: "72px 32px" }}>
         <h1>Built for <em>your</em> care journey</h1>
-        <p>Rubix is designed specifically for the long-term, high-engagement nature of ABA therapy, behavioral health, and mental health treatment — not a one-time procedure.</p>
+        <p>Prism Patient is designed specifically for the long-term, high-engagement nature of ABA therapy, behavioral health, and mental health treatment — not a one-time procedure.</p>
       </div>
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "56px 24px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
@@ -2113,7 +2112,7 @@ function BillReviewService({ onNavigate }) {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 56 }}>
-          {[["01", "Submit Your EOB", "Sign in to your Rubix account and upload your EOB or bill along with a quick description of what looks wrong."], ["02", "We Review It", "Our team reviews your EOB for billing errors, duplicate charges, and coding mistakes."], ["03", "We Follow Up", "Depending on the service level you choose, we file the dispute on your behalf and follow up with you by email."], ["04", "Issue Resolved", "We keep working the dispute until it's resolved, and update you in your portal along the way."]].map(([num, title, desc]) => (
+          {[["01", "Submit Your EOB", "Sign in to your Prism Patient account and upload your EOB or bill along with a quick description of what looks wrong."], ["02", "We Review It", "Our team reviews your EOB for billing errors, duplicate charges, and coding mistakes."], ["03", "We Follow Up", "Depending on the service level you choose, we file the dispute on your behalf and follow up with you by email."], ["04", "Issue Resolved", "We keep working the dispute until it's resolved, and update you in your portal along the way."]].map(([num, title, desc]) => (
             <div key={num} style={{ background: "var(--white)", borderRadius: "var(--radius-sm)", padding: "24px 20px", boxShadow: "var(--shadow)", border: "1px solid var(--border)", textAlign: "center" }}>
               <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, var(--teal), var(--teal-light))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 14, color: "white" }}>{num}</div>
               <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 15, marginBottom: 8 }}>{title}</div>
@@ -2146,7 +2145,7 @@ function BillReviewService({ onNavigate }) {
 
         <div style={{ background: "linear-gradient(135deg, var(--navy), var(--navy-mid))", borderRadius: "var(--radius)", padding: "40px 32px", textAlign: "center" }}>
           <div style={{ fontFamily: "Sora, sans-serif", fontSize: 22, fontWeight: 700, color: "white", marginBottom: 10 }}>Ready to get your bill reviewed?</div>
-          <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 15, marginBottom: 28 }}>{"Sign in to your account to submit your EOB, or create an account if you're new to Rubix."}</div>
+          <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 15, marginBottom: 28 }}>{"Sign in to your account to submit your EOB, or create an account if you're new to Prism Patient."}</div>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <button className="btn btn-primary" onClick={() => onNavigate("patient-account-login")}>Sign In to Submit a Request</button>
             <button className="btn btn-outline" onClick={() => onNavigate("get-started")}>New Here? Get Started</button>
@@ -2233,7 +2232,7 @@ function ProviderLogin({ onAuthenticated }) {
           <div className="card-icon teal">🏥</div>
           <div>
             <div className="card-title">Provider Sign In</div>
-            <div className="card-subtitle">Sign in to your Rubix Provider Portal</div>
+            <div className="card-subtitle">Sign in to your Prism Patient Provider Portal</div>
           </div>
         </div>
         <div className="card-body">
@@ -2350,7 +2349,7 @@ function ProviderDashboard({ onNavigate }) {
                 <div className="metric-val">31 <span style={{ fontSize: 16, fontWeight: 400, color: "var(--text-secondary)" }}>applications</span></div>
                 <div className="metric-sub">↑ 6 vs. last month</div>
               </div>
-              <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: 10, padding: "6px 14px", fontSize: 13, color: "var(--teal-dark)", fontWeight: 500 }}>This Month</div>
+              <div style={{ background: "var(--mist)", border: "1px solid #B3EEE9", borderRadius: 10, padding: "6px 14px", fontSize: 13, color: "var(--teal-dark)", fontWeight: 500 }}>This Month</div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               {[{ label: "Approved", val: "26", pct: "84%", color: "var(--success)" }, { label: "Pending", val: "3", pct: "10%", color: "var(--warning)" }, { label: "Declined", val: "2", pct: "6%", color: "#EF4444" }].map(s => (
@@ -2391,7 +2390,7 @@ function ProviderDashboard({ onNavigate }) {
 // ─── REFER PATIENT PAGE ───────────────────────────────────────────────────────
 
 function ReferPatientPage({ providerUser }) {
-  const APP_URL = "https://rpps-mvp.vercel.app";
+  const APP_URL = "https://prism-mvp.vercel.app";
   const [refForm, setRefForm] = useState({ firstName: "", lastName: "", phone: "", email: "", balance: "", careDescription: "" });
   const [refSent, setRefSent] = useState(null);
   const [sending, setSending] = useState(false);
@@ -2459,7 +2458,7 @@ function ReferPatientPage({ providerUser }) {
     const code = generateReferralCode();
     const link = buildAppLink(code);
     const name = refForm.firstName || "there";
-    const message = `Hi ${name}, your provider has invited you to apply for a patient payment plan through Rubix. It takes under 2 minutes and won't affect your credit score. Apply here: ${link}`;
+    const message = `Hi ${name}, your provider has invited you to apply for a patient payment plan through Prism Patient. It takes under 2 minutes and won't affect your credit score. Apply here: ${link}`;
     window.open(`sms:${refForm.phone.replace(/\D/g, "")}?body=${encodeURIComponent(message)}`);
     await recordReferral("sms", link, code);
     setSending(false);
@@ -2471,7 +2470,7 @@ function ReferPatientPage({ providerUser }) {
     const code = generateReferralCode();
     const link = buildAppLink(code);
     const name = refForm.firstName || "there";
-    const subject = "Your Patient Payment Options — Rubix";
+    const subject = "Your Patient Payment Options — Prism Patient";
     const body = `Hi ${name},\n\nYour provider has invited you to explore flexible payment options for your upcoming care.\n\nApplying takes under 2 minutes and won't affect your credit score.\n\nGet started here:\n${link}\n\n— Your Care Team`;
     window.open(`mailto:${refForm.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
     await recordReferral("email", link, code);
@@ -2625,10 +2624,10 @@ function ProviderAccountPage({ providerEmail, onNotifEmailChange, sharedAddress,
           </div>
           <hr className="divider" />
           <div className="section-title" style={{ fontSize: 16, marginBottom: 6 }}>Financing</div>
-          <div className="section-sub">{"Rubix verifies each patient's EOB and offers one straightforward financing product — no partner selection needed."}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, border: "2px solid var(--teal)", borderRadius: "var(--radius-sm)", padding: "14px 16px", background: "#F0FDFA" }}>
-            <div className="fc-logo" style={{ background: "#F0FDFA" }}>🏥</div>
-            <div><div style={{ fontWeight: 600, fontSize: 14 }}>Rubix EOB-Verified Financing</div><div style={{ fontSize: 12, color: "var(--text-secondary)" }}>3/6/9/12-month terms · 0% interest if paid within 12 months</div></div>
+          <div className="section-sub">{"Prism Patient verifies each patient's EOB and offers one straightforward financing product — no partner selection needed."}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, border: "2px solid var(--teal)", borderRadius: "var(--radius-sm)", padding: "14px 16px", background: "#E6FBF9" }}>
+            <div className="fc-logo" style={{ background: "#E6FBF9" }}>🏥</div>
+            <div><div style={{ fontWeight: 600, fontSize: 14 }}>Prism Patient EOB-Verified Financing</div><div style={{ fontSize: 12, color: "var(--text-secondary)" }}>3/6/9/12-month terms · 0% interest if paid within 12 months</div></div>
             <div style={{ marginLeft: "auto", width: 22, height: 22, borderRadius: 6, background: "var(--teal)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 13, flexShrink: 0 }}>✓</div>
           </div>
           <hr className="divider" />
@@ -2707,13 +2706,13 @@ function ProviderBillingPage({ accountAddress }) {
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="card-header">
           <div className="card-icon teal">💳</div>
-          <div><div className="card-title">Billing</div><div className="card-subtitle">Payment method on file for Rubix monthly platform fee</div></div>
+          <div><div className="card-title">Billing</div><div className="card-subtitle">Payment method on file for Prism Patient monthly platform fee</div></div>
         </div>
         <div className="card-body">
-          <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: "var(--radius-sm)", padding: "16px 20px", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ background: "var(--mist)", border: "1px solid #B3EEE9", borderRadius: "var(--radius-sm)", padding: "16px 20px", marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
             <div>
               <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px", fontWeight: 600 }}>Current Plan</div>
-              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>Rubix Provider</div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18 }}>Prism Patient Provider</div>
               <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>$29.99 / month + $19.99 per additional user · Billed monthly</div>
             </div>
             <div style={{ background: "#D1FAE5", color: "#065F46", fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: "100px" }}>Active</div>
@@ -2832,7 +2831,7 @@ function ProviderBillingPage({ accountAddress }) {
           <table className="patient-table">
             <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead>
             <tbody>
-              {[["May 1, 2026", "Rubix Provider — Base Fee + 1 User", "$49.98", "approved"], ["Apr 1, 2026", "Rubix Provider — Base Fee + 1 User", "$49.98", "approved"], ["Mar 1, 2026", "Rubix Provider — Base Fee", "$29.99", "approved"]].map(([date, desc, amt, status], i) => (
+              {[["May 1, 2026", "Prism Patient Provider — Base Fee + 1 User", "$49.98", "approved"], ["Apr 1, 2026", "Prism Patient Provider — Base Fee + 1 User", "$49.98", "approved"], ["Mar 1, 2026", "Prism Patient Provider — Base Fee", "$29.99", "approved"]].map(([date, desc, amt, status], i) => (
                 <tr key={i}>
                   <td style={{ fontSize: 13, color: "var(--text-secondary)" }}>{date}</td>
                   <td style={{ fontSize: 14 }}>{desc}</td>
@@ -2859,8 +2858,8 @@ function ProviderMessagesPage({ providerUser }) {
     })();
   }, [providerUser?.email]);
   const MOCK_PROVIDER_MESSAGES = [
-    { id: 1, subject: "Welcome to Rubix", from: "Rubix Team", date: "May 1, 2026", read: true, thread: [
-      { from: "Rubix Team", date: "May 1, 2026", body: "Welcome to Rubix! Your practice account is now active. If you have questions about referrals, billing, or your account, please reach out any time — we're here to help." },
+    { id: 1, subject: "Welcome to Prism Patient", from: "Prism Patient Team", date: "May 1, 2026", read: true, thread: [
+      { from: "Prism Patient Team", date: "May 1, 2026", body: "Welcome to Prism Patient! Your practice account is now active. If you have questions about referrals, billing, or your account, please reach out any time — we're here to help." },
     ]},
   ];
   const [messages, setMessages] = useState(MOCK_PROVIDER_MESSAGES);
@@ -2878,7 +2877,7 @@ function ProviderMessagesPage({ providerUser }) {
       <div style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div className="section-title" style={{ marginBottom: 4 }}>Messages</div>
-          <div className="section-sub">Contact the Rubix support team with any questions about referrals, billing, or your account.</div>
+          <div className="section-sub">Contact the Prism Patient support team with any questions about referrals, billing, or your account.</div>
         </div>
         {!composing && !activeThread && (
           <button className="btn btn-primary" style={{ padding: "8px 18px", fontSize: 13 }} onClick={() => { setComposing(true); setNewMsg({ subject: "", body: "" }); }}>+ New Message</button>
@@ -2938,7 +2937,7 @@ function ProviderMessagesPage({ providerUser }) {
                     {msg.from === "Me" ? senderInitial : "R"}
                   </div>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{msg.from === "Me" ? senderName : "Rubix Support Team"}</div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{msg.from === "Me" ? senderName : "Prism Patient Support Team"}</div>
                     <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{msg.date}</div>
                   </div>
                 </div>
@@ -2993,7 +2992,7 @@ function ProviderMessagesPage({ providerUser }) {
               {messages.map(msg => (
                 <div key={msg.id}
                   onClick={() => { setActiveThread(msg); setMessages(msgs => msgs.map(m => m.id === msg.id ? { ...m, read: true } : m)); setReplySent(false); setReplyBody(""); }}
-                  style={{ padding: "16px 24px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: msg.read ? "var(--white)" : "#F0FDFA", display: "flex", alignItems: "center", gap: 14 }}>
+                  style={{ padding: "16px 24px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: msg.read ? "var(--white)" : "#E6FBF9", display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: msg.from === "Me" ? "var(--teal)" : "var(--coral)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
                     {msg.from === "Me" ? senderInitial : "R"}
                   </div>
@@ -3003,7 +3002,7 @@ function ProviderMessagesPage({ providerUser }) {
                       <div style={{ fontSize: 12, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{msg.date}</div>
                     </div>
                     <div style={{ fontSize: 13, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
-                      {msg.from === "Me" ? "Me" : "Rubix Team"}{": "}{msg.thread[msg.thread.length - 1].body.slice(0, 60)}{"..."}
+                      {msg.from === "Me" ? "Me" : "Prism Patient Team"}{": "}{msg.thread[msg.thread.length - 1].body.slice(0, 60)}{"..."}
                     </div>
                   </div>
                   {!msg.read && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--teal)", flexShrink: 0 }} />}
@@ -3072,7 +3071,7 @@ function ProviderHome({ onNavigate }) {
       {/* Hero */}
       <div className="hero" style={{ padding: "88px 32px" }}>
         <h1 style={{ position: "relative" }}>Your patients need care.<br />Cost <em>should not</em> be the reason they stop.</h1>
-        <p>Rubix is built for behavioral health, mental health, autism, and ABA practices — giving your patients a clear path to financing so your team can focus on treatment, not billing.</p>
+        <p>Prism Patient is built for behavioral health, mental health, autism, and ABA practices — giving your patients a clear path to financing so your team can focus on treatment, not billing.</p>
         <div className="hero-ctas">
           <button className="btn btn-primary" onClick={() => onNavigate("register")}>Create Your Free Account</button>
           <button className="btn btn-outline" onClick={() => onNavigate("how-it-works")}>Learn How It Works</button>
@@ -3152,15 +3151,15 @@ function ProviderAbout({ onNavigate }) {
   return (
     <>
       <div className="hero" style={{ padding: "72px 32px" }}>
-        <h1>About <em>Rubix</em></h1>
-        <p>Rubix is purpose-built for the practices and treatment centers serving patients with behavioral health conditions, mental health needs, and autism.</p>
+        <h1>About <em>Prism Patient</em></h1>
+        <p>Prism Patient is purpose-built for the practices and treatment centers serving patients with behavioral health conditions, mental health needs, and autism.</p>
       </div>
       <div style={{ maxWidth: 780, margin: "0 auto", padding: "56px 24px" }}>
         <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Our Mission</div>
-        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>ABA therapy, IOP programs, PHP levels of care, outpatient psychiatric services — these treatments require sustained engagement over weeks and months. A family that has to pause ABA because of a billing gap does not just lose a week of therapy. They lose progress. Rubix was built to prevent that.</p>
+        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>ABA therapy, IOP programs, PHP levels of care, outpatient psychiatric services — these treatments require sustained engagement over weeks and months. A family that has to pause ABA because of a billing gap does not just lose a week of therapy. They lose progress. Prism Patient was built to prevent that.</p>
 
         <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Who We Are</div>
-        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>Rubix was founded by a team with deep roots in behavioral health revenue cycle management. We spent years watching families drop out of ABA programs and behavioral health treatment because of billing complexity and unmanageable out-of-pocket costs. We built Rubix because existing financing products were not designed for this space — and the patients in it deserve better.</p>
+        <p style={{ fontSize: 16, color: "var(--slate)", lineHeight: 1.8, marginBottom: 40 }}>Prism Patient was founded by a team with deep roots in behavioral health revenue cycle management. We spent years watching families drop out of ABA programs and behavioral health treatment because of billing complexity and unmanageable out-of-pocket costs. We built Prism Patient because existing financing products were not designed for this space — and the patients in it deserve better.</p>
 
         <div style={{ fontFamily: "Sora, sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 16 }}>What We Believe</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginBottom: 48 }}>
@@ -3185,8 +3184,8 @@ function ProviderServices({ onNavigate }) {
     { icon: "🏦", title: "Direct Practice Funding", desc: "Once a patient is approved and signs their agreement, funds are disbursed directly to your practice via ACH within 1-2 business days. You get paid in full — we handle collections.", features: ["ACH to your bank account", "1-2 business day funding", "Zero collection risk", "Transparent merchant fee"] },
     { icon: "📲", title: "Patient Referral Tools", desc: "Refer patients to a financing application in seconds from your dashboard. Send a personalized link via text or email, or complete the intake form on their behalf at check-in.", features: ["SMS and email referral links", "Pre-filled patient info", "In-office tablet flow", "Staff-assisted entry"] },
     { icon: "📊", title: "Practice Dashboard", desc: "Track application activity, approval rates, and disbursements across your ABA or behavioral health caseload — all in one real-time dashboard.", features: ["Real-time application status", "Monthly activity metrics", "Approval rate tracking", "Disbursement history"] },
-    { icon: "🔒", title: "Compliance Infrastructure", desc: "Rubix is built on a HIPAA-compliant infrastructure with bank-level encryption. All patient data, loan agreements, and e-signatures are handled in full regulatory compliance.", features: ["HIPAA-compliant data handling", "TILA / Reg Z disclosures", "ESIGN Act e-signatures", "SOC 2 compliant hosting"] },
-    { icon: "🤝", title: "Dedicated Onboarding", desc: "Every new practice gets a dedicated Rubix onboarding specialist who walks you through setup, answers questions, and makes sure you are ready to refer your first patient on day one.", features: ["Dedicated account setup", "Practice staff training", "Go-live support", "Ongoing account management"] },
+    { icon: "🔒", title: "Compliance Infrastructure", desc: "Prism Patient is built on a HIPAA-compliant infrastructure with bank-level encryption. All patient data, loan agreements, and e-signatures are handled in full regulatory compliance.", features: ["HIPAA-compliant data handling", "TILA / Reg Z disclosures", "ESIGN Act e-signatures", "SOC 2 compliant hosting"] },
+    { icon: "🤝", title: "Dedicated Onboarding", desc: "Every new practice gets a dedicated Prism Patient onboarding specialist who walks you through setup, answers questions, and makes sure you are ready to refer your first patient on day one.", features: ["Dedicated account setup", "Practice staff training", "Go-live support", "Ongoing account management"] },
   ];
 
   return (
@@ -3224,19 +3223,19 @@ function ProviderPartners({ onNavigate }) {
   const pillars = [
     { logo: "📄", name: "EOB-Verified Amounts", desc: "Patients upload their EOB or provider statement. Our team — supported by AI — verifies the exact amount owed, so financing decisions are based on real, accurate balances instead of self-reported estimates.", tags: ["AI + human review", "Higher accuracy", "Fewer disputes"] },
     { logo: "💳", name: "Credit Pull, Confirmed Amount", desc: "A soft credit pull runs alongside EOB verification. Combining a confirmed healthcare balance with a standard credit check gives a more reliable underwriting signal than either one alone.", tags: ["Soft pull only", "No score impact to check", "More consistent approvals"] },
-    { logo: "📅", name: "Auto-Assigned Terms", desc: "Rubix automatically assigns a 3, 6, 9, or 12-month term based on the verified loan amount. All terms carry 0% interest as long as the balance is paid in full within 12 months.", tags: ["3/6/9/12 months", "0% within 12 months", "No manual selection needed"] },
+    { logo: "📅", name: "Auto-Assigned Terms", desc: "Prism Patient automatically assigns a 3, 6, 9, or 12-month term based on the verified loan amount. All terms carry 0% interest as long as the balance is paid in full within 12 months.", tags: ["3/6/9/12 months", "0% within 12 months", "No manual selection needed"] },
   ];
 
   return (
     <>
       <div className="hero" style={{ padding: "72px 32px" }}>
-        <h1>How Rubix <em>underwrites</em></h1>
+        <h1>How Prism Patient <em>underwrites</em></h1>
         <p>A financing model built specifically for healthcare — not a generic credit-score-based product.</p>
       </div>
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "56px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <div style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 700, marginBottom: 12 }}>Why EOB-based underwriting</div>
-          <div style={{ fontSize: 15, color: "var(--text-secondary)", maxWidth: 520, margin: "0 auto" }}>Generic BNPL products approve based on credit score alone. Rubix verifies the actual healthcare balance first — leading to more accurate loan amounts and more consistent collections for your practice.</div>
+          <div style={{ fontSize: 15, color: "var(--text-secondary)", maxWidth: 520, margin: "0 auto" }}>Generic BNPL products approve based on credit score alone. Prism Patient verifies the actual healthcare balance first — leading to more accurate loan amounts and more consistent collections for your practice.</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 56 }}>
           {pillars.map((p, i) => (
@@ -3246,7 +3245,7 @@ function ProviderPartners({ onNavigate }) {
                 <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 4 }}>{p.name}</div>
                 <div style={{ fontSize: 14, color: "var(--slate)", lineHeight: 1.7, marginBottom: 14 }}>{p.desc}</div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {p.tags.map(t => (<span key={t} style={{ background: "var(--mist)", border: "1px solid #CCFBF1", color: "var(--teal-dark)", fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: "100px" }}>{t}</span>))}
+                  {p.tags.map(t => (<span key={t} style={{ background: "var(--mist)", border: "1px solid #B3EEE9", color: "var(--teal-dark)", fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: "100px" }}>{t}</span>))}
                 </div>
               </div>
             </div>
@@ -3269,23 +3268,23 @@ function ProviderPartners({ onNavigate }) {
 function ProviderFAQ({ onNavigate }) {
   const [open, setOpen] = useState(null);
   const faqs = [
-    { q: "How long does it take to set up my practice on Rubix?", a: "Setup takes under 5 minutes. Create your account, enter your practice details, connect your bank account for ACH disbursements, and select which payment plans to offer. ABA centers, IOP programs, and outpatient practices can refer their first patient the same day." },
-    { q: "How does Rubix make money?", a: "Rubix charges a flat monthly platform fee of $29.99 per practice, plus $19.99 per month for each additional user on the account. We also collect a small merchant discount fee (deducted from disbursements) when a patient financing transaction is funded. There are no setup fees or long-term contracts." },
+    { q: "How long does it take to set up my practice on Prism Patient?", a: "Setup takes under 5 minutes. Create your account, enter your practice details, connect your bank account for ACH disbursements, and select which payment plans to offer. ABA centers, IOP programs, and outpatient practices can refer their first patient the same day." },
+    { q: "How does Prism Patient make money?", a: "Prism Patient charges a flat monthly platform fee of $29.99 per practice, plus $19.99 per month for each additional user on the account. We also collect a small merchant discount fee (deducted from disbursements) when a patient financing transaction is funded. There are no setup fees or long-term contracts." },
     { q: "When does my practice receive funds after a patient is approved?", a: "Once a patient accepts their offer and signs the loan agreement, funds are disbursed to your practice bank account via ACH within 1-2 business days. You are paid in full regardless of the patient's repayment behavior." },
-    { q: "What happens if a patient defaults on their payment plan?", a: "Your practice bears zero collection risk. Once funds are disbursed to your account, Rubix and our lending partners handle all patient repayment and collections. A patient default has no impact on your practice revenue." },
-    { q: "What types of practices can use Rubix?", a: "Rubix is purpose-built for IOP and PHP programs, outpatient mental health and substance use practices, psychiatric providers, ABA therapy centers, and autism treatment providers. We also support dental, physical therapy, and other specialty healthcare." },
-    { q: "Is Rubix HIPAA compliant?", a: "Yes. Rubix is built on HIPAA-compliant infrastructure. All patient data is encrypted in transit and at rest. We maintain a Business Associate Agreement (BAA) with all practices on the platform." },
-    { q: "What credit scores do patients need to qualify?", a: "Rubix combines a soft credit pull with EOB verification, so approval is not based on credit score alone. We work with a broad credit spectrum, and a verified healthcare balance often allows us to approve patients that a credit-score-only product would decline." },
-    { q: "Can I refer patients from my existing EHR or practice management system?", a: "Direct EHR integration is on our roadmap. Currently, providers refer patients directly from the Rubix dashboard via a personalized SMS or email link. The patient completes their application on any device." },
+    { q: "What happens if a patient defaults on their payment plan?", a: "Your practice bears zero collection risk. Once funds are disbursed to your account, Prism Patient and our lending partners handle all patient repayment and collections. A patient default has no impact on your practice revenue." },
+    { q: "What types of practices can use Prism Patient?", a: "Prism Patient is purpose-built for IOP and PHP programs, outpatient mental health and substance use practices, psychiatric providers, ABA therapy centers, and autism treatment providers. We also support dental, physical therapy, and other specialty healthcare." },
+    { q: "Is Prism Patient HIPAA compliant?", a: "Yes. Prism Patient is built on HIPAA-compliant infrastructure. All patient data is encrypted in transit and at rest. We maintain a Business Associate Agreement (BAA) with all practices on the platform." },
+    { q: "What credit scores do patients need to qualify?", a: "Prism Patient combines a soft credit pull with EOB verification, so approval is not based on credit score alone. We work with a broad credit spectrum, and a verified healthcare balance often allows us to approve patients that a credit-score-only product would decline." },
+    { q: "Can I refer patients from my existing EHR or practice management system?", a: "Direct EHR integration is on our roadmap. Currently, providers refer patients directly from the Prism Patient dashboard via a personalized SMS or email link. The patient completes their application on any device." },
     { q: "Is there a minimum volume requirement?", a: "No. There are no minimum patient volume requirements. The $29.99 base monthly fee, plus $19.99 per additional user, stays flat regardless of how many patients you refer in a given month." },
-    { q: "How do I cancel my Rubix account?", a: "You can cancel at any time with no cancellation fees. Simply contact your account manager or email support. Your account will remain active through the end of your current billing period." },
+    { q: "How do I cancel my Prism Patient account?", a: "You can cancel at any time with no cancellation fees. Simply contact your account manager or email support. Your account will remain active through the end of your current billing period." },
   ];
 
   return (
     <>
       <div className="hero" style={{ padding: "72px 32px" }}>
         <h1>Frequently asked <em>questions</em></h1>
-        <p>Everything providers want to know before getting started with Rubix.</p>
+        <p>Everything providers want to know before getting started with Prism Patient.</p>
       </div>
       <div style={{ maxWidth: 740, margin: "0 auto", padding: "56px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 56 }}>
@@ -3327,7 +3326,7 @@ function ProviderRegister({ onRegistered }) {
   const welcomeEmailBody =
 `Dear ${form.contactName || "there"},
 
-Welcome to Rubix Patient Payment Solutions!
+Welcome to Prism Patient Payment Solutions!
 
 Your account has been created and you are ready to start offering flexible payment options to your patients.
 
@@ -3343,7 +3342,7 @@ If you have any questions, reply to this email or reach out to your dedicated on
 
 Welcome aboard.
 
-— The Rubix Team`;
+— The Prism Patient Team`;
 
   const handleSubmit = async () => {
     const errs = validatePassword(form.password);
@@ -3381,7 +3380,7 @@ Welcome aboard.
         <div className="card-header">
           <div className="card-icon teal">🏥</div>
           <div>
-            <div className="card-title">Create Your Rubix Account</div>
+            <div className="card-title">Create Your Prism Patient Account</div>
             <div className="card-subtitle">First month free — no credit card required</div>
           </div>
         </div>
@@ -3391,7 +3390,7 @@ Welcome aboard.
               <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
               <div style={{ fontFamily: "Sora, sans-serif", fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Account created!</div>
               <div style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 20 }}>Signing you in and sending your welcome email...</div>
-              <MockEmail to={form.email} subject="Welcome to Rubix Patient Payment Solutions" body={welcomeEmailBody} note="Sends automatically upon registration via SendGrid on deployment." />
+              <MockEmail to={form.email} subject="Welcome to Prism Patient Payment Solutions" body={welcomeEmailBody} note="Sends automatically upon registration via SendGrid on deployment." />
             </div>
           ) : (
             <>
@@ -3616,15 +3615,15 @@ function PatientAccountLogin({ onAuthenticated }) {
 // ─── PATIENT ACCOUNT PORTAL ───────────────────────────────────────────────────
 
 const MOCK_PLANS = [
-  { id: "plan1", partner: "Rubix Financing", originalAmount: 1200, remaining: 840, apr: "0% if paid within 12 mo", term: "12 mo", monthlyPayment: 100, nextDue: "Jun 15, 2026", status: "active" },
-  { id: "plan2", partner: "Rubix Financing", originalAmount: 2400, remaining: 0, apr: "0% if paid within 12 mo", term: "9 mo", monthlyPayment: 100, nextDue: "—", status: "paid_off" },
+  { id: "plan1", partner: "Prism Patient Financing", originalAmount: 1200, remaining: 840, apr: "0% if paid within 12 mo", term: "12 mo", monthlyPayment: 100, nextDue: "Jun 15, 2026", status: "active" },
+  { id: "plan2", partner: "Prism Patient Financing", originalAmount: 2400, remaining: 0, apr: "0% if paid within 12 mo", term: "9 mo", monthlyPayment: 100, nextDue: "—", status: "paid_off" },
 ];
 
 const MOCK_PAYMENT_HISTORY = [
-  { date: "May 15, 2026", plan: "Rubix Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
-  { date: "Apr 15, 2026", plan: "Rubix Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
-  { date: "Mar 15, 2026", plan: "Rubix Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
-  { date: "Feb 15, 2026", plan: "Rubix Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "May 15, 2026", plan: "Prism Patient Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "Apr 15, 2026", plan: "Prism Patient Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "Mar 15, 2026", plan: "Prism Patient Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
+  { date: "Feb 15, 2026", plan: "Prism Patient Financing", amount: "$100.00", method: "ACH — Checking ••••4521", status: "approved" },
 ];
 
 function PatientAccountPortal({ user, onSignOut }) {
@@ -3657,7 +3656,7 @@ function PatientAccountPortal({ user, onSignOut }) {
           setRealPlans(plansData.map(p => ({
             id: p.id,
             isReal: true,
-            partner: "Rubix Financing",
+            partner: "Prism Patient Financing",
             originalAmount: Number(p.original_amount) || 0,
             remaining: Number(p.remaining_balance) || 0,
             apr: "0% if paid within 12 mo",
@@ -3701,17 +3700,17 @@ function PatientAccountPortal({ user, onSignOut }) {
 
   // Messages state
   const MOCK_MESSAGES = [
-    { id: 1, subject: "Welcome to Rubix", from: "Rubix Team", date: "May 1, 2026", read: true, thread: [
-      { from: "Rubix Team", date: "May 1, 2026", body: "Welcome to Rubix! Your account is now active. If you have any questions about your payment plan or need assistance, please don't hesitate to reach out. We are here to help." },
+    { id: 1, subject: "Welcome to Prism Patient", from: "Prism Patient Team", date: "May 1, 2026", read: true, thread: [
+      { from: "Prism Patient Team", date: "May 1, 2026", body: "Welcome to Prism Patient! Your account is now active. If you have any questions about your payment plan or need assistance, please don't hesitate to reach out. We are here to help." },
     ]},
     { id: 2, subject: "Question about my payment plan", from: "Me", date: "May 14, 2026", read: true, thread: [
       { from: "Me", date: "May 14, 2026", body: "Hi, I wanted to ask about changing my payment due date. Is that something that can be done?" },
-      { from: "Rubix Team", date: "May 15, 2026", body: "Hi Maria, great question! Yes, we can adjust your payment due date once per plan term. Please let us know what date works best for you and we will make that change." },
+      { from: "Prism Patient Team", date: "May 15, 2026", body: "Hi Maria, great question! Yes, we can adjust your payment due date once per plan term. Please let us know what date works best for you and we will make that change." },
       { from: "Me", date: "May 15, 2026", body: "That would be great — can we move it to the 20th of each month?" },
-      { from: "Rubix Team", date: "May 15, 2026", body: "Done! Your payment due date has been updated to the 20th of each month. Your next payment will be due June 20, 2026." },
+      { from: "Prism Patient Team", date: "May 15, 2026", body: "Done! Your payment due date has been updated to the 20th of each month. Your next payment will be due June 20, 2026." },
     ]},
-    { id: 3, subject: "Document verification complete", from: "Rubix Team", date: "May 16, 2026", read: false, thread: [
-      { from: "Rubix Team", date: "May 16, 2026", body: "Your submitted documents have been reviewed and verified. Your account is fully active. No further action is needed on your part." },
+    { id: 3, subject: "Document verification complete", from: "Prism Patient Team", date: "May 16, 2026", read: false, thread: [
+      { from: "Prism Patient Team", date: "May 16, 2026", body: "Your submitted documents have been reviewed and verified. Your account is fully active. No further action is needed on your part." },
     ]},
   ];
   const [messages, setMessages] = useState(MOCK_MESSAGES);
@@ -3750,7 +3749,7 @@ function PatientAccountPortal({ user, onSignOut }) {
     const { data: plansData } = await supabase.from("payment_plans").select("*").eq("patient_id", patientDbId).order("created_at", { ascending: false });
     if (plansData) {
       setRealPlans(plansData.map(p => ({
-        id: p.id, isReal: true, partner: "Rubix Financing",
+        id: p.id, isReal: true, partner: "Prism Patient Financing",
         originalAmount: Number(p.original_amount) || 0, remaining: Number(p.remaining_balance) || 0,
         apr: "0% if paid within 12 mo", term: "—", monthlyPayment: Number(p.monthly_payment) || 0,
         nextDue: p.next_due_date ? new Date(p.next_due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—",
@@ -3812,7 +3811,7 @@ function PatientAccountPortal({ user, onSignOut }) {
       await logEmail(
         "autopay_pending_review",
         "Your Autopay Request is Under Review",
-        `Hi, we've received your request to set up autopay of $${amount} charged on day ${chargeDay} of each month. Since this falls after your plan's current due date, a Rubix team member will review it and a decision will be reached within 1-2 business days.`
+        `Hi, we've received your request to set up autopay of $${amount} charged on day ${chargeDay} of each month. Since this falls after your plan's current due date, a Prism Patient team member will review it and a decision will be reached within 1-2 business days.`
       );
       setAutopayResultMsg("Your autopay request needs a quick review since the day you chose falls after your due date. You'll get a decision within 1-2 business days.");
     } else {
@@ -3820,7 +3819,7 @@ function PatientAccountPortal({ user, onSignOut }) {
       await logEmail(
         "autopay_enabled",
         "Autopay Confirmed",
-        `Hi, autopay has been set up on your Rubix payment plan for $${amount}, charged on ${timingText}.`
+        `Hi, autopay has been set up on your Prism Patient payment plan for $${amount}, charged on ${timingText}.`
       );
       setAutopayResultMsg("Autopay is set up and active.");
     }
@@ -3831,7 +3830,7 @@ function PatientAccountPortal({ user, onSignOut }) {
     setAutopaySubmitting(true);
     await supabase.from("payment_plans").update({ autopay_enabled: false, autopay_status: "none" }).eq("id", plan.id);
     setRealPlans(prev => prev.map(p => p.id === plan.id ? { ...p, autopayEnabled: false, autopayStatus: "none" } : p));
-    await logEmail("autopay_disabled", "Autopay Turned Off", `Hi, autopay has been turned off for your Rubix payment plan. You can re-enable it any time from your account.`);
+    await logEmail("autopay_disabled", "Autopay Turned Off", `Hi, autopay has been turned off for your Prism Patient payment plan. You can re-enable it any time from your account.`);
     setAutopayResultMsg("Autopay has been turned off.");
     setAutopaySubmitting(false);
   };
@@ -3868,7 +3867,7 @@ function PatientAccountPortal({ user, onSignOut }) {
           <>
             <div style={{ marginBottom: 20 }}>
               <div className="section-title" style={{ marginBottom: 4 }}>Your Payment Plans</div>
-              <div className="section-sub">All active and completed financing through Rubix.</div>
+              <div className="section-sub">All active and completed financing through Prism Patient.</div>
             </div>
             {plans.map(plan => (
               <div key={plan.id} className="card" style={{ marginBottom: 16 }}>
@@ -3941,7 +3940,7 @@ function PatientAccountPortal({ user, onSignOut }) {
                       </div>
                       {paymentPlan && <div className="helper-text">Minimum payment: ${paymentPlan.monthlyPayment} · Remaining: ${paymentPlan.remaining.toLocaleString()}</div>}
                     </div>
-                    <div style={{ background: "var(--mist)", border: "1px solid #CCFBF1", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 14, marginBottom: 20 }}>
+                    <div style={{ background: "var(--mist)", border: "1px solid #B3EEE9", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 14, marginBottom: 20 }}>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>Payment method</div>
                       <div style={{ color: "var(--slate)" }}>ACH — {banking.bankName} Checking ••••{banking.accountNumber.slice(-4)}</div>
                       <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>To update your bank account, go to Account Info.</div>
@@ -3966,7 +3965,7 @@ function PatientAccountPortal({ user, onSignOut }) {
                 ) : (
                   <>
                     {autopayPlan?.autopayStatus === "active" && (
-                      <div style={{ background: "#F0FDFA", border: "1px solid #CCFBF1", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 14, marginBottom: 16 }}>
+                      <div style={{ background: "#E6FBF9", border: "1px solid #B3EEE9", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 14, marginBottom: 16 }}>
                         <div style={{ fontWeight: 600, marginBottom: 4 }}>✓ Autopay is active</div>
                         <div style={{ color: "var(--slate)" }}>${autopayPlan.autopayAmount} charged {autopayPlan.autopayUseDueDate ? "on your due date" : `on day ${autopayPlan.autopayChargeDay}`} each month.</div>
                         <button className="btn btn-ghost" style={{ marginTop: 10, fontSize: 13, padding: "6px 14px" }} disabled={autopaySubmitting} onClick={() => handleAutopayDisable(autopayPlan)}>Turn Off Autopay</button>
@@ -3975,7 +3974,7 @@ function PatientAccountPortal({ user, onSignOut }) {
                     {autopayPlan?.autopayStatus === "pending_review" && (
                       <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "var(--radius-sm)", padding: "14px 16px", fontSize: 14, marginBottom: 16 }}>
                         <div style={{ fontWeight: 600, marginBottom: 4 }}>⏳ Autopay request under review</div>
-                        <div style={{ color: "var(--slate)" }}>Requested ${autopayPlan.autopayAmount} on day {autopayPlan.autopayChargeDay} of each month. A Rubix team member will make a decision within 1-2 business days.</div>
+                        <div style={{ color: "var(--slate)" }}>Requested ${autopayPlan.autopayAmount} on day {autopayPlan.autopayChargeDay} of each month. A Prism Patient team member will make a decision within 1-2 business days.</div>
                       </div>
                     )}
                     {(!autopayPlan || autopayPlan.autopayStatus === "none" || autopayPlan.autopayStatus === "rejected") && (
@@ -4027,7 +4026,7 @@ function PatientAccountPortal({ user, onSignOut }) {
                               <input type="text" inputMode="numeric" placeholder="Day of month (1-28)" style={{ maxWidth: 200 }} value={autopayDay} onChange={e => setAutopayDay(e.target.value.replace(/\D/g, ""))} />
                             )}
                           </div>
-                          <div className="helper-text">If the day you choose falls after your plan's due date, a Rubix team member will need to review and approve it first.</div>
+                          <div className="helper-text">If the day you choose falls after your plan's due date, a Prism Patient team member will need to review and approve it first.</div>
                         </div>
                         {autopayError && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{autopayError}</div>}
                         <button className="btn btn-primary" style={{ width: "100%" }} disabled={autopaySubmitting} onClick={handleAutopaySetup}>
@@ -4153,7 +4152,7 @@ function PatientAccountPortal({ user, onSignOut }) {
                   <div className="card-body">
                     <div className="alert info" style={{ marginBottom: 20 }}>{"Checking your options does not affect your credit score."}</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 28 }}>
-                      {[["💊", "New or upcoming treatment", "Apply for financing for a new episode of care or upcoming procedure."], ["🏥", "Existing balance", "Finance an outstanding balance with your current provider."], ["🔄", "Refinance existing plan", "Request different terms on an existing Rubix payment plan."]].map(([icon, title, desc]) => (
+                      {[["💊", "New or upcoming treatment", "Apply for financing for a new episode of care or upcoming procedure."], ["🏥", "Existing balance", "Finance an outstanding balance with your current provider."], ["🔄", "Refinance existing plan", "Request different terms on an existing Prism Patient payment plan."]].map(([icon, title, desc]) => (
                         <div key={title} style={{ display: "flex", gap: 14, padding: "18px", border: "1.5px solid var(--border)", borderRadius: "var(--radius-sm)", cursor: "pointer", background: "var(--white)", transition: "all 0.2s" }} onClick={() => setFinancingStep("intake")}>
                           <div style={{ fontSize: 28, flexShrink: 0 }}>{icon}</div>
                           <div>
@@ -4336,7 +4335,7 @@ function PatientAccountPortal({ user, onSignOut }) {
                   <div className="section-sub" style={{ marginBottom: 16 }}>Choose the level of service you need:</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
                     {DISPUTE_SERVICE_TIERS.map(tier => (
-                      <div key={tier.id} onClick={() => setDisputeForm(f => ({ ...f, tier: tier.id }))} style={{ border: `2px solid ${disputeForm.tier === tier.id ? "var(--teal)" : "var(--border)"}`, borderRadius: "var(--radius-sm)", padding: "16px 18px", cursor: "pointer", background: disputeForm.tier === tier.id ? "#F0FDFA" : "var(--white)" }}>
+                      <div key={tier.id} onClick={() => setDisputeForm(f => ({ ...f, tier: tier.id }))} style={{ border: `2px solid ${disputeForm.tier === tier.id ? "var(--teal)" : "var(--border)"}`, borderRadius: "var(--radius-sm)", padding: "16px 18px", cursor: "pointer", background: disputeForm.tier === tier.id ? "#E6FBF9" : "var(--white)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, gap: 12 }}>
                           <div style={{ fontWeight: 600, fontSize: 15 }}>{tier.name}</div>
                           <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, color: "var(--teal-dark)", whiteSpace: "nowrap" }}>${tier.price}</div>
@@ -4425,7 +4424,7 @@ function PatientAccountPortal({ user, onSignOut }) {
             <div style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div className="section-title" style={{ marginBottom: 4 }}>Messages</div>
-                <div className="section-sub">Send and receive messages with the Rubix support team.</div>
+                <div className="section-sub">Send and receive messages with the Prism Patient support team.</div>
               </div>
               {!composing && !activeThread && (
                 <button className="btn btn-primary" style={{ padding: "8px 18px", fontSize: 13 }} onClick={() => { setComposing(true); setNewMsg({ subject: "", body: "" }); }}>+ New Message</button>
@@ -4483,7 +4482,7 @@ function PatientAccountPortal({ user, onSignOut }) {
                           {msg.from === "Me" ? (acctForm.firstName[0] || "M") : "R"}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: 14 }}>{msg.from === "Me" ? acctForm.firstName + " " + acctForm.lastName : "Rubix Support Team"}</div>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>{msg.from === "Me" ? acctForm.firstName + " " + acctForm.lastName : "Prism Patient Support Team"}</div>
                           <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{msg.date}</div>
                         </div>
                       </div>
@@ -4537,7 +4536,7 @@ function PatientAccountPortal({ user, onSignOut }) {
                     {messages.map(msg => (
                       <div key={msg.id}
                         onClick={() => { setActiveThread(msg); setMessages(msgs => msgs.map(m => m.id === msg.id ? { ...m, read: true } : m)); setReplySent(false); setReplyBody(""); }}
-                        style={{ padding: "16px 24px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: msg.read ? "var(--white)" : "#F0FDFA", display: "flex", alignItems: "center", gap: 14 }}>
+                        style={{ padding: "16px 24px", borderBottom: "1px solid var(--border)", cursor: "pointer", background: msg.read ? "var(--white)" : "#E6FBF9", display: "flex", alignItems: "center", gap: 14 }}>
                         <div style={{ width: 36, height: 36, borderRadius: "50%", background: msg.from === "Me" ? "var(--teal)" : "var(--coral)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
                           {msg.from === "Me" ? (acctForm.firstName[0] || "M") : "R"}
                         </div>
@@ -4547,7 +4546,7 @@ function PatientAccountPortal({ user, onSignOut }) {
                             <div style={{ fontSize: 12, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{msg.date}</div>
                           </div>
                           <div style={{ fontSize: 13, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 2 }}>
-                            {msg.from === "Me" ? "Me" : "Rubix Team"}{": "}{msg.thread[msg.thread.length - 1].body.slice(0, 60)}{"..."}
+                            {msg.from === "Me" ? "Me" : "Prism Patient Team"}{": "}{msg.thread[msg.thread.length - 1].body.slice(0, 60)}{"..."}
                           </div>
                         </div>
                         {!msg.read && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--teal)", flexShrink: 0 }} />}
@@ -4569,7 +4568,7 @@ function PatientAccountPortal({ user, onSignOut }) {
 // ── INTERNAL ADMIN (hidden route: ?admin=1) ──
 // NOTE: this is a simple shared-passcode gate for internal use during the demo/beta phase.
 // It is not real authentication and should be replaced with proper admin auth before real patient data flows.
-const ADMIN_PASSCODE = "RubixAdmin2026"; // TODO: change this, and move to a real auth system before production
+const ADMIN_PASSCODE = "PrismAdmin2026"; // TODO: change this, and move to a real auth system before production
 
 function AdminLogin({ onAuthed }) {
   const [passcode, setPasscode] = useState("");
@@ -4580,12 +4579,12 @@ function AdminLogin({ onAuthed }) {
   };
   return (
     <div style={{ maxWidth: 360, margin: "80px auto", padding: 24, fontFamily: "DM Sans, sans-serif", background: "white", border: "1px solid #E2E8F0", borderRadius: 12 }}>
-      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 16 }}>Rubix Internal Access</div>
+      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 16 }}>Prism Patient Internal Access</div>
       <input type="password" placeholder="Passcode" value={passcode} onChange={e => setPasscode(e.target.value)}
         onKeyDown={e => e.key === "Enter" && handleSubmit()}
         style={{ width: "100%", padding: "10px 12px", border: "1px solid #CBD5E1", borderRadius: 8, marginBottom: 12, fontFamily: "DM Sans, sans-serif" }} />
       {error && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{error}</div>}
-      <button onClick={handleSubmit} style={{ width: "100%", padding: "10px 12px", background: "#0F766E", color: "white", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>Enter</button>
+      <button onClick={handleSubmit} style={{ width: "100%", padding: "10px 12px", background: "#01665E", color: "white", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>Enter</button>
     </div>
   );
 }
@@ -4643,11 +4642,11 @@ function AdminDashboard() {
   return (
     <div style={{ maxWidth: 960, margin: "40px auto", padding: 24, fontFamily: "DM Sans, sans-serif" }}>
       <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 22, marginBottom: 4 }}>Autopay Requests — Internal Review</div>
-      <div style={{ fontSize: 13, color: "#64748B", marginBottom: 24 }}>Requests where the patient chose a charge day after their plan's due date.</div>
+      <div style={{ fontSize: 13, color: "#656972", marginBottom: 24 }}>Requests where the patient chose a charge day after their plan's due date.</div>
       {loading ? (
         <div>Loading...</div>
       ) : requests.length === 0 ? (
-        <div style={{ color: "#64748B" }}>No pending requests.</div>
+        <div style={{ color: "#656972" }}>No pending requests.</div>
       ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -4670,7 +4669,7 @@ function AdminDashboard() {
                   <td style={{ padding: "10px 12px" }}>Day {r.autopay_charge_day}</td>
                   <td style={{ padding: "10px 12px" }}>{r.next_due_date}</td>
                   <td style={{ padding: "10px 12px", display: "flex", gap: 8 }}>
-                    <button disabled={actioning === r.id} onClick={() => handleDecision(r, true)} style={{ padding: "6px 14px", background: "#0F766E", color: "white", border: "none", borderRadius: 6, cursor: "pointer" }}>Approve</button>
+                    <button disabled={actioning === r.id} onClick={() => handleDecision(r, true)} style={{ padding: "6px 14px", background: "#01665E", color: "white", border: "none", borderRadius: 6, cursor: "pointer" }}>Approve</button>
                     <button disabled={actioning === r.id} onClick={() => handleDecision(r, false)} style={{ padding: "6px 14px", background: "white", color: "#DC2626", border: "1px solid #DC2626", borderRadius: 6, cursor: "pointer" }}>Reject</button>
                   </td>
                 </tr>
@@ -4681,11 +4680,11 @@ function AdminDashboard() {
       )}
 
       <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 22, marginTop: 48, marginBottom: 4 }}>Patient Referrals — All Providers</div>
-      <div style={{ fontSize: 13, color: "#64748B", marginBottom: 24 }}>Every referral sent across all provider accounts.</div>
+      <div style={{ fontSize: 13, color: "#656972", marginBottom: 24 }}>Every referral sent across all provider accounts.</div>
       {loadingReferrals ? (
         <div>Loading...</div>
       ) : referrals.length === 0 ? (
-        <div style={{ color: "#64748B" }}>No referrals sent yet.</div>
+        <div style={{ color: "#656972" }}>No referrals sent yet.</div>
       ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -4893,18 +4892,15 @@ function MainApp() {
               setPatientAcctUser(null);
             }
           }}>
-            <svg width="190" height="60" viewBox="0 0 1600 520" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <g transform="translate(120,92) scale(1.25)">
-                <path d="M120 0 L240 68 L120 136 L0 68 Z" fill="#14B8A6"/>
-                <path d="M0 78 L112 142 L112 275 L0 211 Z" fill="#0F766E"/>
-                <path d="M128 142 L240 78 L240 211 L128 275 Z" fill="#F59E0B"/>
-                <path d="M6 70 L120 134 L234 70" stroke="#F8FAFC" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M120 136 V260" stroke="#F8FAFC" strokeWidth="10" strokeLinecap="round"/>
+            <svg width="150" height="60" viewBox="0 0 1983 793" xmlns="http://www.w3.org/2000/svg">
+              <g stroke="#FFFFFF" strokeWidth="7" strokeLinejoin="round">
+                <polygon points="430,164 560,391 415,453 203,550" fill="#0FB8AB"/>
+                <polygon points="203,550 172,597 430,590 415,453" fill="#01665E"/>
+                <polygon points="560,391 687,597 430,590 415,453" fill="#F7A106"/>
               </g>
-              <g transform="translate(545,128)">
-                <text x="0" y="160" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="205" fontWeight="800" letterSpacing="-8" fill="#0F2237">Rubix</text>
-                <text x="4" y="250" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="76" fontWeight="400" letterSpacing="-1" fill="#64748B">Patient Payment Solutions</text>
-              </g>
+              <text x="750" y="520" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="400" fontWeight="900" letterSpacing="-8" fill="#001936">Pr{"\u0131"}sm</text>
+              <circle cx="1225" cy="215" r="42" fill="#0FB8AB"/>
+              <text x="755" y="615" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="95" fontWeight="400" letterSpacing="2" fill="#656972">Patient Payment Solutions</text>
             </svg>
           </div>
           {!isPatientPortal && !isProviderPortal && (
@@ -4938,7 +4934,7 @@ function MainApp() {
           <>
             <div className="hero">
               <h1>{"The support you need"}<br />{"shouldn't wait on "}<em>cost</em>{"."}</h1>
-              <p>Rubix helps families and individuals in behavioral health, mental health, autism, and ABA treatment manage their care costs with flexible payment options.</p>
+              <p>Prism Patient helps families and individuals in behavioral health, mental health, autism, and ABA treatment manage their care costs with flexible payment options.</p>
               <div className="hero-ctas" style={{ flexDirection: "column", alignItems: "center", gap: 12 }}>
                 <button className="btn btn-primary" style={{ width: 280, justifyContent: "center" }} onClick={() => document.getElementById("intake-form")?.scrollIntoView({ behavior: "smooth" })}>Check My Options</button>
                 <button className="btn btn-outline" style={{ width: 280, justifyContent: "center" }} onClick={() => setPage("how-it-works")}>Learn How It Works</button>
