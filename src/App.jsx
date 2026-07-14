@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabaseClient";
 
 const styles = `
@@ -884,9 +884,18 @@ function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSign
     dob: "", ssn: "", address: "", city: "", state: "", zip: "",
     employmentStatus: "", annualIncome: "", employerName: "",
     mockCreditScore: "670",
-    eobFile: "", eobAmount: intakeData.balanceOwed || "", eobClarity: "clear",
+    eobFile: "", eobFileObj: null, eobAmount: intakeData.balanceOwed || "", eobClarity: "clear",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [eobUploadError, setEobUploadError] = useState("");
+  const fileInputRef = useRef(null);
+
+  const handleEobFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEobUploadError("");
+    setUwForm(f => ({ ...f, eobFile: file.name, eobFileObj: file }));
+  };
 
   const uwSteps = ["Personal", "Financial", "Upload EOB", "Review"];
   const upd = (k, v) => setUwForm(f => ({ ...f, [k]: v }));
@@ -926,11 +935,27 @@ function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSign
     }
 
     if (uwForm.eobFile) {
+      let fileUrl = null;
+
+      if (uwForm.eobFileObj) {
+        const filePath = `${patientData?.id || "unlinked"}/${Date.now()}_${uwForm.eobFileObj.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("eob-documents")
+          .upload(filePath, uwForm.eobFileObj);
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage.from("eob-documents").getPublicUrl(filePath);
+          fileUrl = publicUrlData?.publicUrl || null;
+        } else {
+          setEobUploadError("File upload failed — the application was still submitted, but the document wasn't attached.");
+        }
+      }
+
       await supabase.from("documents").insert({
         patient_id: patientData?.id,
         document_type: "EOB",
         file_name: uwForm.eobFile,
-        file_url: null,
+        file_url: fileUrl,
         status: uwForm.eobClarity === "clear" ? "verified" : "reviewing",
       });
     }
@@ -1066,15 +1091,23 @@ function PatientPortal({ user, intakeData, onApprovalResult, onEobReview, onSign
 
                 <div className="form-group">
                   <label>Upload EOB or Provider Statement *</label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    style={{ display: "none" }}
+                    onChange={handleEobFileChange}
+                  />
                   <div style={{ border: "2px dashed var(--border)", borderRadius: "var(--radius-sm)", padding: "28px 20px", textAlign: "center", cursor: "pointer", background: "var(--mist2)" }}
-                    onClick={() => upd("eobFile", `EOB_Statement_${Date.now()}.pdf`)}>
+                    onClick={() => fileInputRef.current?.click()}>
                     {uwForm.eobFile ? (
                       <div><div style={{ fontSize: 24, marginBottom: 6 }}>📄</div><div style={{ fontWeight: 600, fontSize: 14 }}>{uwForm.eobFile}</div><div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>Click to change file</div></div>
                     ) : (
                       <div><div style={{ fontSize: 32, marginBottom: 8 }}>📎</div><div style={{ fontWeight: 500, fontSize: 14, color: "var(--text-secondary)" }}>Click to select a file</div><div style={{ fontSize: 12, color: "var(--text-light)", marginTop: 4 }}>PDF, JPG, or PNG — max 10MB</div></div>
                     )}
                   </div>
-                  <div className="helper-text">Demo mode: clicking selects a mock file. On deployment, this opens your file picker.</div>
+                  <div className="helper-text">Uploads to secure storage when you submit your application.</div>
+                  {eobUploadError && <div className="alert" style={{ marginTop: 10, background: "#FEF2F2", color: "#991B1B", border: "1px solid #FECACA" }}>{eobUploadError}</div>}
                 </div>
 
                 <div className="form-group">
@@ -2872,6 +2905,40 @@ function ProviderMessagesPage({ providerUser }) {
   const senderName = providerUser?.practiceName || providerUser?.contactName || providerUser?.email || "Me";
   const senderInitial = (senderName || "M")[0].toUpperCase();
 
+  // Fetch real message threads from Supabase once we know the provider's DB id.
+  useEffect(() => {
+    if (!providerId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("provider_id", providerId)
+        .order("created_at", { ascending: true });
+
+      if (data && data.length > 0) {
+        const byThread = {};
+        data.forEach(row => {
+          const dateStr = row.created_at
+            ? new Date(row.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+            : "";
+          const isMe = row.sender === senderName;
+          if (!byThread[row.thread_id]) {
+            byThread[row.thread_id] = { id: row.thread_id, subject: (row.subject || "").replace(/^Re:\s*/i, ""), read: true, thread: [] };
+          }
+          byThread[row.thread_id].thread.push({ from: isMe ? "Me" : (row.sender || "Prism Patient Team"), date: dateStr, body: row.body });
+          if (row.read === false) byThread[row.thread_id].read = false;
+        });
+        const grouped = Object.values(byThread)
+          .sort((a, b) => Number(b.id) - Number(a.id))
+          .map(t => {
+            const last = t.thread[t.thread.length - 1];
+            return { ...t, from: last.from, date: last.date };
+          });
+        setMessages(grouped);
+      }
+    })();
+  }, [providerId, senderName]);
+
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px" }}>
       <div style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -3721,6 +3788,41 @@ function PatientAccountPortal({ user, onSignOut }) {
   const [replySent, setReplySent] = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
   const unreadCount = messages.filter(m => !m.read).length;
+
+  // Fetch real message threads from Supabase once we know the patient's DB id.
+  useEffect(() => {
+    if (!patientDbId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("patient_id", patientDbId)
+        .order("created_at", { ascending: true });
+
+      if (data && data.length > 0) {
+        const selfName = `${acctForm.firstName} ${acctForm.lastName}`;
+        const byThread = {};
+        data.forEach(row => {
+          const dateStr = row.created_at
+            ? new Date(row.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+            : "";
+          const isMe = row.sender === selfName;
+          if (!byThread[row.thread_id]) {
+            byThread[row.thread_id] = { id: row.thread_id, subject: (row.subject || "").replace(/^Re:\s*/i, ""), read: true, thread: [] };
+          }
+          byThread[row.thread_id].thread.push({ from: isMe ? "Me" : (row.sender || "Prism Patient Team"), date: dateStr, body: row.body });
+          if (row.read === false) byThread[row.thread_id].read = false;
+        });
+        const grouped = Object.values(byThread)
+          .sort((a, b) => Number(b.id) - Number(a.id))
+          .map(t => {
+            const last = t.thread[t.thread.length - 1];
+            return { ...t, from: last.from, date: last.date };
+          });
+        setMessages(grouped);
+      }
+    })();
+  }, [patientDbId]);
   // Bill Review / Dispute Service state
   const [disputeRequests, setDisputeRequests] = useState([
     { id: 1001, tier: "Standard Dispute Filing", price: 149, eobFile: "EOB_March_Visit.pdf", description: "Charged twice for the same office visit on the same date.", status: "resolved", date: "May 8, 2026", lastUpdate: "Resolved May 14, 2026 — duplicate charge removed, insurer reprocessed claim." },

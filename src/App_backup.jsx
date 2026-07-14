@@ -338,7 +338,7 @@ const MOCK_PATIENTS = [
 
 function generateMagicLink(email) {
   const token = Math.random().toString(36).slice(2, 10).toUpperCase();
-  return `https://prism-mvp.vercel.app/auth?token=${token}&email=${encodeURIComponent(email)}`;
+  return `https://prism-patient-mvp.vercel.app/auth?token=${token}&email=${encodeURIComponent(email)}`;
 }
 
 // ─── INPUT FORMATTERS ─────────────────────────────────────────────────────────
@@ -1330,7 +1330,7 @@ Great news — your EOB has been verified and you have been approved!
 To accept this offer, please sign in to your Prism Patient portal using the link below and review your loan agreement.
 
   [View and Accept Your Offer]
-  https://prism-mvp.vercel.app/portal
+  https://prism-patient-mvp.vercel.app/portal
 
 This offer expires in 30 days.
 
@@ -2390,7 +2390,7 @@ function ProviderDashboard({ onNavigate }) {
 // ─── REFER PATIENT PAGE ───────────────────────────────────────────────────────
 
 function ReferPatientPage({ providerUser }) {
-  const APP_URL = "https://prism-mvp.vercel.app";
+  const APP_URL = "https://prism-patient-mvp.vercel.app";
   const [refForm, setRefForm] = useState({ firstName: "", lastName: "", phone: "", email: "", balance: "", careDescription: "" });
   const [refSent, setRefSent] = useState(null);
   const [sending, setSending] = useState(false);
