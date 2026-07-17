@@ -598,6 +598,7 @@ function ComingSoonModal({ onClose }) {
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = async () => {
+    if (!name.trim()) { setError("Please enter your name."); return; }
     if (!isValidEmail) { setError("Please enter a valid email address."); return; }
     setError("");
     setStatus("submitting");
@@ -605,7 +606,7 @@ function ComingSoonModal({ onClose }) {
     const { error: insertError } = await supabase
       .from("mailing_list")
       .upsert(
-        { email: email.trim().toLowerCase(), name: name.trim() || null, source: "coming_soon_modal" },
+        { email: email.trim().toLowerCase(), name: name.trim(), source: "coming_soon_modal" },
         { onConflict: "email", ignoreDuplicates: true }
       );
 
@@ -662,7 +663,7 @@ function ComingSoonModal({ onClose }) {
           ) : (
             <>
               <div className="form-group">
-                <label>Name (optional)</label>
+                <label>Name *</label>
                 <input placeholder="Jane Smith" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="form-group">
@@ -673,7 +674,7 @@ function ComingSoonModal({ onClose }) {
               <button
                 className="btn btn-primary"
                 style={{ width: "100%" }}
-                disabled={!email || status === "submitting"}
+                disabled={!email || !name.trim() || status === "submitting"}
                 onClick={handleSubmit}
               >
                 {status === "submitting" ? "Joining..." : "Notify Me at Launch"}

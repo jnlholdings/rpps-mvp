@@ -8,6 +8,11 @@ import { supabase } from "./supabaseClient";
 // a "join the waitlist" email capture.
 const COMING_SOON_MODE = true;
 
+// Set to false once legal/human review of all copy (blog posts, marketing
+// pages, etc.) is complete. While true, a subtle non-blocking watermark is
+// tiled across every page as a reminder that copy hasn't been signed off.
+const CONTENT_PENDING_REVIEW = true;
+
 const ComingSoonContext = createContext({ active: false, requestAccess: () => {} });
 function useComingSoon() {
   return useContext(ComingSoonContext);
@@ -513,6 +518,32 @@ function runEobUnderwriting(data) {
 }
 
 // ─── INTAKE FORM (pre-auth) ───────────────────────────────────────────────────
+
+// ─── PENDING REVIEW WATERMARK ─────────────────────────────────────────────
+// Site-wide, non-interactive reminder that copy (blog posts, marketing
+// pages, everything) hasn't cleared human/legal review yet.
+
+const pendingReviewWatermarkUrl = `data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="260">
+    <text x="10" y="140" transform="rotate(-28 210 130)" font-family="DM Sans, Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="2" fill="rgba(0,25,54,0.07)">DRAFT &#183; PENDING REVIEW</text>
+  </svg>`
+)}`;
+
+function ContentPendingWatermark() {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 400,
+        pointerEvents: "none",
+        backgroundImage: `url("${pendingReviewWatermarkUrl}")`,
+        backgroundRepeat: "repeat",
+      }}
+    />
+  );
+}
 
 // ─── COMING SOON: BANNER + WAITLIST MODAL ─────────────────────────────────
 
@@ -5161,6 +5192,7 @@ function MainApp() {
       <div className="app">
         {COMING_SOON_MODE && <ComingSoonBanner onJoinClick={() => setComingSoonOpen(true)} />}
         {comingSoonOpen && <ComingSoonModal onClose={() => setComingSoonOpen(false)} />}
+        {CONTENT_PENDING_REVIEW && <ContentPendingWatermark />}
 
         <nav className="nav">
           <div className="nav-logo" style={{ cursor: "pointer" }} onClick={() => {
