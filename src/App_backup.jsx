@@ -599,14 +599,15 @@ const MAILCHIMP_HONEYPOT_NAME = "b_0fe959857832831538427af7e_f2c9ab9c3a";
 
 function ComingSoonModal({ onClose }) {
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [status, setStatus] = useState("idle"); // idle | submitting | done
 
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
-    if (!name.trim()) { e.preventDefault(); setError("Please enter your name."); return; }
+    if (!firstName.trim() || !lastName.trim()) { e.preventDefault(); setError("Please enter your first and last name."); return; }
     if (!isValidEmail) { e.preventDefault(); setError("Please enter a valid email address."); return; }
     setError("");
     setStatus("submitting");
@@ -664,9 +665,15 @@ function ComingSoonModal({ onClose }) {
               target="mc_hidden_iframe"
               onSubmit={handleSubmit}
             >
-              <div className="form-group">
-                <label>Name *</label>
-                <input name="FNAME" placeholder="Jane Smith" value={name} onChange={(e) => setName(e.target.value)} />
+              <div className="form-row">
+                <div className="form-group">
+                  <label>First Name *</label>
+                  <input name="FNAME" placeholder="Jane" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label>Last Name *</label>
+                  <input name="LNAME" placeholder="Smith" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                </div>
               </div>
               <div className="form-group">
                 <label>Email Address *</label>
@@ -681,7 +688,7 @@ function ComingSoonModal({ onClose }) {
                 type="submit"
                 className="btn btn-primary"
                 style={{ width: "100%" }}
-                disabled={!email || !name.trim() || status === "submitting"}
+                disabled={!email || !firstName.trim() || !lastName.trim() || status === "submitting"}
               >
                 {status === "submitting" ? "Joining..." : "Notify Me at Launch"}
               </button>
