@@ -1,5 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { supabase } from "./supabaseClient";
+
+// ─── COMING SOON MODE ──────────────────────────────────────────────────────
+// Flip this to false when Prism Patient is ready to go fully live.
+// While true: a banner + one-time modal appear site-wide, and sign in,
+// account registration, and provider registration are disabled in favor of
+// a "join the waitlist" email capture.
+const COMING_SOON_MODE = true;
+
+const ComingSoonContext = createContext({ active: false, requestAccess: () => {} });
+function useComingSoon() {
+  return useContext(ComingSoonContext);
+}
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
@@ -502,6 +514,150 @@ function runEobUnderwriting(data) {
 
 // ─── INTAKE FORM (pre-auth) ───────────────────────────────────────────────────
 
+// ─── COMING SOON: BANNER + WAITLIST MODAL ─────────────────────────────────
+
+function ComingSoonBanner({ onJoinClick }) {
+  return (
+    <div
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 500,
+        width: "100%",
+        background: "linear-gradient(90deg, #01665E, #0FB8AB)",
+        color: "#FFFFFF",
+        fontFamily: "DM Sans, sans-serif",
+        padding: "10px 16px",
+        textAlign: "center",
+        fontSize: 13.5,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        flexWrap: "wrap",
+      }}
+    >
+      <span>🚧 <strong>Prism Patient is launching soon.</strong> You're an early visitor — sign-in and applications aren't open yet.</span>
+      <button
+        onClick={onJoinClick}
+        style={{
+          background: "#FFFFFF",
+          color: "#01665E",
+          border: "none",
+          borderRadius: 999,
+          padding: "5px 14px",
+          fontSize: 12.5,
+          fontWeight: 700,
+          cursor: "pointer",
+          fontFamily: "DM Sans, sans-serif",
+        }}
+      >
+        Join the waitlist
+      </button>
+    </div>
+  );
+}
+
+function ComingSoonModal({ onClose }) {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [status, setStatus] = useState("idle"); // idle | submitting | done | error
+  const [error, setError] = useState("");
+
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const handleSubmit = async () => {
+    if (!isValidEmail) { setError("Please enter a valid email address."); return; }
+    setError("");
+    setStatus("submitting");
+
+    const { error: insertError } = await supabase
+      .from("mailing_list")
+      .upsert(
+        { email: email.trim().toLowerCase(), name: name.trim() || null, source: "coming_soon_modal" },
+        { onConflict: "email", ignoreDuplicates: true }
+      );
+
+    if (insertError) {
+      setError("Something went wrong — please try again in a moment.");
+      setStatus("error");
+      return;
+    }
+
+    setStatus("done");
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0, 25, 54, 0.55)",
+        zIndex: 900,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="card"
+        style={{ maxWidth: 420, width: "100%", position: "relative" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: "absolute", top: 14, right: 14, background: "none", border: "none",
+            fontSize: 20, lineHeight: 1, cursor: "pointer", color: "var(--text-light)",
+          }}
+        >
+          ×
+        </button>
+        <div className="card-header">
+          <div className="card-icon teal">🚀</div>
+          <div>
+            <div className="card-title">We're launching soon!</div>
+            <div className="card-subtitle">Prism Patient isn't live yet — leave your email and we'll let you know the moment we open.</div>
+          </div>
+        </div>
+        <div className="card-body">
+          {status === "done" ? (
+            <div className="alert success" style={{ textAlign: "center" }}>
+              You're on the list! We'll email you as soon as we launch.
+            </div>
+          ) : (
+            <>
+              <div className="form-group">
+                <label>Name (optional)</label>
+                <input placeholder="Jane Smith" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Email Address *</label>
+                <input type="email" placeholder="jane@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              {error && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+              <button
+                className="btn btn-primary"
+                style={{ width: "100%" }}
+                disabled={!email || status === "submitting"}
+                onClick={handleSubmit}
+              >
+                {status === "submitting" ? "Joining..." : "Notify Me at Launch"}
+              </button>
+              <div style={{ fontSize: 11.5, color: "var(--text-light)", textAlign: "center", marginTop: 12, lineHeight: 1.6 }}>
+                We'll only use this to send you launch updates. No spam, unsubscribe anytime.
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function IntakeForm({ onSubmit, prefill, hideContactFields, storageKey }) {
   const [form, setForm] = useState(() => {
     let draft = null;
@@ -712,6 +868,7 @@ function AuthDivider() {
 // ─── REGISTER / LOGIN PAGE (patient intake) ───────────────────────────────────
 
 function AuthPage({ intakeData, onAuthenticated }) {
+  const { active: comingSoon, requestAccess } = useComingSoon();
   const [tab, setTab] = useState("register");
   const [forgot, setForgot] = useState(null); // "password" | "username" | null
   const [regForm, setRegForm] = useState({ password: "", confirmPassword: "" });
@@ -723,6 +880,7 @@ function AuthPage({ intakeData, onAuthenticated }) {
   const updLogin = (k, v) => setLoginForm(f => ({ ...f, [k]: v }));
 
 const handleRegister = async () => {
+    if (comingSoon) { requestAccess(); return; }
     const errs = validatePassword(regForm.password);
     if (errs.length) { setError(errs[0]); return; }
     if (regForm.password !== regForm.confirmPassword) { setError("Passwords do not match."); return; }
@@ -750,6 +908,7 @@ const handleRegister = async () => {
   };
 
 const handlePasswordSignIn = async () => {
+    if (comingSoon) { requestAccess(); return; }
     if (!loginForm.email || !loginForm.password) { setError("Please enter your email and password."); return; }
     setError("");
 
@@ -785,6 +944,7 @@ const handlePasswordSignIn = async () => {
   };
 
   const handleMagicLink = async () => {
+    if (comingSoon) { requestAccess(); return; }
     if (!magicEmail) return;
 
     const { error: otpError } = await supabase.auth.signInWithOtp({
@@ -2204,9 +2364,11 @@ function ProviderLogin({ onAuthenticated }) {
   const [forgot, setForgot] = useState(null);
   const [error, setError] = useState("");
   const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const { active: comingSoon, requestAccess } = useComingSoon();
 
   const handlePasswordSignIn = async () => {
     if (!form.email || !form.password) { setError("Please enter your email and password."); return; }
+    if (comingSoon) { requestAccess(); return; }
     setError("");
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -2242,6 +2404,7 @@ function ProviderLogin({ onAuthenticated }) {
 
   const handleMagicLink = async () => {
     if (!magicEmail) return;
+    if (comingSoon) { requestAccess(); return; }
 
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: magicEmail,
@@ -3386,6 +3549,7 @@ function ProviderRegister({ onRegistered }) {
   const [showEmail, setShowEmail] = useState(false);
   const [error, setError] = useState("");
   const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const { active: comingSoon, requestAccess } = useComingSoon();
   const pwErrors = validatePassword(form.password);
   const valid = form.contactName && form.practiceName && form.email && form.phone && form.password && form.confirmPassword && pwErrors.length === 0;
 
@@ -3412,6 +3576,7 @@ Welcome aboard.
 — The Prism Patient Team`;
 
   const handleSubmit = async () => {
+    if (comingSoon) { requestAccess(); return; }
     const errs = validatePassword(form.password);
     if (errs.length) { setError(errs[0]); return; }
     if (form.password !== form.confirmPassword) { setError("Passwords do not match."); return; }
@@ -3541,9 +3706,11 @@ function PatientAccountLogin({ onAuthenticated }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const { active: comingSoon, requestAccess } = useComingSoon();
 
   const handlePasswordSignIn = async () => {
     if (!form.email || !form.password) { setError("Please enter your email and password."); return; }
+    if (comingSoon) { requestAccess(); return; }
     setError("");
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -3579,6 +3746,7 @@ function PatientAccountLogin({ onAuthenticated }) {
 
   const handleMagicLink = async () => {
     if (!magicEmail) return;
+    if (comingSoon) { requestAccess(); return; }
 
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: magicEmail,
@@ -4866,6 +5034,18 @@ function MainApp() {
   const [acctResetKey, setAcctResetKey] = useState(0);
   // session restoration (so a reload / back-forward navigation doesn't falsely look signed out)
   const [sessionChecked, setSessionChecked] = useState(false);
+  // coming soon gate
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+
+  useEffect(() => {
+    if (!COMING_SOON_MODE) return;
+    try {
+      if (!sessionStorage.getItem("prism_coming_soon_seen")) {
+        setComingSoonOpen(true);
+        sessionStorage.setItem("prism_coming_soon_seen", "1");
+      }
+    } catch (e) { /* sessionStorage unavailable — skip auto-open */ }
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -4976,9 +5156,11 @@ function MainApp() {
   }
 
   return (
-    <>
+    <ComingSoonContext.Provider value={{ active: COMING_SOON_MODE, requestAccess: () => setComingSoonOpen(true) }}>
       <style>{styles}</style>
       <div className="app">
+        {COMING_SOON_MODE && <ComingSoonBanner onJoinClick={() => setComingSoonOpen(true)} />}
+        {comingSoonOpen && <ComingSoonModal onClose={() => setComingSoonOpen(false)} />}
 
         <nav className="nav">
           <div className="nav-logo" style={{ cursor: "pointer" }} onClick={() => {
@@ -5131,6 +5313,6 @@ function MainApp() {
         )}
 
       </div>
-    </>
+    </ComingSoonContext.Provider>
   );
 }
