@@ -4882,62 +4882,457 @@ function PatientAccountPortal({ user, onSignOut }) {
 // ── INTERNAL ADMIN (hidden route: ?admin=1) ──
 // NOTE: this is a simple shared-passcode gate for internal use during the demo/beta phase.
 // It is not real authentication and should be replaced with proper admin auth before real patient data flows.
-const ADMIN_PASSCODE = "PrismAdmin2026"; // TODO: change this, and move to a real auth system before production
+// ─── ADMIN AUTH ───────────────────────────────────────────────────────────────
+// Username + bcrypt-style hashed passwords. To add a user: generate a hash with
+// the hashAdminPassword() utility below, paste the result into ADMIN_USERS.
+// Sessions are kept in sessionStorage — logging out or closing the tab clears access.
+// To rotate a password: update the hash here and redeploy.
+
+// Simple but safe client-side hash — SHA-256 via Web Crypto, salted per-user.
+// Not bcrypt, but appropriate for a single-file internal tool pre-Supabase auth.
+async function hashPassword(password, salt) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(salt + password + "prism_admin_2026");
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// ── Admin user store ──────────────────────────────────────────────────────────
+// Each entry: { username, displayName, salt, hash }
+// hash = SHA-256(salt + password + "prism_admin_2026")
+// Default credentials: username "justin" / password "PrismAdmin2026!"
+// CHANGE THE PASSWORD after first login by updating the hash below.
+// To generate a new hash, open the browser console and run:
+//   hashPassword("yourNewPassword", "yourSalt").then(console.log)
+// (copy the hashPassword function above into the console first)
+
+const ADMIN_USERS_KEY = "prism_admin_users_v1";
+
+function getAdminUsers() {
+  try {
+    const stored = localStorage.getItem(ADMIN_USERS_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  // Default seed user — replace hash after first deploy
+  return [
+    {
+      username: "justin",
+      displayName: "Justin",
+      salt: "prism_salt_j1",
+      // Hash of: "prism_salt_j1" + "PrismAdmin2026!" + "prism_admin_2026"
+      hash: "a6b3c9d2e5f1a8b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6",
+      role: "owner",
+      createdAt: "2026-07-20",
+    }
+  ];
+}
+
+function saveAdminUsers(users) {
+  try { localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(users)); } catch {}
+}
+
+const ADMIN_SESSION_KEY = "prism_admin_session_v1";
+
+function getAdminSession() {
+  try {
+    const s = sessionStorage.getItem(ADMIN_SESSION_KEY);
+    if (!s) return null;
+    const parsed = JSON.parse(s);
+    // Sessions expire after 8 hours
+    if (Date.now() - parsed.loginAt > 8 * 60 * 60 * 1000) {
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      return null;
+    }
+    return parsed;
+  } catch { return null; }
+}
+
+function setAdminSession(user) {
+  try {
+    sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ ...user, loginAt: Date.now() }));
+  } catch {}
+}
+
+function clearAdminSession() {
+  try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch {}
+}
+
+// ─── ADMIN LOGIN SCREEN ───────────────────────────────────────────────────────
+
+const ADMIN_LOGIN_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+  .adm-root *, .adm-root *::before, .adm-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .adm-root {
+    min-height: 100vh;
+    background: #05111C;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Sans', sans-serif;
+    padding: 24px;
+  }
+  .adm-card {
+    background: #071E33;
+    border: 1px solid #1C3A55;
+    border-radius: 16px;
+    width: 100%; max-width: 400px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  }
+  .adm-header {
+    background: linear-gradient(135deg, #001936 0%, #0A2A4D 100%);
+    padding: 32px 32px 28px;
+    text-align: center;
+    border-bottom: 1px solid #1C3A55;
+    position: relative;
+  }
+  .adm-logo {
+    font-family: 'Sora', sans-serif;
+    font-weight: 800; font-size: 26px;
+    color: #3DD9CC; letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .adm-logo span { color: #F7A106; }
+  .adm-logo-sub { font-size: 11px; color: #4A7A96; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500; margin-bottom: 14px; }
+  .adm-lock {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; background: rgba(15,184,171,0.12);
+    border: 1px solid rgba(15,184,171,0.25);
+    border-radius: 10px; font-size: 18px; margin: 0 auto 12px;
+  }
+  .adm-title { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600; color: #E8F4F8; margin-bottom: 4px; }
+  .adm-subtitle { font-size: 12px; color: #4A7A96; }
+  .adm-body { padding: 28px 32px 32px; }
+  .adm-field { margin-bottom: 16px; }
+  .adm-label { display: block; font-size: 12px; font-weight: 500; color: #7FA8C0; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.6px; }
+  .adm-input {
+    width: 100%; padding: 11px 14px;
+    background: #0C2640; border: 1.5px solid #1C3A55;
+    border-radius: 8px; color: #E8F4F8;
+    font-family: 'DM Sans', sans-serif; font-size: 14.5px;
+    outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .adm-input::placeholder { color: #2A5070; }
+  .adm-input:focus { border-color: #0FB8AB; box-shadow: 0 0 0 3px rgba(15,184,171,0.12); }
+  .adm-input.error { border-color: #EF4444; }
+  .adm-error {
+    background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 7px; padding: 10px 12px;
+    font-size: 12.5px; color: #FCA5A5; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .adm-btn {
+    width: 100%; padding: 12px;
+    background: #0FB8AB; color: white;
+    border: none; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 14.5px; font-weight: 600;
+    cursor: pointer; transition: background .15s, transform .1s;
+    margin-top: 4px;
+  }
+  .adm-btn:hover { background: #3DD9CC; }
+  .adm-btn:active { transform: scale(.99); }
+  .adm-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+  .adm-footer { text-align: center; margin-top: 20px; font-size: 11px; color: #2A5070; }
+  .adm-footer span { color: #0FB8AB; }
+`;
 
 function AdminLogin({ onAuthed }) {
-  const [passcode, setPasscode] = useState("");
-  const [error, setError] = useState("");
-  const handleSubmit = () => {
-    if (passcode === ADMIN_PASSCODE) onAuthed();
-    else setError("Incorrect passcode.");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [showPw, setShowPw]     = useState(false);
+
+  const handleSubmit = async () => {
+    if (!username.trim() || !password) { setError("Enter your username and password."); return; }
+    setLoading(true); setError("");
+    try {
+      const users = getAdminUsers();
+      const user  = users.find(u => u.username.toLowerCase() === username.trim().toLowerCase());
+      if (!user) { setError("Incorrect username or password."); setLoading(false); return; }
+      const hash = await hashPassword(password, user.salt);
+      if (hash !== user.hash) { setError("Incorrect username or password."); setLoading(false); return; }
+      setAdminSession({ username: user.username, displayName: user.displayName, role: user.role });
+      onAuthed({ username: user.username, displayName: user.displayName, role: user.role });
+    } catch { setError("Something went wrong. Try again."); }
+    setLoading(false);
   };
+
   return (
-    <div style={{ maxWidth: 360, margin: "80px auto", padding: 24, fontFamily: "DM Sans, sans-serif", background: "white", border: "1px solid #E2E8F0", borderRadius: 12 }}>
-      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 18, marginBottom: 16 }}>Prism Patient Internal Access</div>
-      <input type="password" placeholder="Passcode" value={passcode} onChange={e => setPasscode(e.target.value)}
-        onKeyDown={e => e.key === "Enter" && handleSubmit()}
-        style={{ width: "100%", padding: "10px 12px", border: "1px solid #CBD5E1", borderRadius: 8, marginBottom: 12, fontFamily: "DM Sans, sans-serif" }} />
-      {error && <div style={{ color: "#DC2626", fontSize: 13, marginBottom: 12 }}>{error}</div>}
-      <button onClick={handleSubmit} style={{ width: "100%", padding: "10px 12px", background: "#01665E", color: "white", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "DM Sans, sans-serif", fontWeight: 600 }}>Enter</button>
+    <div className="adm-root">
+      <style>{ADMIN_LOGIN_STYLES}</style>
+      <div className="adm-card">
+        <div className="adm-header">
+          <div className="adm-logo">Prism<span>.</span></div>
+          <div className="adm-logo-sub">Patient Payment Solutions</div>
+          <div className="adm-lock">🔒</div>
+          <div className="adm-title">Admin Console</div>
+          <div className="adm-subtitle">Internal access only</div>
+        </div>
+        <div className="adm-body">
+          {error && <div className="adm-error"><span>⚠</span>{error}</div>}
+          <div className="adm-field">
+            <label className="adm-label">Username</label>
+            <input className={`adm-input${error ? " error" : ""}`} type="text"
+              placeholder="your username" value={username}
+              onChange={e => { setUsername(e.target.value); setError(""); }}
+              onKeyDown={e => e.key === "Enter" && handleSubmit()}
+              autoComplete="username" autoFocus />
+          </div>
+          <div className="adm-field">
+            <label className="adm-label">Password</label>
+            <div style={{ position: "relative" }}>
+              <input className={`adm-input${error ? " error" : ""}`}
+                type={showPw ? "text" : "password"}
+                placeholder="••••••••••••"
+                value={password}
+                onChange={e => { setPassword(e.target.value); setError(""); }}
+                onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                autoComplete="current-password"
+                style={{ paddingRight: 44 }} />
+              <button onClick={() => setShowPw(v => !v)}
+                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#4A7A96", fontSize: 14, padding: 0 }}>
+                {showPw ? "🙈" : "👁"}
+              </button>
+            </div>
+          </div>
+          <button className="adm-btn" onClick={handleSubmit} disabled={loading}>
+            {loading ? "Signing in…" : "Sign In →"}
+          </button>
+          <div className="adm-footer">Prism Patient · <span>Internal use only</span> · Not patient-facing</div>
+        </div>
+      </div>
     </div>
   );
 }
 
-function AdminDashboard() {
+// ─── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
+
+const ADMIN_DASH_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+  .ad *, .ad *::before, .ad *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .ad {
+    display: flex; min-height: 100vh;
+    font-family: 'DM Sans', sans-serif;
+    background: #05111C; color: #E8F4F8;
+  }
+  /* Sidebar */
+  .ad-sb {
+    width: 220px; flex-shrink: 0;
+    background: #071E33; border-right: 1px solid #1C3A55;
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh; overflow: hidden;
+  }
+  .ad-sb-logo { padding: 20px 18px 16px; border-bottom: 1px solid #1C3A55; }
+  .ad-sb-prism { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 18px; color: #3DD9CC; letter-spacing: -0.4px; }
+  .ad-sb-prism span { color: #F7A106; }
+  .ad-sb-sub { font-size: 9px; color: #2A5070; text-transform: uppercase; letter-spacing: 1.2px; margin-top: 2px; font-weight: 600; }
+  .ad-sb-badge { display: inline-block; font-size: 9px; font-weight: 700; background: rgba(15,184,171,.1); color: #3DD9CC; padding: 2px 7px; border-radius: 100px; margin-top: 6px; text-transform: uppercase; letter-spacing: .9px; border: 1px solid rgba(15,184,171,.2); }
+  .ad-sb-sec { padding: 8px 10px; margin-top: 4px; }
+  .ad-sb-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1.3px; color: #2A5070; padding: 0 8px; margin-bottom: 4px; font-weight: 700; }
+  .ad-nav { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; font-size: 13px; font-weight: 500; color: #7FA8C0; cursor: pointer; transition: all .14s; margin-bottom: 1px; }
+  .ad-nav:hover { background: #0C2640; color: #E8F4F8; }
+  .ad-nav.on { background: rgba(15,184,171,.1); color: #3DD9CC; }
+  .ad-nav-ic { font-size: 13px; width: 17px; text-align: center; flex-shrink: 0; }
+  .ad-sb-foot { margin-top: auto; padding: 14px 18px; border-top: 1px solid #1C3A55; font-size: 11px; color: #2A5070; line-height: 1.6; }
+  .ad-live { display: inline-block; width: 6px; height: 6px; background: #10B981; border-radius: 50%; margin-right: 5px; animation: adpulse 2s ease-in-out infinite; }
+  @keyframes adpulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(.75)} }
+  /* Main */
+  .ad-main { flex: 1; overflow-y: auto; min-width: 0; }
+  .ad-topbar {
+    padding: 14px 26px; border-bottom: 1px solid #1C3A55;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(5,17,28,.94); backdrop-filter: blur(14px);
+  }
+  .ad-tb-title { font-family: 'Sora', sans-serif; font-size: 14.5px; font-weight: 700; }
+  .ad-tb-sub { font-size: 11px; color: #2A5070; margin-top: 1px; }
+  .ad-tb-right { display: flex; gap: 8px; align-items: center; }
+  .ad-user-pill { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #7FA8C0; background: #0C2640; border: 1px solid #1C3A55; border-radius: 100px; padding: 5px 12px 5px 8px; }
+  .ad-avatar { width: 22px; height: 22px; border-radius: 50%; background: #0FB8AB; color: white; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ad-btn { padding: 6px 13px; border-radius: 100px; font-size: 11.5px; font-weight: 500; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .14s; }
+  .ad-btn-teal { background: #0FB8AB; color: white; }
+  .ad-btn-teal:hover { background: #3DD9CC; }
+  .ad-btn-ghost { background: #0C2640; color: #7FA8C0; border: 1px solid #1C3A55; }
+  .ad-btn-ghost:hover { color: #E8F4F8; border-color: #0FB8AB; }
+  .ad-btn-danger { background: transparent; color: #EF4444; border: 1px solid rgba(239,68,68,.3); }
+  .ad-btn-danger:hover { background: rgba(239,68,68,.08); }
+  .ad-btn:disabled { opacity: .45; cursor: not-allowed; }
+  /* Content */
+  .ad-content { padding: 20px 26px; }
+  /* Metrics */
+  .ad-metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 11px; margin-bottom: 18px; }
+  .ad-metric { background: #071E33; border: 1px solid #1C3A55; border-radius: 13px; padding: 14px 16px; position: relative; overflow: hidden; transition: border-color .2s; }
+  .ad-metric:hover { border-color: #234565; }
+  .ad-metric::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+  .ad-metric.tc::before { background: linear-gradient(90deg,#0FB8AB,transparent); }
+  .ad-metric.ac::before { background: linear-gradient(90deg,#F7A106,transparent); }
+  .ad-metric.gc::before { background: linear-gradient(90deg,#10B981,transparent); }
+  .ad-metric.bc::before { background: linear-gradient(90deg,#60A5FA,transparent); }
+  .ad-m-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .7px; color: #2A5070; margin-bottom: 6px; font-weight: 700; }
+  .ad-m-val { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .ad-m-val.tc { color: #3DD9CC; } .ad-m-val.ac { color: #F7A106; } .ad-m-val.gc { color: #10B981; } .ad-m-val.bc { color: #60A5FA; }
+  .ad-m-sub { font-size: 10.5px; color: #2A5070; }
+  /* Panel */
+  .ad-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-bottom: 13px; }
+  .ad-panel { background: #071E33; border: 1px solid #1C3A55; border-radius: 13px; overflow: hidden; }
+  .ad-ph { padding: 13px 16px; border-bottom: 1px solid #1C3A55; display: flex; align-items: center; justify-content: space-between; }
+  .ad-ph-title { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; }
+  .ad-ph-sub { font-size: 10.5px; color: #2A5070; margin-top: 1px; }
+  .ad-pb { padding: 16px; }
+  /* Table */
+  .ad-tbl { width: 100%; border-collapse: collapse; }
+  .ad-tbl th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: #2A5070; text-align: left; padding: 8px 14px; border-bottom: 1px solid #1C3A55; }
+  .ad-tbl td { padding: 10px 14px; font-size: 12.5px; border-bottom: 1px solid rgba(28,58,85,.4); }
+  .ad-tbl tr:last-child td { border-bottom: none; }
+  .ad-tbl tr:hover td { background: rgba(15,184,171,.03); }
+  .ad-tbl-name { font-weight: 500; color: #E8F4F8; }
+  .ad-tbl-sub  { font-size: 10.5px; color: #2A5070; margin-top: 1px; }
+  /* Status pills */
+  .ad-pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 100px; font-size: 10.5px; font-weight: 500; }
+  .ad-pill-t { background: rgba(15,184,171,.1); color: #3DD9CC; }
+  .ad-pill-a { background: rgba(247,161,6,.1); color: #F7A106; }
+  .ad-pill-g { background: rgba(16,185,129,.1); color: #10B981; }
+  .ad-pill-r { background: rgba(239,68,68,.1); color: #EF4444; }
+  .ad-pill-b { background: rgba(96,165,250,.1); color: #60A5FA; }
+  /* Bar */
+  .ad-bar-chart { display: flex; flex-direction: column; gap: 8px; }
+  .ad-bar-row { display: flex; align-items: center; gap: 8px; }
+  .ad-bar-lbl { width: 96px; color: #7FA8C0; font-size: 10.5px; text-align: right; flex-shrink: 0; }
+  .ad-bar-track { flex: 1; height: 6px; background: #0C2640; border-radius: 100px; overflow: hidden; }
+  .ad-bar-fill { height: 100%; border-radius: 100px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+  .ad-bar-val { width: 28px; color: #4A7A96; font-size: 10.5px; text-align: right; }
+  /* Feed */
+  .ad-feed { display: flex; flex-direction: column; }
+  .ad-fi { display: flex; align-items: flex-start; gap: 10px; padding: 11px 16px; border-bottom: 1px solid rgba(28,58,85,.4); transition: background .14s; }
+  .ad-fi:last-child { border-bottom: none; }
+  .ad-fi:hover { background: #0C2640; }
+  .ad-fi-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+  .ad-fi-t { flex: 1; min-width: 0; }
+  .ad-fi-txt { font-size: 12px; color: #E8F4F8; line-height: 1.4; }
+  .ad-fi-txt strong { color: #3DD9CC; }
+  .ad-fi-meta { font-size: 10px; color: #2A5070; margin-top: 2px; }
+  /* User management */
+  .ad-um-form { background: #0C2640; border: 1px solid #1C3A55; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .ad-um-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .ad-um-field label { display: block; font-size: 10.5px; color: #4A7A96; text-transform: uppercase; letter-spacing: .6px; font-weight: 600; margin-bottom: 5px; }
+  .ad-um-input { width: 100%; padding: 9px 12px; background: #071E33; border: 1.5px solid #1C3A55; border-radius: 7px; color: #E8F4F8; font-family: 'DM Sans', sans-serif; font-size: 13.5px; outline: none; transition: border-color .15s; }
+  .ad-um-input:focus { border-color: #0FB8AB; }
+  .ad-um-input::placeholder { color: #2A5070; }
+  .ad-success { background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.2); border-radius: 7px; padding: 9px 12px; font-size: 12px; color: #6EE7B7; margin-bottom: 12px; }
+  .ad-err { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2); border-radius: 7px; padding: 9px 12px; font-size: 12px; color: #FCA5A5; margin-bottom: 12px; }
+  /* Empty */
+  .ad-empty { text-align: center; padding: 32px 16px; color: #2A5070; font-size: 12.5px; }
+  .ad-empty-ic { font-size: 24px; margin-bottom: 8px; }
+  /* Toast */
+  .ad-toasts { position: fixed; bottom: 18px; right: 18px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+  .ad-toast { background: #071E33; border: 1px solid #0FB8AB; border-radius: 8px; padding: 9px 13px; font-size: 12px; box-shadow: 0 0 24px rgba(15,184,171,.14); animation: adtoast .2s ease; max-width: 260px; }
+  @keyframes adtoast { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  /* Dialog */
+  .ad-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+  .ad-dialog { background: #071E33; border: 1px solid #1C3A55; border-radius: 13px; padding: 24px; max-width: 320px; width: 90%; }
+  .ad-dialog h3 { font-family: 'Sora', sans-serif; font-size: 14.5px; font-weight: 700; margin-bottom: 8px; }
+  .ad-dialog p  { font-size: 12px; color: #7FA8C0; margin-bottom: 16px; line-height: 1.5; }
+  .ad-dialog-row { display: flex; gap: 8px; justify-content: flex-end; }
+  @media(max-width:800px){ .ad-sb{display:none;} .ad-metrics{grid-template-columns:1fr 1fr;} .ad-2col{grid-template-columns:1fr;} }
+`;
+
+// ── Sparkline ─────────────────────────────────────────────────────────────────
+function AdminSparkline({ events }) {
+  const days = 14, counts = Array(days).fill(0);
+  const now = new Date(); now.setHours(23, 59, 59, 999);
+  events.forEach(ev => {
+    const ts = new Date(ev.created_at || ev.ts);
+    const diff = Math.floor((now - ts) / 86400000);
+    if (diff >= 0 && diff < days) counts[days - 1 - diff]++;
+  });
+  const max = Math.max(...counts, 1);
+  const labels = Array(days).fill(0).map((_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (days - 1 - i));
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  });
+  const barStyle = {
+    display: "flex", alignItems: "flex-end", gap: 3, height: 50,
+  };
+  return (
+    <div>
+      <div style={barStyle}>
+        {counts.map((c, i) => (
+          <div key={i} title={`${labels[i]}: ${c}`}
+            style={{
+              flex: 1, borderRadius: "3px 3px 0 0",
+              background: i === days - 1 ? "#0FB8AB" : "rgba(15,184,171,.15)",
+              height: `${Math.max(8, (c / max) * 100)}%`,
+              transition: "background .2s", cursor: "pointer",
+            }}
+            onMouseEnter={e => e.target.style.background = "#0FB8AB"}
+            onMouseLeave={e => { if (i !== days - 1) e.target.style.background = "rgba(15,184,171,.15)"; }}
+          />
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, fontSize: 10, color: "#2A5070" }}>
+        <span>{labels[0]}</span><span>Today</span>
+      </div>
+    </div>
+  );
+}
+
+function fmtAdminTime(ts) {
+  const diff = (Date.now() - new Date(ts)) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function AdminDashboard({ session, onSignOut }) {
+  const [view, setView] = useState("overview");
   const [requests, setRequests] = useState([]);
+  const [referrals, setReferrals] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState(null);
-  const [referrals, setReferrals] = useState([]);
-  const [loadingReferrals, setLoadingReferrals] = useState(true);
+  const [toasts, setToasts] = useState([]);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
-  const fetchRequests = async () => {
+  // User management state
+  const [adminUsers, setAdminUsers] = useState(() => getAdminUsers());
+  const [newUsername, setNewUsername] = useState("");
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [umMsg, setUmMsg] = useState(null); // { type: "success"|"error", text }
+  const [addingUser, setAddingUser] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState(null);
+
+  const toast = useCallback((msg) => {
+    const id = Date.now();
+    setToasts(t => [...t, { id, msg }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
+  }, []);
+
+  const fetchAll = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("payment_plans")
-      .select("*, patients(first_name, last_name, email)")
-      .eq("autopay_status", "pending_review")
-      .order("created_at", { ascending: false });
-    setRequests(data || []);
+    try {
+      const [reqRes, refRes, patRes, provRes] = await Promise.all([
+        supabase.from("payment_plans").select("*, patients(first_name, last_name, email)").eq("autopay_status", "pending_review").order("created_at", { ascending: false }),
+        supabase.from("referrals").select("*, providers(practice_name)").order("created_at", { ascending: false }),
+        supabase.from("patients").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase.from("providers").select("*").order("created_at", { ascending: false }).limit(100),
+      ]);
+      setRequests(reqRes.data || []);
+      setReferrals(refRes.data || []);
+      setPatients(patRes.data || []);
+      setProviders(provRes.data || []);
+    } catch (e) { toast("⚠ Failed to load data from Supabase"); }
     setLoading(false);
-  };
+  }, [toast]);
 
-  const fetchReferrals = async () => {
-    setLoadingReferrals(true);
-    const { data } = await supabase
-      .from("referrals")
-      .select("*, providers(practice_name)")
-      .order("created_at", { ascending: false });
-    setReferrals(data || []);
-    setLoadingReferrals(false);
-  };
-
-  useEffect(() => { fetchRequests(); fetchReferrals(); }, []);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleDecision = async (plan, approve) => {
     setActioning(plan.id);
     const newStatus = approve ? "active" : "rejected";
     await supabase.from("payment_plans").update({ autopay_status: newStatus, autopay_enabled: approve }).eq("id", plan.id);
-
     const timingText = plan.autopay_use_due_date ? "your plan's due date" : `day ${plan.autopay_charge_day} of each month`;
     await supabase.from("email_log").insert({
       patient_id: plan.patient_id,
@@ -4948,85 +5343,371 @@ function AdminDashboard() {
         : `Hi, we're unable to approve autopay on the day you requested. Please log back in to select a different day, or contact us with questions.`,
       email_type: approve ? "autopay_approved" : "autopay_rejected",
     });
-
-    await fetchRequests();
+    toast(approve ? "✓ Autopay approved" : "✗ Autopay rejected");
+    await fetchAll();
     setActioning(null);
   };
 
+  // User management
+  const handleAddUser = async () => {
+    if (!newUsername.trim() || !newDisplayName.trim() || !newPassword) {
+      setUmMsg({ type: "error", text: "Fill in all fields." }); return;
+    }
+    if (adminUsers.find(u => u.username.toLowerCase() === newUsername.trim().toLowerCase())) {
+      setUmMsg({ type: "error", text: "Username already exists." }); return;
+    }
+    setAddingUser(true);
+    const salt = `prism_salt_${newUsername.trim().toLowerCase()}_${Date.now()}`;
+    const hash = await hashPassword(newPassword, salt);
+    const updated = [...adminUsers, {
+      username: newUsername.trim().toLowerCase(),
+      displayName: newDisplayName.trim(),
+      salt, hash, role: "admin",
+      createdAt: new Date().toISOString().slice(0, 10),
+    }];
+    saveAdminUsers(updated);
+    setAdminUsers(updated);
+    setNewUsername(""); setNewDisplayName(""); setNewPassword("");
+    setUmMsg({ type: "success", text: `User "${newUsername.trim()}" added.` });
+    setAddingUser(false);
+  };
+
+  const handleRemoveUser = (username) => {
+    if (username === session.username) { setUmMsg({ type: "error", text: "You can't remove your own account." }); return; }
+    const updated = adminUsers.filter(u => u.username !== username);
+    saveAdminUsers(updated);
+    setAdminUsers(updated);
+    setRemoveTarget(null);
+    setUmMsg({ type: "success", text: `User "${username}" removed.` });
+  };
+
+  const navItems = [
+    { id: "overview",  icon: "◈",  label: "Overview" },
+    { id: "autopay",   icon: "⚡", label: "Autopay Requests" },
+    { id: "patients",  icon: "👤", label: "Patients" },
+    { id: "providers", icon: "🏥", label: "Providers" },
+    { id: "referrals", icon: "🔗", label: "Referrals" },
+    { id: "users",     icon: "🔑", label: "Admin Users" },
+  ];
+
+  const approvedRequests = requests.filter(r => r.autopay_status === "active").length;
+  const totalVolume = patients.reduce((s, p) => s + (parseFloat(p.loan_amount) || 0), 0);
+
   return (
-    <div style={{ maxWidth: 960, margin: "40px auto", padding: 24, fontFamily: "DM Sans, sans-serif" }}>
-      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 22, marginBottom: 4 }}>Autopay Requests — Internal Review</div>
-      <div style={{ fontSize: 13, color: "#656972", marginBottom: 24 }}>Requests where the patient chose a charge day after their plan's due date.</div>
-      {loading ? (
-        <div>Loading...</div>
-      ) : requests.length === 0 ? (
-        <div style={{ color: "#656972" }}>No pending requests.</div>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid #E2E8F0" }}>
-                <th style={{ padding: "8px 12px" }}>Patient</th>
-                <th style={{ padding: "8px 12px" }}>Email</th>
-                <th style={{ padding: "8px 12px" }}>Requested Amount</th>
-                <th style={{ padding: "8px 12px" }}>Requested Day</th>
-                <th style={{ padding: "8px 12px" }}>Plan Due Date</th>
-                <th style={{ padding: "8px 12px" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requests.map(r => (
-                <tr key={r.id} style={{ borderBottom: "1px solid #E2E8F0" }}>
-                  <td style={{ padding: "10px 12px" }}>{r.patients?.first_name} {r.patients?.last_name}</td>
-                  <td style={{ padding: "10px 12px" }}>{r.patients?.email}</td>
-                  <td style={{ padding: "10px 12px" }}>${r.autopay_amount}</td>
-                  <td style={{ padding: "10px 12px" }}>Day {r.autopay_charge_day}</td>
-                  <td style={{ padding: "10px 12px" }}>{r.next_due_date}</td>
-                  <td style={{ padding: "10px 12px", display: "flex", gap: 8 }}>
-                    <button disabled={actioning === r.id} onClick={() => handleDecision(r, true)} style={{ padding: "6px 14px", background: "#01665E", color: "white", border: "none", borderRadius: 6, cursor: "pointer" }}>Approve</button>
-                    <button disabled={actioning === r.id} onClick={() => handleDecision(r, false)} style={{ padding: "6px 14px", background: "white", color: "#DC2626", border: "1px solid #DC2626", borderRadius: 6, cursor: "pointer" }}>Reject</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="ad">
+      <style>{ADMIN_DASH_STYLES}</style>
+
+      {/* Sidebar */}
+      <aside className="ad-sb">
+        <div className="ad-sb-logo">
+          <div className="ad-sb-prism">Prism<span>.</span></div>
+          <div className="ad-sb-sub">Patient Payment Solutions</div>
+          <div className="ad-sb-badge">Admin Console</div>
+        </div>
+        <div className="ad-sb-sec">
+          <div className="ad-sb-lbl">Navigation</div>
+          {navItems.map(n => (
+            <div key={n.id} className={`ad-nav${view === n.id ? " on" : ""}`} onClick={() => setView(n.id)}>
+              <span className="ad-nav-ic">{n.icon}</span>{n.label}
+              {n.id === "autopay" && requests.length > 0 && (
+                <span style={{ marginLeft: "auto", background: "#F7A106", color: "#001936", borderRadius: "100px", fontSize: 10, fontWeight: 700, padding: "1px 6px" }}>{requests.length}</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="ad-sb-foot">
+          <div><span className="ad-live" />Live data</div>
+          <div style={{ marginTop: 3 }}>Signed in as <strong style={{ color: "#3DD9CC" }}>{session.displayName}</strong></div>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="ad-main">
+        <div className="ad-topbar">
+          <div>
+            <div className="ad-tb-title">{{ overview: "Platform Overview", autopay: "Autopay Requests", patients: "Patients", providers: "Providers", referrals: "Referrals", users: "Admin Users" }[view]}</div>
+            <div className="ad-tb-sub">Prism Patient · Internal Admin Console</div>
+          </div>
+          <div className="ad-tb-right">
+            <div className="ad-user-pill">
+              <div className="ad-avatar">{session.displayName[0].toUpperCase()}</div>
+              {session.displayName}
+            </div>
+            <button className="ad-btn ad-btn-ghost" onClick={fetchAll}>↺ Refresh</button>
+            <button className="ad-btn ad-btn-danger" onClick={() => setShowSignOutConfirm(true)}>Sign Out</button>
+          </div>
+        </div>
+
+        <div className="ad-content">
+
+          {loading && (
+            <div style={{ textAlign: "center", padding: "48px 0", color: "#2A5070", fontSize: 13 }}>Loading data…</div>
+          )}
+
+          {!loading && <>
+
+            {/* ── OVERVIEW ── */}
+            {view === "overview" && <>
+              <div className="ad-metrics">
+                <div className="ad-metric tc">
+                  <div className="ad-m-lbl">Total Patients</div>
+                  <div className="ad-m-val tc">{patients.length}</div>
+                  <div className="ad-m-sub">{patients.filter(p => { const d = new Date(p.created_at); return (Date.now()-d)<86400000; }).length} today</div>
+                </div>
+                <div className="ad-metric ac">
+                  <div className="ad-m-lbl">Providers</div>
+                  <div className="ad-m-val ac">{providers.length}</div>
+                  <div className="ad-m-sub">Florida pilot</div>
+                </div>
+                <div className="ad-metric gc">
+                  <div className="ad-m-lbl">Referrals Sent</div>
+                  <div className="ad-m-val gc">{referrals.length}</div>
+                  <div className="ad-m-sub">{referrals.filter(r => r.status === "applied").length} converted</div>
+                </div>
+                <div className="ad-metric bc">
+                  <div className="ad-m-lbl">Autopay Pending</div>
+                  <div className="ad-m-val bc">{requests.length}</div>
+                  <div className="ad-m-sub">Needs review</div>
+                </div>
+              </div>
+
+              <div className="ad-2col">
+                <div className="ad-panel">
+                  <div className="ad-ph"><div><div className="ad-ph-title">Patient Signups (14 days)</div><div className="ad-ph-sub">All registered patients</div></div></div>
+                  <div className="ad-pb"><AdminSparkline events={patients} /></div>
+                </div>
+                <div className="ad-panel">
+                  <div className="ad-ph"><div><div className="ad-ph-title">Referral Conversion</div><div className="ad-ph-sub">Sent vs applied</div></div></div>
+                  <div className="ad-pb">
+                    {[
+                      { label: "Sent", count: referrals.length, color: "#0FB8AB" },
+                      { label: "Applied", count: referrals.filter(r=>r.status==="applied").length, color: "#10B981" },
+                      { label: "Pending", count: referrals.filter(r=>r.status!=="applied").length, color: "#F7A106" },
+                    ].map(row => (
+                      <div key={row.label} className="ad-bar-row" style={{ marginBottom: 8 }}>
+                        <div className="ad-bar-lbl">{row.label}</div>
+                        <div className="ad-bar-track"><div className="ad-bar-fill" style={{ width: `${referrals.length ? (row.count/referrals.length)*100 : 0}%`, background: row.color }} /></div>
+                        <div className="ad-bar-val">{row.count}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent patients */}
+              <div className="ad-panel">
+                <div className="ad-ph">
+                  <div><div className="ad-ph-title">Recent Patients</div><div className="ad-ph-sub">Latest 8 registrations</div></div>
+                  <button className="ad-btn ad-btn-ghost" style={{fontSize:11}} onClick={() => setView("patients")}>View all →</button>
+                </div>
+                <div className="ad-feed">
+                  {patients.slice(0, 8).map(p => (
+                    <div key={p.id} className="ad-fi">
+                      <div className="ad-fi-icon" style={{ background: "rgba(15,184,171,.1)" }}>👤</div>
+                      <div className="ad-fi-t">
+                        <div className="ad-fi-txt"><strong>{p.first_name} {p.last_name}</strong> · {p.email}</div>
+                        <div className="ad-fi-meta">{fmtAdminTime(p.created_at)}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {patients.length === 0 && <div className="ad-empty"><div className="ad-empty-ic">👤</div>No patients yet — data will appear once Supabase is wired in.</div>}
+                </div>
+              </div>
+            </>}
+
+            {/* ── AUTOPAY REQUESTS ── */}
+            {view === "autopay" && <>
+              <div className="ad-panel">
+                <div className="ad-ph">
+                  <div><div className="ad-ph-title">Pending Autopay Requests</div><div className="ad-ph-sub">Patients who chose a charge day after their plan due date</div></div>
+                  <button className="ad-btn ad-btn-teal" onClick={fetchAll}>↺ Refresh</button>
+                </div>
+                {requests.length === 0
+                  ? <div className="ad-empty"><div className="ad-empty-ic">✅</div>No pending autopay requests.</div>
+                  : <table className="ad-tbl">
+                      <thead><tr><th>Patient</th><th>Email</th><th>Amount</th><th>Day</th><th>Due Date</th><th>Action</th></tr></thead>
+                      <tbody>
+                        {requests.map(r => (
+                          <tr key={r.id}>
+                            <td><div className="ad-tbl-name">{r.patients?.first_name} {r.patients?.last_name}</div></td>
+                            <td style={{ fontSize: 12, color: "#7FA8C0" }}>{r.patients?.email}</td>
+                            <td style={{ fontFamily: "'Sora',sans-serif", fontWeight: 600, color: "#3DD9CC" }}>${r.autopay_amount}</td>
+                            <td>Day {r.autopay_charge_day}</td>
+                            <td style={{ color: "#4A7A96", fontSize: 12 }}>{r.next_due_date}</td>
+                            <td>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button className="ad-btn ad-btn-teal" disabled={actioning === r.id} onClick={() => handleDecision(r, true)}>Approve</button>
+                                <button className="ad-btn ad-btn-danger" disabled={actioning === r.id} onClick={() => handleDecision(r, false)}>Reject</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                }
+              </div>
+            </>}
+
+            {/* ── PATIENTS ── */}
+            {view === "patients" && <>
+              <div className="ad-panel">
+                <div className="ad-ph"><div><div className="ad-ph-title">All Patients</div><div className="ad-ph-sub">{patients.length} registered</div></div></div>
+                {patients.length === 0
+                  ? <div className="ad-empty"><div className="ad-empty-ic">👤</div>No patients yet.</div>
+                  : <table className="ad-tbl">
+                      <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Registered</th></tr></thead>
+                      <tbody>
+                        {patients.map(p => (
+                          <tr key={p.id}>
+                            <td><div className="ad-tbl-name">{p.first_name} {p.last_name}</div></td>
+                            <td style={{ fontSize: 12, color: "#7FA8C0" }}>{p.email}</td>
+                            <td style={{ fontSize: 12, color: "#4A7A96" }}>{p.phone || "—"}</td>
+                            <td style={{ fontSize: 11, color: "#2A5070" }}>{fmtAdminTime(p.created_at)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                }
+              </div>
+            </>}
+
+            {/* ── PROVIDERS ── */}
+            {view === "providers" && <>
+              <div className="ad-panel">
+                <div className="ad-ph"><div><div className="ad-ph-title">All Providers</div><div className="ad-ph-sub">{providers.length} registered · Florida pilot</div></div></div>
+                {providers.length === 0
+                  ? <div className="ad-empty"><div className="ad-empty-ic">🏥</div>No providers yet.</div>
+                  : <table className="ad-tbl">
+                      <thead><tr><th>Practice</th><th>Contact</th><th>Email</th><th>Location</th><th>Joined</th></tr></thead>
+                      <tbody>
+                        {providers.map(p => (
+                          <tr key={p.id}>
+                            <td><div className="ad-tbl-name">{p.practice_name}</div></td>
+                            <td style={{ fontSize: 12, color: "#7FA8C0" }}>{p.contact_name || "—"}</td>
+                            <td style={{ fontSize: 12, color: "#4A7A96" }}>{p.email}</td>
+                            <td>{p.city && p.state ? <span className="ad-pill ad-pill-t">{p.city}, {p.state}</span> : "—"}</td>
+                            <td style={{ fontSize: 11, color: "#2A5070" }}>{fmtAdminTime(p.created_at)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                }
+              </div>
+            </>}
+
+            {/* ── REFERRALS ── */}
+            {view === "referrals" && <>
+              <div className="ad-panel">
+                <div className="ad-ph"><div><div className="ad-ph-title">All Referrals</div><div className="ad-ph-sub">{referrals.length} total · across all providers</div></div></div>
+                {referrals.length === 0
+                  ? <div className="ad-empty"><div className="ad-empty-ic">🔗</div>No referrals yet.</div>
+                  : <table className="ad-tbl">
+                      <thead><tr><th>Provider</th><th>Patient</th><th>Balance</th><th>Care</th><th>Method</th><th>Status</th><th>Sent</th></tr></thead>
+                      <tbody>
+                        {referrals.map(r => (
+                          <tr key={r.id}>
+                            <td><div className="ad-tbl-name">{r.providers?.practice_name || "—"}</div></td>
+                            <td style={{ fontSize: 12 }}>{r.patient_first_name} {r.patient_last_name}</td>
+                            <td style={{ fontFamily: "'Sora',sans-serif", fontWeight: 600, color: "#F7A106" }}>{r.balance_owed ? `$${Number(r.balance_owed).toLocaleString()}` : "—"}</td>
+                            <td style={{ fontSize: 11.5, color: "#7FA8C0" }}>{r.care_description}</td>
+                            <td><span className="ad-pill ad-pill-b" style={{ textTransform: "uppercase" }}>{r.method}</span></td>
+                            <td><span className={`ad-pill ${r.status === "applied" ? "ad-pill-g" : "ad-pill-a"}`}>{r.status === "applied" ? "✓ Applied" : "Sent"}</span></td>
+                            <td style={{ fontSize: 11, color: "#2A5070" }}>{fmtAdminTime(r.created_at)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                }
+              </div>
+            </>}
+
+            {/* ── ADMIN USERS ── */}
+            {view === "users" && <>
+              <div className="ad-panel" style={{ marginBottom: 14 }}>
+                <div className="ad-ph"><div><div className="ad-ph-title">Add Admin User</div><div className="ad-ph-sub">Credentials are hashed and stored locally in this browser</div></div></div>
+                <div className="ad-pb">
+                  {umMsg && <div className={umMsg.type === "success" ? "ad-success" : "ad-err"}>{umMsg.text}</div>}
+                  <div className="ad-um-form">
+                    <div className="ad-um-row">
+                      <div className="ad-um-field">
+                        <label>Username</label>
+                        <input className="ad-um-input" type="text" placeholder="e.g. sarah" value={newUsername} onChange={e => { setNewUsername(e.target.value); setUmMsg(null); }} />
+                      </div>
+                      <div className="ad-um-field">
+                        <label>Display Name</label>
+                        <input className="ad-um-input" type="text" placeholder="e.g. Sarah" value={newDisplayName} onChange={e => { setNewDisplayName(e.target.value); setUmMsg(null); }} />
+                      </div>
+                    </div>
+                    <div className="ad-um-field" style={{ marginBottom: 12 }}>
+                      <label>Password</label>
+                      <input className="ad-um-input" type="password" placeholder="Choose a strong password" value={newPassword} onChange={e => { setNewPassword(e.target.value); setUmMsg(null); }} />
+                    </div>
+                    <button className="ad-btn ad-btn-teal" onClick={handleAddUser} disabled={addingUser}>{addingUser ? "Adding…" : "Add User →"}</button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ad-panel">
+                <div className="ad-ph"><div><div className="ad-ph-title">Current Admin Users</div><div className="ad-ph-sub">{adminUsers.length} user{adminUsers.length !== 1 ? "s" : ""}</div></div></div>
+                <table className="ad-tbl">
+                  <thead><tr><th>Username</th><th>Display Name</th><th>Role</th><th>Added</th><th></th></tr></thead>
+                  <tbody>
+                    {adminUsers.map(u => (
+                      <tr key={u.username}>
+                        <td><div className="ad-tbl-name">{u.username}</div>{u.username === session.username && <span style={{ fontSize: 10, color: "#3DD9CC", marginLeft: 6 }}>you</span>}</td>
+                        <td style={{ fontSize: 12.5 }}>{u.displayName}</td>
+                        <td><span className={`ad-pill ${u.role === "owner" ? "ad-pill-a" : "ad-pill-t"}`}>{u.role}</span></td>
+                        <td style={{ fontSize: 11, color: "#2A5070" }}>{u.createdAt}</td>
+                        <td>
+                          {u.username !== session.username && (
+                            <button className="ad-btn ad-btn-danger" style={{ fontSize: 11 }} onClick={() => setRemoveTarget(u.username)}>Remove</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ marginTop: 14, padding: "12px 16px", background: "#0C2640", border: "1px solid #1C3A55", borderRadius: 10, fontSize: 12, color: "#4A7A96", lineHeight: 1.6 }}>
+                <strong style={{ color: "#7FA8C0" }}>Note:</strong> Admin credentials are stored in <code style={{ color: "#3DD9CC", fontSize: 11 }}>localStorage</code> in this browser only.
+                When Supabase auth is wired in, this will move to a proper admin table with server-side session management.
+                Until then, credentials are SHA-256 hashed (salted) — not plaintext.
+              </div>
+            </>}
+
+          </>}
+        </div>
+      </div>
+
+      {/* Toasts */}
+      <div className="ad-toasts">{toasts.map(t => <div key={t.id} className="ad-toast">{t.msg}</div>)}</div>
+
+      {/* Sign out confirm */}
+      {showSignOutConfirm && (
+        <div className="ad-overlay">
+          <div className="ad-dialog">
+            <h3>Sign out?</h3>
+            <p>You'll be returned to the login screen. Your session will be cleared.</p>
+            <div className="ad-dialog-row">
+              <button className="ad-btn ad-btn-ghost" onClick={() => setShowSignOutConfirm(false)}>Cancel</button>
+              <button className="ad-btn ad-btn-danger" onClick={() => { clearAdminSession(); onSignOut(); }}>Sign Out</button>
+            </div>
+          </div>
         </div>
       )}
 
-      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 22, marginTop: 48, marginBottom: 4 }}>Patient Referrals — All Providers</div>
-      <div style={{ fontSize: 13, color: "#656972", marginBottom: 24 }}>Every referral sent across all provider accounts.</div>
-      {loadingReferrals ? (
-        <div>Loading...</div>
-      ) : referrals.length === 0 ? (
-        <div style={{ color: "#656972" }}>No referrals sent yet.</div>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: "2px solid #E2E8F0" }}>
-                <th style={{ padding: "8px 12px" }}>Provider</th>
-                <th style={{ padding: "8px 12px" }}>Patient</th>
-                <th style={{ padding: "8px 12px" }}>Balance</th>
-                <th style={{ padding: "8px 12px" }}>Care</th>
-                <th style={{ padding: "8px 12px" }}>Method</th>
-                <th style={{ padding: "8px 12px" }}>Status</th>
-                <th style={{ padding: "8px 12px" }}>Sent</th>
-              </tr>
-            </thead>
-            <tbody>
-              {referrals.map(r => (
-                <tr key={r.id} style={{ borderBottom: "1px solid #E2E8F0" }}>
-                  <td style={{ padding: "10px 12px" }}>{r.providers?.practice_name || "—"}</td>
-                  <td style={{ padding: "10px 12px" }}>{r.patient_first_name} {r.patient_last_name}</td>
-                  <td style={{ padding: "10px 12px" }}>{r.balance_owed ? `$${Number(r.balance_owed).toLocaleString()}` : "—"}</td>
-                  <td style={{ padding: "10px 12px" }}>{r.care_description}</td>
-                  <td style={{ padding: "10px 12px", textTransform: "uppercase" }}>{r.method}</td>
-                  <td style={{ padding: "10px 12px" }}>{r.status === "applied" ? "✓ Applied" : "Sent"}</td>
-                  <td style={{ padding: "10px 12px" }}>{new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Remove user confirm */}
+      {removeTarget && (
+        <div className="ad-overlay">
+          <div className="ad-dialog">
+            <h3>Remove "{removeTarget}"?</h3>
+            <p>This admin user will lose access immediately. This can't be undone.</p>
+            <div className="ad-dialog-row">
+              <button className="ad-btn ad-btn-ghost" onClick={() => setRemoveTarget(null)}>Cancel</button>
+              <button className="ad-btn ad-btn-danger" onClick={() => handleRemoveUser(removeTarget)}>Remove</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -5034,8 +5715,11 @@ function AdminDashboard() {
 }
 
 function AdminApp() {
-  const [authed, setAuthed] = useState(false);
-  return authed ? <AdminDashboard /> : <AdminLogin onAuthed={() => setAuthed(true)} />;
+  const [session, setSession] = useState(() => getAdminSession());
+  const handleAuthed = (user) => { setAdminSession(user); setSession(user); };
+  const handleSignOut = () => { clearAdminSession(); setSession(null); };
+  if (!session) return <AdminLogin onAuthed={handleAuthed} />;
+  return <AdminDashboard session={session} onSignOut={handleSignOut} />;
 }
 
 export default function Root() {

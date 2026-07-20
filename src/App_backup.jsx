@@ -665,15 +665,13 @@ function ComingSoonModal({ onClose }) {
               target="mc_hidden_iframe"
               onSubmit={handleSubmit}
             >
-              <div className="form-row">
-                <div className="form-group">
-                  <label>First Name *</label>
-                  <input name="FNAME" placeholder="Jane" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Last Name *</label>
-                  <input name="LNAME" placeholder="Smith" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                </div>
+              <div className="form-group">
+                <label>First Name *</label>
+                <input name="FNAME" placeholder="Jane" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Last Name *</label>
+                <input name="LNAME" placeholder="Smith" value={lastName} onChange={(e) => setLastName(e.target.value)} />
               </div>
               <div className="form-group">
                 <label>Email Address *</label>
