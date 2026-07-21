@@ -11,7 +11,7 @@ const COMING_SOON_MODE = true;
 // Set to false once legal/human review of all copy (blog posts, marketing
 // pages, etc.) is complete. While true, a subtle non-blocking watermark is
 // tiled across every page as a reminder that copy hasn't been signed off.
-const CONTENT_PENDING_REVIEW = true;
+const CONTENT_PENDING_REVIEW = false;
 
 const ComingSoonContext = createContext({ active: false, requestAccess: () => {} });
 function useComingSoon() {
