@@ -4983,21 +4983,7 @@ const ADMIN_LOGIN_STYLES = `
     text-align: center;
     border-bottom: 1px solid #F1F5F9;
   }
-  .adm-logo-lockup { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
-  .adm-logo-icon {
-    width: 40px; height: 40px; border-radius: 10px;
-    background: rgba(15,184,171,0.12); border: 1px solid rgba(15,184,171,0.25);
-    display: flex; align-items: center; justify-content: center; font-size: 18px;
-  }
-  .adm-logo-text { text-align: left; }
-  .adm-logo {
-    font-family: 'Sora', sans-serif;
-    font-weight: 800; font-size: 20px;
-    color: #001936; letter-spacing: -0.4px;
-    line-height: 1;
-  }
-  .adm-logo span { color: #0FB8AB; }
-  .adm-logo-sub { font-size: 10px; color: #94A3B8; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 500; margin-top: 2px; }
+  .adm-logo-lockup { display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
   .adm-title { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700; color: #001936; margin-bottom: 4px; }
   .adm-subtitle { font-size: 13px; color: #64748B; }
   .adm-body { padding: 24px 32px 28px; }
@@ -5063,11 +5049,16 @@ function AdminLogin({ onAuthed }) {
       <div className="adm-card">
         <div className="adm-header">
           <div className="adm-logo-lockup">
-            <div className="adm-logo-icon">🔒</div>
-            <div className="adm-logo-text">
-              <div className="adm-logo">Prism<span>.</span></div>
-              <div className="adm-logo-sub">Patient Payment Solutions</div>
-            </div>
+            <svg width="180" height="56" viewBox="0 0 1983 793" xmlns="http://www.w3.org/2000/svg">
+              <g stroke="#FFFFFF" strokeWidth="7" strokeLinejoin="round">
+                <polygon points="430,164 560,391 415,453 203,550" fill="#0FB8AB"/>
+                <polygon points="203,550 172,597 430,590 415,453" fill="#01665E"/>
+                <polygon points="560,391 687,597 430,590 415,453" fill="#F7A106"/>
+              </g>
+              <text x="750" y="520" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="400" fontWeight="900" letterSpacing="-8" fill="#001936">Pr{"ı"}sm</text>
+              <circle cx="1225" cy="215" r="42" fill="#0FB8AB"/>
+              <text x="755" y="615" fontFamily="Inter, Montserrat, Avenir Next, Helvetica, Arial, sans-serif" fontSize="95" fontWeight="400" letterSpacing="2" fill="#656972">Patient Payment Solutions</text>
+            </svg>
           </div>
           <div className="adm-title">Admin Sign In</div>
           <div className="adm-subtitle">Access your Prism Patient dashboard</div>
@@ -5077,7 +5068,7 @@ function AdminLogin({ onAuthed }) {
           <div className="adm-field">
             <label className="adm-label">Username</label>
             <input className={`adm-input${error ? " error" : ""}`} type="text"
-              placeholder="your username" value={username}
+              placeholder="Your username" value={username}
               onChange={e => { setUsername(e.target.value); setError(""); }}
               onKeyDown={e => e.key === "Enter" && handleSubmit()}
               autoComplete="username" autoFocus />

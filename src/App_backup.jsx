@@ -11,7 +11,7 @@ const COMING_SOON_MODE = true;
 // Set to false once legal/human review of all copy (blog posts, marketing
 // pages, etc.) is complete. While true, a subtle non-blocking watermark is
 // tiled across every page as a reminder that copy hasn't been signed off.
-const CONTENT_PENDING_REVIEW = true;
+const CONTENT_PENDING_REVIEW = false;
 
 const ComingSoonContext = createContext({ active: false, requestAccess: () => {} });
 function useComingSoon() {
@@ -4965,73 +4965,73 @@ const ADMIN_LOGIN_STYLES = `
   .adm-root *, .adm-root *::before, .adm-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
   .adm-root {
     min-height: 100vh;
-    background: #05111C;
+    background: #F0F4F8;
     display: flex; align-items: center; justify-content: center;
     font-family: 'DM Sans', sans-serif;
     padding: 24px;
   }
   .adm-card {
-    background: #071E33;
-    border: 1px solid #1C3A55;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
     border-radius: 16px;
-    width: 100%; max-width: 400px;
+    width: 100%; max-width: 420px;
     overflow: hidden;
-    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 24px rgba(0,25,54,0.10), 0 1px 4px rgba(0,25,54,0.06);
   }
   .adm-header {
-    background: linear-gradient(135deg, #001936 0%, #0A2A4D 100%);
-    padding: 32px 32px 28px;
+    padding: 28px 32px 24px;
     text-align: center;
-    border-bottom: 1px solid #1C3A55;
-    position: relative;
+    border-bottom: 1px solid #F1F5F9;
   }
+  .adm-logo-lockup { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
+  .adm-logo-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(15,184,171,0.12); border: 1px solid rgba(15,184,171,0.25);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .adm-logo-text { text-align: left; }
   .adm-logo {
     font-family: 'Sora', sans-serif;
-    font-weight: 800; font-size: 26px;
-    color: #3DD9CC; letter-spacing: -0.5px;
-    margin-bottom: 4px;
+    font-weight: 800; font-size: 20px;
+    color: #001936; letter-spacing: -0.4px;
+    line-height: 1;
   }
-  .adm-logo span { color: #F7A106; }
-  .adm-logo-sub { font-size: 11px; color: #4A7A96; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 500; margin-bottom: 14px; }
-  .adm-lock {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 42px; height: 42px; background: rgba(15,184,171,0.12);
-    border: 1px solid rgba(15,184,171,0.25);
-    border-radius: 10px; font-size: 18px; margin: 0 auto 12px;
-  }
-  .adm-title { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 600; color: #E8F4F8; margin-bottom: 4px; }
-  .adm-subtitle { font-size: 12px; color: #4A7A96; }
-  .adm-body { padding: 28px 32px 32px; }
+  .adm-logo span { color: #0FB8AB; }
+  .adm-logo-sub { font-size: 10px; color: #94A3B8; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 500; margin-top: 2px; }
+  .adm-title { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700; color: #001936; margin-bottom: 4px; }
+  .adm-subtitle { font-size: 13px; color: #64748B; }
+  .adm-body { padding: 24px 32px 28px; }
   .adm-field { margin-bottom: 16px; }
-  .adm-label { display: block; font-size: 12px; font-weight: 500; color: #7FA8C0; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.6px; }
+  .adm-label { display: block; font-size: 13px; font-weight: 500; color: #334155; margin-bottom: 6px; }
   .adm-input {
     width: 100%; padding: 11px 14px;
-    background: #0C2640; border: 1.5px solid #1C3A55;
-    border-radius: 8px; color: #E8F4F8;
+    background: #FFFFFF; border: 1.5px solid #CBD5E1;
+    border-radius: 10px; color: #001936;
     font-family: 'DM Sans', sans-serif; font-size: 14.5px;
     outline: none; transition: border-color .15s, box-shadow .15s;
   }
-  .adm-input::placeholder { color: #2A5070; }
+  .adm-input::placeholder { color: #94A3B8; }
   .adm-input:focus { border-color: #0FB8AB; box-shadow: 0 0 0 3px rgba(15,184,171,0.12); }
-  .adm-input.error { border-color: #EF4444; }
+  .adm-input.error { border-color: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.10); }
   .adm-error {
-    background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.25);
-    border-radius: 7px; padding: 10px 12px;
-    font-size: 12.5px; color: #FCA5A5; margin-bottom: 14px;
+    background: #FEF2F2; border: 1px solid #FECACA;
+    border-radius: 8px; padding: 10px 12px;
+    font-size: 13px; color: #DC2626; margin-bottom: 14px;
     display: flex; align-items: center; gap: 7px;
   }
   .adm-btn {
-    width: 100%; padding: 12px;
+    width: 100%; padding: 13px;
     background: #0FB8AB; color: white;
-    border: none; border-radius: 8px;
-    font-family: 'DM Sans', sans-serif; font-size: 14.5px; font-weight: 600;
-    cursor: pointer; transition: background .15s, transform .1s;
-    margin-top: 4px;
+    border: none; border-radius: 100px;
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s;
+    margin-top: 6px; letter-spacing: 0.1px;
+    box-shadow: 0 2px 8px rgba(15,184,171,0.30);
   }
-  .adm-btn:hover { background: #3DD9CC; }
+  .adm-btn:hover { background: #0da89c; box-shadow: 0 4px 14px rgba(15,184,171,0.38); }
   .adm-btn:active { transform: scale(.99); }
-  .adm-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-  .adm-footer { text-align: center; margin-top: 20px; font-size: 11px; color: #2A5070; }
+  .adm-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+  .adm-footer { text-align: center; margin-top: 18px; font-size: 11.5px; color: #94A3B8; }
   .adm-footer span { color: #0FB8AB; }
 `;
 
@@ -5062,11 +5062,15 @@ function AdminLogin({ onAuthed }) {
       <style>{ADMIN_LOGIN_STYLES}</style>
       <div className="adm-card">
         <div className="adm-header">
-          <div className="adm-logo">Prism<span>.</span></div>
-          <div className="adm-logo-sub">Patient Payment Solutions</div>
-          <div className="adm-lock">🔒</div>
-          <div className="adm-title">Admin Console</div>
-          <div className="adm-subtitle">Internal access only</div>
+          <div className="adm-logo-lockup">
+            <div className="adm-logo-icon">🔒</div>
+            <div className="adm-logo-text">
+              <div className="adm-logo">Prism<span>.</span></div>
+              <div className="adm-logo-sub">Patient Payment Solutions</div>
+            </div>
+          </div>
+          <div className="adm-title">Admin Sign In</div>
+          <div className="adm-subtitle">Access your Prism Patient dashboard</div>
         </div>
         <div className="adm-body">
           {error && <div className="adm-error"><span>⚠</span>{error}</div>}
@@ -5083,20 +5087,20 @@ function AdminLogin({ onAuthed }) {
             <div style={{ position: "relative" }}>
               <input className={`adm-input${error ? " error" : ""}`}
                 type={showPw ? "text" : "password"}
-                placeholder="••••••••••••"
+                placeholder="Your password"
                 value={password}
                 onChange={e => { setPassword(e.target.value); setError(""); }}
                 onKeyDown={e => e.key === "Enter" && handleSubmit()}
                 autoComplete="current-password"
                 style={{ paddingRight: 44 }} />
               <button onClick={() => setShowPw(v => !v)}
-                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#4A7A96", fontSize: 14, padding: 0 }}>
+                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: 14, padding: 0 }}>
                 {showPw ? "🙈" : "👁"}
               </button>
             </div>
           </div>
           <button className="adm-btn" onClick={handleSubmit} disabled={loading}>
-            {loading ? "Signing in…" : "Sign In →"}
+            {loading ? "Signing in…" : "Sign In"}
           </button>
           <div className="adm-footer">Prism Patient · <span>Internal use only</span> · Not patient-facing</div>
         </div>
@@ -5113,125 +5117,125 @@ const ADMIN_DASH_STYLES = `
   .ad {
     display: flex; min-height: 100vh;
     font-family: 'DM Sans', sans-serif;
-    background: #05111C; color: #E8F4F8;
+    background: #F0F4F8; color: #001936;
   }
   /* Sidebar */
   .ad-sb {
-    width: 220px; flex-shrink: 0;
-    background: #071E33; border-right: 1px solid #1C3A55;
+    width: 224px; flex-shrink: 0;
+    background: #001936; border-right: 1px solid #0a2a4a;
     display: flex; flex-direction: column;
     position: sticky; top: 0; height: 100vh; overflow: hidden;
   }
-  .ad-sb-logo { padding: 20px 18px 16px; border-bottom: 1px solid #1C3A55; }
-  .ad-sb-prism { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 18px; color: #3DD9CC; letter-spacing: -0.4px; }
-  .ad-sb-prism span { color: #F7A106; }
-  .ad-sb-sub { font-size: 9px; color: #2A5070; text-transform: uppercase; letter-spacing: 1.2px; margin-top: 2px; font-weight: 600; }
-  .ad-sb-badge { display: inline-block; font-size: 9px; font-weight: 700; background: rgba(15,184,171,.1); color: #3DD9CC; padding: 2px 7px; border-radius: 100px; margin-top: 6px; text-transform: uppercase; letter-spacing: .9px; border: 1px solid rgba(15,184,171,.2); }
+  .ad-sb-logo { padding: 20px 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .ad-sb-prism { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 19px; color: #FFFFFF; letter-spacing: -0.4px; }
+  .ad-sb-prism span { color: #0FB8AB; }
+  .ad-sb-sub { font-size: 9px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 1.2px; margin-top: 2px; font-weight: 600; }
+  .ad-sb-badge { display: inline-block; font-size: 9px; font-weight: 700; background: rgba(15,184,171,.15); color: #0FB8AB; padding: 2px 7px; border-radius: 100px; margin-top: 6px; text-transform: uppercase; letter-spacing: .9px; border: 1px solid rgba(15,184,171,.25); }
   .ad-sb-sec { padding: 8px 10px; margin-top: 4px; }
-  .ad-sb-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1.3px; color: #2A5070; padding: 0 8px; margin-bottom: 4px; font-weight: 700; }
-  .ad-nav { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; font-size: 13px; font-weight: 500; color: #7FA8C0; cursor: pointer; transition: all .14s; margin-bottom: 1px; }
-  .ad-nav:hover { background: #0C2640; color: #E8F4F8; }
-  .ad-nav.on { background: rgba(15,184,171,.1); color: #3DD9CC; }
+  .ad-sb-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1.3px; color: rgba(255,255,255,0.25); padding: 0 8px; margin-bottom: 4px; font-weight: 700; }
+  .ad-nav { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.55); cursor: pointer; transition: all .14s; margin-bottom: 1px; }
+  .ad-nav:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.90); }
+  .ad-nav.on { background: rgba(15,184,171,.15); color: #0FB8AB; }
   .ad-nav-ic { font-size: 13px; width: 17px; text-align: center; flex-shrink: 0; }
-  .ad-sb-foot { margin-top: auto; padding: 14px 18px; border-top: 1px solid #1C3A55; font-size: 11px; color: #2A5070; line-height: 1.6; }
+  .ad-sb-foot { margin-top: auto; padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 11px; color: rgba(255,255,255,0.30); line-height: 1.6; }
   .ad-live { display: inline-block; width: 6px; height: 6px; background: #10B981; border-radius: 50%; margin-right: 5px; animation: adpulse 2s ease-in-out infinite; }
   @keyframes adpulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(.75)} }
   /* Main */
   .ad-main { flex: 1; overflow-y: auto; min-width: 0; }
   .ad-topbar {
-    padding: 14px 26px; border-bottom: 1px solid #1C3A55;
+    padding: 14px 26px; border-bottom: 1px solid #E2E8F0;
     display: flex; align-items: center; justify-content: space-between;
     position: sticky; top: 0; z-index: 10;
-    background: rgba(5,17,28,.94); backdrop-filter: blur(14px);
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
   }
-  .ad-tb-title { font-family: 'Sora', sans-serif; font-size: 14.5px; font-weight: 700; }
-  .ad-tb-sub { font-size: 11px; color: #2A5070; margin-top: 1px; }
+  .ad-tb-title { font-family: 'Sora', sans-serif; font-size: 14.5px; font-weight: 700; color: #001936; }
+  .ad-tb-sub { font-size: 11px; color: #94A3B8; margin-top: 1px; }
   .ad-tb-right { display: flex; gap: 8px; align-items: center; }
-  .ad-user-pill { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #7FA8C0; background: #0C2640; border: 1px solid #1C3A55; border-radius: 100px; padding: 5px 12px 5px 8px; }
+  .ad-user-pill { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #64748B; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 100px; padding: 5px 12px 5px 8px; }
   .ad-avatar { width: 22px; height: 22px; border-radius: 50%; background: #0FB8AB; color: white; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .ad-btn { padding: 6px 13px; border-radius: 100px; font-size: 11.5px; font-weight: 500; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .14s; }
-  .ad-btn-teal { background: #0FB8AB; color: white; }
-  .ad-btn-teal:hover { background: #3DD9CC; }
-  .ad-btn-ghost { background: #0C2640; color: #7FA8C0; border: 1px solid #1C3A55; }
-  .ad-btn-ghost:hover { color: #E8F4F8; border-color: #0FB8AB; }
-  .ad-btn-danger { background: transparent; color: #EF4444; border: 1px solid rgba(239,68,68,.3); }
-  .ad-btn-danger:hover { background: rgba(239,68,68,.08); }
+  .ad-btn { padding: 6px 14px; border-radius: 100px; font-size: 11.5px; font-weight: 500; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .14s; }
+  .ad-btn-teal { background: #0FB8AB; color: white; box-shadow: 0 1px 4px rgba(15,184,171,.25); }
+  .ad-btn-teal:hover { background: #0da89c; }
+  .ad-btn-ghost { background: white; color: #64748B; border: 1px solid #E2E8F0; }
+  .ad-btn-ghost:hover { color: #001936; border-color: #0FB8AB; }
+  .ad-btn-danger { background: transparent; color: #DC2626; border: 1px solid #FECACA; }
+  .ad-btn-danger:hover { background: #FEF2F2; }
   .ad-btn:disabled { opacity: .45; cursor: not-allowed; }
   /* Content */
   .ad-content { padding: 20px 26px; }
   /* Metrics */
-  .ad-metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 11px; margin-bottom: 18px; }
-  .ad-metric { background: #071E33; border: 1px solid #1C3A55; border-radius: 13px; padding: 14px 16px; position: relative; overflow: hidden; transition: border-color .2s; }
-  .ad-metric:hover { border-color: #234565; }
-  .ad-metric::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+  .ad-metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
+  .ad-metric { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px 18px; position: relative; overflow: hidden; transition: box-shadow .2s; box-shadow: 0 1px 3px rgba(0,25,54,.05); }
+  .ad-metric:hover { box-shadow: 0 4px 12px rgba(0,25,54,.08); }
+  .ad-metric::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
   .ad-metric.tc::before { background: linear-gradient(90deg,#0FB8AB,transparent); }
   .ad-metric.ac::before { background: linear-gradient(90deg,#F7A106,transparent); }
   .ad-metric.gc::before { background: linear-gradient(90deg,#10B981,transparent); }
   .ad-metric.bc::before { background: linear-gradient(90deg,#60A5FA,transparent); }
-  .ad-m-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .7px; color: #2A5070; margin-bottom: 6px; font-weight: 700; }
-  .ad-m-val { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
-  .ad-m-val.tc { color: #3DD9CC; } .ad-m-val.ac { color: #F7A106; } .ad-m-val.gc { color: #10B981; } .ad-m-val.bc { color: #60A5FA; }
-  .ad-m-sub { font-size: 10.5px; color: #2A5070; }
+  .ad-m-lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .7px; color: #94A3B8; margin-bottom: 6px; font-weight: 700; }
+  .ad-m-val { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .ad-m-val.tc { color: #0FB8AB; } .ad-m-val.ac { color: #F7A106; } .ad-m-val.gc { color: #10B981; } .ad-m-val.bc { color: #3B82F6; }
+  .ad-m-sub { font-size: 11px; color: #94A3B8; }
   /* Panel */
-  .ad-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-bottom: 13px; }
-  .ad-panel { background: #071E33; border: 1px solid #1C3A55; border-radius: 13px; overflow: hidden; }
-  .ad-ph { padding: 13px 16px; border-bottom: 1px solid #1C3A55; display: flex; align-items: center; justify-content: space-between; }
-  .ad-ph-title { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; }
-  .ad-ph-sub { font-size: 10.5px; color: #2A5070; margin-top: 1px; }
-  .ad-pb { padding: 16px; }
+  .ad-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .ad-panel { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,25,54,.05); }
+  .ad-ph { padding: 14px 18px; border-bottom: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; }
+  .ad-ph-title { font-family: 'Sora', sans-serif; font-size: 13.5px; font-weight: 600; color: #001936; }
+  .ad-ph-sub { font-size: 11px; color: #94A3B8; margin-top: 1px; }
+  .ad-pb { padding: 16px 18px; }
   /* Table */
   .ad-tbl { width: 100%; border-collapse: collapse; }
-  .ad-tbl th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: #2A5070; text-align: left; padding: 8px 14px; border-bottom: 1px solid #1C3A55; }
-  .ad-tbl td { padding: 10px 14px; font-size: 12.5px; border-bottom: 1px solid rgba(28,58,85,.4); }
+  .ad-tbl th { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: #94A3B8; text-align: left; padding: 9px 16px; border-bottom: 1px solid #F1F5F9; background: #F8FAFC; }
+  .ad-tbl td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid #F1F5F9; color: #334155; }
   .ad-tbl tr:last-child td { border-bottom: none; }
-  .ad-tbl tr:hover td { background: rgba(15,184,171,.03); }
-  .ad-tbl-name { font-weight: 500; color: #E8F4F8; }
-  .ad-tbl-sub  { font-size: 10.5px; color: #2A5070; margin-top: 1px; }
+  .ad-tbl tr:hover td { background: #F8FAFC; }
+  .ad-tbl-name { font-weight: 500; color: #001936; }
+  .ad-tbl-sub  { font-size: 11px; color: #94A3B8; margin-top: 1px; }
   /* Status pills */
-  .ad-pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 100px; font-size: 10.5px; font-weight: 500; }
-  .ad-pill-t { background: rgba(15,184,171,.1); color: #3DD9CC; }
-  .ad-pill-a { background: rgba(247,161,6,.1); color: #F7A106; }
-  .ad-pill-g { background: rgba(16,185,129,.1); color: #10B981; }
-  .ad-pill-r { background: rgba(239,68,68,.1); color: #EF4444; }
-  .ad-pill-b { background: rgba(96,165,250,.1); color: #60A5FA; }
+  .ad-pill { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+  .ad-pill-t { background: rgba(15,184,171,.10); color: #0a9086; }
+  .ad-pill-a { background: rgba(247,161,6,.10); color: #b57800; }
+  .ad-pill-g { background: rgba(16,185,129,.10); color: #047857; }
+  .ad-pill-r { background: rgba(220,38,38,.10); color: #DC2626; }
+  .ad-pill-b { background: rgba(59,130,246,.10); color: #2563EB; }
   /* Bar */
-  .ad-bar-chart { display: flex; flex-direction: column; gap: 8px; }
-  .ad-bar-row { display: flex; align-items: center; gap: 8px; }
-  .ad-bar-lbl { width: 96px; color: #7FA8C0; font-size: 10.5px; text-align: right; flex-shrink: 0; }
-  .ad-bar-track { flex: 1; height: 6px; background: #0C2640; border-radius: 100px; overflow: hidden; }
+  .ad-bar-chart { display: flex; flex-direction: column; gap: 9px; }
+  .ad-bar-row { display: flex; align-items: center; gap: 9px; }
+  .ad-bar-lbl { width: 96px; color: #64748B; font-size: 11px; text-align: right; flex-shrink: 0; }
+  .ad-bar-track { flex: 1; height: 6px; background: #F1F5F9; border-radius: 100px; overflow: hidden; }
   .ad-bar-fill { height: 100%; border-radius: 100px; transition: width .5s cubic-bezier(.4,0,.2,1); }
-  .ad-bar-val { width: 28px; color: #4A7A96; font-size: 10.5px; text-align: right; }
+  .ad-bar-val { width: 28px; color: #94A3B8; font-size: 11px; text-align: right; }
   /* Feed */
   .ad-feed { display: flex; flex-direction: column; }
-  .ad-fi { display: flex; align-items: flex-start; gap: 10px; padding: 11px 16px; border-bottom: 1px solid rgba(28,58,85,.4); transition: background .14s; }
+  .ad-fi { display: flex; align-items: flex-start; gap: 10px; padding: 12px 18px; border-bottom: 1px solid #F1F5F9; transition: background .14s; }
   .ad-fi:last-child { border-bottom: none; }
-  .ad-fi:hover { background: #0C2640; }
-  .ad-fi-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+  .ad-fi:hover { background: #F8FAFC; }
+  .ad-fi-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
   .ad-fi-t { flex: 1; min-width: 0; }
-  .ad-fi-txt { font-size: 12px; color: #E8F4F8; line-height: 1.4; }
-  .ad-fi-txt strong { color: #3DD9CC; }
-  .ad-fi-meta { font-size: 10px; color: #2A5070; margin-top: 2px; }
+  .ad-fi-txt { font-size: 12.5px; color: #334155; line-height: 1.4; }
+  .ad-fi-txt strong { color: #001936; font-weight: 600; }
+  .ad-fi-meta { font-size: 10.5px; color: #94A3B8; margin-top: 2px; }
   /* User management */
-  .ad-um-form { background: #0C2640; border: 1px solid #1C3A55; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .ad-um-form { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
   .ad-um-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-  .ad-um-field label { display: block; font-size: 10.5px; color: #4A7A96; text-transform: uppercase; letter-spacing: .6px; font-weight: 600; margin-bottom: 5px; }
-  .ad-um-input { width: 100%; padding: 9px 12px; background: #071E33; border: 1.5px solid #1C3A55; border-radius: 7px; color: #E8F4F8; font-family: 'DM Sans', sans-serif; font-size: 13.5px; outline: none; transition: border-color .15s; }
-  .ad-um-input:focus { border-color: #0FB8AB; }
-  .ad-um-input::placeholder { color: #2A5070; }
-  .ad-success { background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.2); border-radius: 7px; padding: 9px 12px; font-size: 12px; color: #6EE7B7; margin-bottom: 12px; }
-  .ad-err { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2); border-radius: 7px; padding: 9px 12px; font-size: 12px; color: #FCA5A5; margin-bottom: 12px; }
+  .ad-um-field label { display: block; font-size: 12px; color: #64748B; font-weight: 500; margin-bottom: 5px; }
+  .ad-um-input { width: 100%; padding: 9px 12px; background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; color: #001936; font-family: 'DM Sans', sans-serif; font-size: 13.5px; outline: none; transition: border-color .15s, box-shadow .15s; }
+  .ad-um-input:focus { border-color: #0FB8AB; box-shadow: 0 0 0 3px rgba(15,184,171,.10); }
+  .ad-um-input::placeholder { color: #CBD5E1; }
+  .ad-success { background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; color: #15803D; margin-bottom: 12px; }
+  .ad-err { background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; color: #DC2626; margin-bottom: 12px; }
   /* Empty */
-  .ad-empty { text-align: center; padding: 32px 16px; color: #2A5070; font-size: 12.5px; }
-  .ad-empty-ic { font-size: 24px; margin-bottom: 8px; }
+  .ad-empty { text-align: center; padding: 36px 16px; color: #94A3B8; font-size: 13px; }
+  .ad-empty-ic { font-size: 26px; margin-bottom: 8px; }
   /* Toast */
   .ad-toasts { position: fixed; bottom: 18px; right: 18px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
-  .ad-toast { background: #071E33; border: 1px solid #0FB8AB; border-radius: 8px; padding: 9px 13px; font-size: 12px; box-shadow: 0 0 24px rgba(15,184,171,.14); animation: adtoast .2s ease; max-width: 260px; }
+  .ad-toast { background: #FFFFFF; border: 1px solid #E2E8F0; border-left: 3px solid #0FB8AB; border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: #334155; box-shadow: 0 4px 16px rgba(0,25,54,.10); animation: adtoast .2s ease; max-width: 260px; }
   @keyframes adtoast { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
   /* Dialog */
-  .ad-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-  .ad-dialog { background: #071E33; border: 1px solid #1C3A55; border-radius: 13px; padding: 24px; max-width: 320px; width: 90%; }
-  .ad-dialog h3 { font-family: 'Sora', sans-serif; font-size: 14.5px; font-weight: 700; margin-bottom: 8px; }
-  .ad-dialog p  { font-size: 12px; color: #7FA8C0; margin-bottom: 16px; line-height: 1.5; }
+  .ad-overlay { position: fixed; inset: 0; background: rgba(0,25,54,.45); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+  .ad-dialog { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 26px; max-width: 340px; width: 90%; box-shadow: 0 8px 32px rgba(0,25,54,.15); }
+  .ad-dialog h3 { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 8px; color: #001936; }
+  .ad-dialog p  { font-size: 13px; color: #64748B; margin-bottom: 18px; line-height: 1.5; }
   .ad-dialog-row { display: flex; gap: 8px; justify-content: flex-end; }
   @media(max-width:800px){ .ad-sb{display:none;} .ad-metrics{grid-template-columns:1fr 1fr;} .ad-2col{grid-template-columns:1fr;} }
 `;
@@ -5260,16 +5264,16 @@ function AdminSparkline({ events }) {
           <div key={i} title={`${labels[i]}: ${c}`}
             style={{
               flex: 1, borderRadius: "3px 3px 0 0",
-              background: i === days - 1 ? "#0FB8AB" : "rgba(15,184,171,.15)",
+              background: i === days - 1 ? "#0FB8AB" : "rgba(15,184,171,.20)",
               height: `${Math.max(8, (c / max) * 100)}%`,
               transition: "background .2s", cursor: "pointer",
             }}
             onMouseEnter={e => e.target.style.background = "#0FB8AB"}
-            onMouseLeave={e => { if (i !== days - 1) e.target.style.background = "rgba(15,184,171,.15)"; }}
+            onMouseLeave={e => { if (i !== days - 1) e.target.style.background = "rgba(15,184,171,.20)"; }}
           />
         ))}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, fontSize: 10, color: "#2A5070" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, fontSize: 10, color: "#94A3B8" }}>
         <span>{labels[0]}</span><span>Today</span>
       </div>
     </div>
