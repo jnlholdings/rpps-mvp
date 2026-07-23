@@ -4907,25 +4907,57 @@ async function hashPassword(password, salt) {
 //   hashPassword("yourNewPassword", "yourSalt").then(console.log)
 // (copy the hashPassword function above into the console first)
 
-const ADMIN_USERS_KEY = "prism_admin_users_v1";
+// Bump this key version any time you need to force-reset all browsers' stored credentials.
+const ADMIN_USERS_KEY = "prism_admin_users_v2";
+
+// Canonical default users — the source of truth baked into the code.
+// If a stored user's hash matches an old placeholder, it gets replaced with this.
+// To rotate a password: recompute the hash (see hashPassword above) and update here,
+// then bump ADMIN_USERS_KEY to force all browsers to pick up the new credentials.
+const ADMIN_DEFAULTS = [
+  {
+    username: "justin",
+    displayName: "Justin",
+    salt: "prism_salt_j1",
+    // SHA-256("prism_salt_j1" + "PrismAdmin2026!" + "prism_admin_2026")
+    hash: "fbb2956ecf78f2a1daeb2319c4544f7a9ed598ecb0d6934ff1b992bfac4d19c1",
+    role: "owner",
+    createdAt: "2026-07-20",
+  }
+];
+
+// Known bad placeholder hashes that should never authenticate anyone.
+const PLACEHOLDER_HASHES = new Set([
+  "a6b3c9d2e5f1a8b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6",
+]);
 
 function getAdminUsers() {
+  let users = [];
   try {
     const stored = localStorage.getItem(ADMIN_USERS_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) users = JSON.parse(stored);
   } catch {}
-  // Default seed user — replace hash after first deploy
-  return [
-    {
-      username: "justin",
-      displayName: "Justin",
-      salt: "prism_salt_j1",
-      // Hash of: "prism_salt_j1" + "PrismAdmin2026!" + "prism_admin_2026"
-      hash: "a6b3c9d2e5f1a8b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6",
-      role: "owner",
-      createdAt: "2026-07-20",
+
+  // Reconcile: for every default user, if their stored entry has a placeholder
+  // hash (or they're missing entirely), replace with the canonical default.
+  let changed = false;
+  const reconciled = [...users];
+  for (const def of ADMIN_DEFAULTS) {
+    const idx = reconciled.findIndex(u => u.username === def.username);
+    if (idx === -1) {
+      // User missing from storage entirely — add canonical version
+      reconciled.push(def);
+      changed = true;
+    } else if (PLACEHOLDER_HASHES.has(reconciled[idx].hash)) {
+      // Stored hash is a known bad placeholder — overwrite with correct hash
+      reconciled[idx] = { ...reconciled[idx], hash: def.hash, salt: def.salt };
+      changed = true;
     }
-  ];
+  }
+  if (changed) {
+    try { localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(reconciled)); } catch {}
+  }
+  return reconciled;
 }
 
 function saveAdminUsers(users) {

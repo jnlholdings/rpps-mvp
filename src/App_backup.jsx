@@ -4921,7 +4921,7 @@ function getAdminUsers() {
       displayName: "Justin",
       salt: "prism_salt_j1",
       // Hash of: "prism_salt_j1" + "PrismAdmin2026!" + "prism_admin_2026"
-      hash: "fbb2956ecf78f2a1daeb2319c4544f7a9ed598ecb0d6934ff1b992bfac4d19c1",
+      hash: "a6b3c9d2e5f1a8b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6",
       role: "owner",
       createdAt: "2026-07-20",
     }
@@ -5285,6 +5285,7 @@ function AdminDashboard({ session, onSignOut }) {
   const [referrals, setReferrals] = useState([]);
   const [patients, setPatients] = useState([]);
   const [providers, setProviders] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState(null);
   const [toasts, setToasts] = useState([]);
@@ -5305,22 +5306,33 @@ function AdminDashboard({ session, onSignOut }) {
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
   }, []);
 
+  const [dbReady, setDbReady] = useState(true);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [reqRes, refRes, patRes, provRes] = await Promise.all([
-        supabase.from("payment_plans").select("*, patients(first_name, last_name, email)").eq("autopay_status", "pending_review").order("created_at", { ascending: false }),
-        supabase.from("referrals").select("*, providers(practice_name)").order("created_at", { ascending: false }),
-        supabase.from("patients").select("*").order("created_at", { ascending: false }).limit(100),
-        supabase.from("providers").select("*").order("created_at", { ascending: false }).limit(100),
+      const [patRes, provRes, appRes, refRes, planRes] = await Promise.all([
+        supabase.from("patients").select("id, email, first_name, last_name, phone, created_at").order("created_at", { ascending: false }).limit(200),
+        supabase.from("providers").select("id, email, practice_name, contact_name, phone, specialty, created_at").order("created_at", { ascending: false }).limit(200),
+        supabase.from("applications").select("id, patient_id, balance_owed, approved_amount, decision, term, apr, monthly_payment, status, created_at").order("created_at", { ascending: false }).limit(200),
+        supabase.from("referrals").select("id, provider_id, patient_first_name, patient_last_name, patient_email, balance_owed, care_description, method, status, referral_code, created_at").order("created_at", { ascending: false }).limit(200),
+        supabase.from("payment_plans").select("id, patient_id, autopay_status, autopay_amount, autopay_charge_day, next_due_date, created_at").eq("autopay_status", "pending_review").order("created_at", { ascending: false }),
       ]);
-      setRequests(reqRes.data || []);
-      setReferrals(refRes.data || []);
-      setPatients(patRes.data || []);
-      setProviders(provRes.data || []);
-    } catch (e) { toast("⚠ Failed to load data from Supabase"); }
+      const anyError = [patRes, provRes, appRes, refRes, planRes].find(r => r.error);
+      if (anyError) {
+        console.warn("Admin fetch error:", anyError.error);
+        setDbReady(false);
+      } else {
+        setDbReady(true);
+        setPatients(patRes.data || []);
+        setProviders(provRes.data || []);
+        setApplications(appRes.data || []);
+        setReferrals(refRes.data || []);
+        setRequests(planRes.data || []);
+      }
+    } catch (e) { console.error(e); setDbReady(false); }
     setLoading(false);
-  }, [toast]);
+  }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -5377,12 +5389,13 @@ function AdminDashboard({ session, onSignOut }) {
   };
 
   const navItems = [
-    { id: "overview",  icon: "◈",  label: "Overview" },
-    { id: "autopay",   icon: "⚡", label: "Autopay Requests" },
-    { id: "patients",  icon: "👤", label: "Patients" },
-    { id: "providers", icon: "🏥", label: "Providers" },
-    { id: "referrals", icon: "🔗", label: "Referrals" },
-    { id: "users",     icon: "🔑", label: "Admin Users" },
+    { id: "overview",     icon: "◈",  label: "Overview" },
+    { id: "applications", icon: "📋", label: "Applications" },
+    { id: "autopay",      icon: "⚡", label: "Autopay Requests" },
+    { id: "patients",     icon: "👤", label: "Patients" },
+    { id: "providers",    icon: "🏥", label: "Providers" },
+    { id: "referrals",    icon: "🔗", label: "Referrals" },
+    { id: "users",        icon: "🔑", label: "Admin Users" },
   ];
 
   const approvedRequests = requests.filter(r => r.autopay_status === "active").length;
@@ -5420,7 +5433,7 @@ function AdminDashboard({ session, onSignOut }) {
       <div className="ad-main">
         <div className="ad-topbar">
           <div>
-            <div className="ad-tb-title">{{ overview: "Platform Overview", autopay: "Autopay Requests", patients: "Patients", providers: "Providers", referrals: "Referrals", users: "Admin Users" }[view]}</div>
+            <div className="ad-tb-title">{{ overview: "Platform Overview", applications: "Patient Applications", autopay: "Autopay Requests", patients: "Patients", providers: "Providers", referrals: "Referrals", users: "Admin Users" }[view]}</div>
             <div className="ad-tb-sub">Prism Patient · Internal Admin Console</div>
           </div>
           <div className="ad-tb-right">
@@ -5436,18 +5449,38 @@ function AdminDashboard({ session, onSignOut }) {
         <div className="ad-content">
 
           {loading && (
-            <div style={{ textAlign: "center", padding: "48px 0", color: "#2A5070", fontSize: 13 }}>Loading data…</div>
+            <div style={{ textAlign: "center", padding: "48px 0", color: "#94A3B8", fontSize: 13 }}>Loading data…</div>
           )}
 
-          {!loading && <>
+          {!loading && !dbReady && (
+            <div style={{
+              background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 12,
+              padding: "20px 24px", marginBottom: 20,
+              display: "flex", alignItems: "flex-start", gap: 14,
+            }}>
+              <div style={{ fontSize: 22, flexShrink: 0 }}>⚠️</div>
+              <div>
+                <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 700, fontSize: 14, color: "#92400E", marginBottom: 4 }}>
+                  Unable to load data
+                </div>
+                <div style={{ fontSize: 13, color: "#78350F", lineHeight: 1.6 }}>
+                  One or more Supabase tables returned an error. Check the browser console for details.
+                  If tables are missing, run the SQL migrations first, then refresh.
+                </div>
+                <button className="ad-btn ad-btn-ghost" style={{ marginTop: 10, fontSize: 12 }} onClick={fetchAll}>↺ Retry</button>
+              </div>
+            </div>
+          )}
+
+          {!loading && dbReady && <>
 
             {/* ── OVERVIEW ── */}
             {view === "overview" && <>
               <div className="ad-metrics">
                 <div className="ad-metric tc">
-                  <div className="ad-m-lbl">Total Patients</div>
+                  <div className="ad-m-lbl">Registered Patients</div>
                   <div className="ad-m-val tc">{patients.length}</div>
-                  <div className="ad-m-sub">{patients.filter(p => { const d = new Date(p.created_at); return (Date.now()-d)<86400000; }).length} today</div>
+                  <div className="ad-m-sub">{patients.filter(p=>(Date.now()-new Date(p.created_at))<86400000).length} today</div>
                 </div>
                 <div className="ad-metric ac">
                   <div className="ad-m-lbl">Providers</div>
@@ -5455,14 +5488,14 @@ function AdminDashboard({ session, onSignOut }) {
                   <div className="ad-m-sub">Florida pilot</div>
                 </div>
                 <div className="ad-metric gc">
-                  <div className="ad-m-lbl">Referrals Sent</div>
-                  <div className="ad-m-val gc">{referrals.length}</div>
-                  <div className="ad-m-sub">{referrals.filter(r => r.status === "applied").length} converted</div>
+                  <div className="ad-m-lbl">Applications</div>
+                  <div className="ad-m-val gc">{applications.length}</div>
+                  <div className="ad-m-sub">{applications.filter(a=>a.decision==="approved").length} approved</div>
                 </div>
                 <div className="ad-metric bc">
-                  <div className="ad-m-lbl">Autopay Pending</div>
-                  <div className="ad-m-val bc">{requests.length}</div>
-                  <div className="ad-m-sub">Needs review</div>
+                  <div className="ad-m-lbl">Referrals</div>
+                  <div className="ad-m-val bc">{referrals.length}</div>
+                  <div className="ad-m-sub">{referrals.filter(r=>r.status==="applied").length} converted</div>
                 </div>
               </div>
 
@@ -5496,16 +5529,19 @@ function AdminDashboard({ session, onSignOut }) {
                   <button className="ad-btn ad-btn-ghost" style={{fontSize:11}} onClick={() => setView("patients")}>View all →</button>
                 </div>
                 <div className="ad-feed">
-                  {patients.slice(0, 8).map(p => (
-                    <div key={p.id} className="ad-fi">
-                      <div className="ad-fi-icon" style={{ background: "rgba(15,184,171,.1)" }}>👤</div>
-                      <div className="ad-fi-t">
-                        <div className="ad-fi-txt"><strong>{p.first_name} {p.last_name}</strong> · {p.email}</div>
-                        <div className="ad-fi-meta">{fmtAdminTime(p.created_at)}</div>
+                  {patients.slice(0, 8).map(p => {
+                    const appCount = applications.filter(a => a.patient_id === p.id).length;
+                    return (
+                      <div key={p.id} className="ad-fi">
+                        <div className="ad-fi-icon" style={{ background: "rgba(15,184,171,.1)" }}>👤</div>
+                        <div className="ad-fi-t">
+                          <div className="ad-fi-txt"><strong>{p.first_name} {p.last_name}</strong> · <span style={{color:"#64748B"}}>{p.email}</span></div>
+                          <div className="ad-fi-meta">{fmtAdminTime(p.created_at)}{appCount > 0 ? ` · ${appCount} application${appCount!==1?"s":""}` : ""}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                  {patients.length === 0 && <div className="ad-empty"><div className="ad-empty-ic">👤</div>No patients yet — data will appear once Supabase is wired in.</div>}
+                    );
+                  })}
+                  {patients.length === 0 && <div className="ad-empty"><div className="ad-empty-ic">👤</div>No patients registered yet.</div>}
                 </div>
               </div>
             </>}
@@ -5550,16 +5586,20 @@ function AdminDashboard({ session, onSignOut }) {
                 {patients.length === 0
                   ? <div className="ad-empty"><div className="ad-empty-ic">👤</div>No patients yet.</div>
                   : <table className="ad-tbl">
-                      <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Registered</th></tr></thead>
+                      <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Applications</th><th>Registered</th></tr></thead>
                       <tbody>
-                        {patients.map(p => (
-                          <tr key={p.id}>
-                            <td><div className="ad-tbl-name">{p.first_name} {p.last_name}</div></td>
-                            <td style={{ fontSize: 12, color: "#7FA8C0" }}>{p.email}</td>
-                            <td style={{ fontSize: 12, color: "#4A7A96" }}>{p.phone || "—"}</td>
-                            <td style={{ fontSize: 11, color: "#2A5070" }}>{fmtAdminTime(p.created_at)}</td>
-                          </tr>
-                        ))}
+                        {patients.map(p => {
+                          const appCount = applications.filter(a => a.patient_id === p.id).length;
+                          return (
+                            <tr key={p.id}>
+                              <td><div className="ad-tbl-name">{p.first_name} {p.last_name}</div></td>
+                              <td style={{ fontSize: 12, color: "#64748B" }}>{p.email}</td>
+                              <td style={{ fontSize: 12, color: "#94A3B8" }}>{p.phone || "—"}</td>
+                              <td>{appCount > 0 ? <span className="ad-pill ad-pill-t">{appCount} app{appCount!==1?"s":""}</span> : <span style={{color:"#94A3B8",fontSize:12}}>None</span>}</td>
+                              <td style={{ fontSize: 11, color: "#94A3B8" }}>{fmtAdminTime(p.created_at)}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                 }
@@ -5573,15 +5613,16 @@ function AdminDashboard({ session, onSignOut }) {
                 {providers.length === 0
                   ? <div className="ad-empty"><div className="ad-empty-ic">🏥</div>No providers yet.</div>
                   : <table className="ad-tbl">
-                      <thead><tr><th>Practice</th><th>Contact</th><th>Email</th><th>Location</th><th>Joined</th></tr></thead>
+                      <thead><tr><th>Practice</th><th>Contact</th><th>Email</th><th>Phone</th><th>Specialty</th><th>Joined</th></tr></thead>
                       <tbody>
                         {providers.map(p => (
                           <tr key={p.id}>
                             <td><div className="ad-tbl-name">{p.practice_name}</div></td>
-                            <td style={{ fontSize: 12, color: "#7FA8C0" }}>{p.contact_name || "—"}</td>
-                            <td style={{ fontSize: 12, color: "#4A7A96" }}>{p.email}</td>
-                            <td>{p.city && p.state ? <span className="ad-pill ad-pill-t">{p.city}, {p.state}</span> : "—"}</td>
-                            <td style={{ fontSize: 11, color: "#2A5070" }}>{fmtAdminTime(p.created_at)}</td>
+                            <td style={{ fontSize: 12, color: "#64748B" }}>{p.contact_name || "—"}</td>
+                            <td style={{ fontSize: 12, color: "#64748B" }}>{p.email}</td>
+                            <td style={{ fontSize: 12, color: "#94A3B8" }}>{p.phone || "—"}</td>
+                            <td>{p.specialty ? <span className="ad-pill ad-pill-t">{p.specialty}</span> : "—"}</td>
+                            <td style={{ fontSize: 11, color: "#94A3B8" }}>{fmtAdminTime(p.created_at)}</td>
                           </tr>
                         ))}
                       </tbody>
