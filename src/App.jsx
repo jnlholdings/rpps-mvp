@@ -295,7 +295,7 @@ const styles = `
   .section-divider-text { font-size: 12px; color: var(--text-light); font-weight: 500; white-space: nowrap; }
 
   .site-footer { background: var(--navy); color: rgba(255,255,255,0.7); padding: 56px 32px 32px; margin-top: auto; }
-  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; max-width: 1000px; margin: 0 auto 48px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1.6fr; gap: 40px; max-width: 1000px; margin: 0 auto 48px; }
   .footer-brand-col .footer-logo { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 22px; color: white; margin-bottom: 12px; }
   .footer-brand-col .footer-logo span { color: var(--coral); }
   .footer-brand-col p { font-size: 13px; line-height: 1.7; max-width: 240px; }
@@ -2003,7 +2003,7 @@ function SiteFooter({ mode, onNavigate }) {
         <div>
           <div className="footer-col-title">Contact</div>
           <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.8 }}>
-            <div>Prism Patient Payment Solutions</div>
+            <div style={{ fontSize: 12, whiteSpace: "nowrap" }}>Prism Patient Payment Solutions</div>
             <div>info@prism-patient.com</div>
             <div>Boynton Beach, FL</div>
           </div>
