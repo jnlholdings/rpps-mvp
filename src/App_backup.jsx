@@ -4921,7 +4921,7 @@ function getAdminUsers() {
       displayName: "Justin",
       salt: "prism_salt_j1",
       // Hash of: "prism_salt_j1" + "PrismAdmin2026!" + "prism_admin_2026"
-      hash: "a6b3c9d2e5f1a8b4c7d0e3f6a9b2c5d8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6",
+      hash: "fbb2956ecf78f2a1daeb2319c4544f7a9ed598ecb0d6934ff1b992bfac4d19c1",
       role: "owner",
       createdAt: "2026-07-20",
     }
