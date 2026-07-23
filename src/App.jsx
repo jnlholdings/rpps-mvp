@@ -2003,10 +2003,9 @@ function SiteFooter({ mode, onNavigate }) {
         <div>
           <div className="footer-col-title">Contact</div>
           <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.8 }}>
-            <div>support@prism.com</div>
-            <div>(800) 000-0000</div>
-            <div style={{ marginTop: 8 }}>Mon–Fri, 9am–6pm ET</div>
-            <div style={{ marginTop: 12, fontSize: 12 }}>123 Health Ave, Suite 100<br />Miami, FL 33101</div>
+            <div>Prism Patient Payment Solutions</div>
+            <div>info@prism-patient.com</div>
+            <div>Boynton Beach, FL</div>
           </div>
         </div>
       </div>
@@ -2143,6 +2142,26 @@ function ContactPage({ audience }) {
       sender: form.name,
       read: false,
     });
+
+    // Notify info@prism-patient.com via email (best-effort — submission is
+    // already saved above, so a failed email never loses the message)
+    try {
+      await fetch("/api/send-contact-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          subject: form.subject,
+          message: form.message,
+          audience,
+        }),
+      });
+    } catch (err) {
+      console.error("Contact email notification failed:", err);
+    }
+
     setSending(false);
     setSubmitted(true);
   };
@@ -2164,10 +2183,9 @@ function ContactPage({ audience }) {
           <div>
             <div style={{ fontFamily: "Sora, sans-serif", fontSize: 20, fontWeight: 700, marginBottom: 24 }}>Contact Information</div>
             {[
-              ["📧", "Email", "support@prism.com", audience === "provider" ? "providers@prism.com" : null],
-              ["📞", "Phone", "(800) 000-0000", null],
-              ["🕐", "Hours", "Monday – Friday", "9:00 AM – 6:00 PM ET"],
-              ["📍", "Address", "123 Health Ave, Suite 100", "Miami, FL 33101"],
+              ["🏢", "Company", "Prism Patient Payment Solutions", null],
+              ["📧", "Email", "info@prism-patient.com", null],
+              ["📍", "Location", "Boynton Beach, FL", null],
             ].map(([icon, label, line1, line2]) => (
               <div key={label} style={{ display: "flex", gap: 14, marginBottom: 24 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "var(--mist)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{icon}</div>
